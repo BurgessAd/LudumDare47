@@ -7,8 +7,15 @@ public class TestMerge : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        int j = 1;
+        int b = 1;
     }
+
+
+    void GetBlumpkin()
+	{
+        
+	}
 
     // Update is called once per frame
     void Update()
