@@ -15,12 +15,28 @@ public class UFO : MonoBehaviour
     {
         m_StateMachine = new StateMachine(new UFOFindState(this));
         m_StateMachine.AddState(new UFOSwoopState(this, m_MovementHandling));
+        m_StateMachine.AddState(new UFOWrangleState(this));
+    }
+
+    // method called by something external, like the lasso, to begin wrangling, for example
+    public void OnUfoWrangled() 
+    {
+        m_StateMachine.RequestTransition(typeof(UFOFindState));
     }
 
     // state machine update
     public void Update()
     {
         m_StateMachine.Tick();
+    }
+}
+
+public class UFOWrangleState : IState 
+{
+    private UFO m_Ufo;
+    public UFOWrangleState(UFO ufo)
+    {
+        m_Ufo = ufo;
     }
 }
 
