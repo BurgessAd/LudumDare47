@@ -20,6 +20,11 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+    }
+
+    public void Tick()
+    {
         forwardSpeed = Input.GetAxis("Vertical") / slowFactor;
         sideSpeed = Input.GetAxis("Horizontal") / slowFactor;
 
@@ -28,12 +33,7 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 newPos = transform.position + (camTansform.forward * forwardSpeed) + (camTansform.right * sideSpeed); ;
 
-        transform.position = new Vector3(newPos.x, 0f, newPos.z);
-    }
-
-    private void FixedUpdate()
-    {
-
+        transform.position = new Vector3(newPos.x, transform.position.y, newPos.z);
     }
 
 }
