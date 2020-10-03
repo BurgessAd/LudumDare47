@@ -4,19 +4,21 @@ using UnityEngine;
 
 public class Lasso : MonoBehaviour
 {
+    public GameObject lassoColliderPrefab;
+    private GameObject lassoCollider;
 
-    public GameObject lasso;
-    public GameObject lassoCollider;
-
-    //firepoint will be the players position
-    public Transform firePoint;
-    public Transform playerCam;
+    //PlayerCam will be the fire point for the lasso
+    private Transform playerCam;
     private float force = 100f;
     private bool fired = false;
+    private Vector3 firePoint;
+
+    void Awake(){
+        playerCam = GameObject.Find("Main Camera").GetComponent<Transform>();
+    }
 
     void Update()
     {
-
         if(Input.GetButtonDown("Fire1") && !fired){
             //can add a hold here to increase the distance of the throw
             FireLasso();
@@ -28,15 +30,13 @@ public class Lasso : MonoBehaviour
     }
 
     void HandleCollision(){
-        //on collision with an entity (ground or otherwise)
-        fired = false;
+       fired = false;
     }
 
     void FireLasso(){
         fired = true;
-        lassoCollider = Instantiate(lassoCollider, transform.position, Quaternion.Euler(0,0,0), transform);
+        lassoCollider = Instantiate(lassoColliderPrefab, playerCam.position, Quaternion.Euler(0,0,0), transform);
         Rigidbody collider = lassoCollider.GetComponent<Rigidbody>();
         collider.AddForce(playerCam.forward*force, ForceMode.Impulse);
     }
-
 }
