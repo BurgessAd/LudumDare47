@@ -6,11 +6,12 @@ public class PlayerStateManager : MonoBehaviour
 {
 
     // setting up and adding states to state machine
-    private StateMachine m_StateMachine;
+    public StateMachine m_StateMachine;
     public Transform camTransform;
     public LineRenderer lineRenderer;
     public PlayerMovement playerMovement;
     public ProjectileRenderer projectileRenderer;
+    public GameObject cow =null;
 
     public void Start()
     {
@@ -22,7 +23,7 @@ public class PlayerStateManager : MonoBehaviour
         m_StateMachine = new StateMachine(new PlayerMoving(this));
         m_StateMachine.AddState(new PlayerLassoAiming(this, gameObject, 1.0f, 0.5f));
         m_StateMachine.AddState(new PlayerLassoReturning());
-        m_StateMachine.AddState(new PlayerLassoWithObject());
+        m_StateMachine.AddState(new PlayerLassoWithObject(this));
     }
 
 
@@ -63,6 +64,8 @@ public class PlayerLassoAiming : IState
     private float force;
     public float minForce = 0.5f;
     public float maxForce = 10f;
+    public GameObject cow;
+
     public PlayerLassoAiming(PlayerStateManager stateManager, GameObject gameObject, float mass, float drag)
     {
         this.gameObject = gameObject;
@@ -112,13 +115,32 @@ public class PlayerLassoReturning : IState
 
 public class PlayerLassoWithObject : IState
 {
-    public PlayerLassoWithObject()
+    private float strength = 5;
+    private PlayerStateManager stateManager;
+    private GameObject cow;
+
+    public PlayerLassoWithObject(PlayerStateManager stateManager)
     {
-        ;
+        this.stateManager =stateManager;
     }
 
     public override void Tick()
-    {
+    { 
+
+        
+        stateManager.playerMovement.Tick();
+
+		if (Input.GetMouseButton(0))
+		{
+            Vector3 dir = stateManager.gameObject.transform.position - cow.transform.position;
+            dir = dir.normalized;
+
+            cow.GetComponent<Rigidbody>().AddForce(strength*dir);
+		}
+
     }
+    public override void OnEnter(){
+        cow = stateManager.cow;
+	}
 
 }

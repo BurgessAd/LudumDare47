@@ -69,12 +69,16 @@ public class Lasso : MonoBehaviour
     }
 
     public void AttatchToCow(GameObject cow){
-        Debug.Log("attatching to cow");
+        //Debug.Log("attatching to cow");
         lassoEnd = cow.GetComponent<Transform>();
         attatched = true;
     }
 
     void Detatch(){
+		if (attatched)
+		{
+            lassoEnd.gameObject.GetComponent<AnimalComponent>().OffLasso();
+		}
         attatched = false;
     }
 
