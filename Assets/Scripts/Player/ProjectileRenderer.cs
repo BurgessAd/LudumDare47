@@ -8,6 +8,7 @@ public class ProjectileRenderer : MonoBehaviour
     public int maxIterations = 10000;
     public int maxSegmentCount = 1000;
     public float segmentStepModulo = 10f;
+    private float killFloor = - 20f;
 
     private Vector3[] segments;
     private int numSegments = 0;
@@ -16,10 +17,11 @@ public class ProjectileRenderer : MonoBehaviour
     {
     }
 
-    public void SimulatePath(GameObject gameObject, Vector3 forceDirection, float mass, float drag, LineRenderer lineRenderer)
+    public void SimulatePath(GameObject firePoint, float force, float mass, float drag, LineRenderer lineRenderer)
     {
         this.lineRenderer = lineRenderer;
-        forceDirection *= 10;
+        Vector3 forceDirection = Camera.main.transform.forward;
+        forceDirection *= force;
 
        // Rigidbody rigidbody;
 
@@ -27,8 +29,8 @@ public class ProjectileRenderer : MonoBehaviour
 
         float stepDrag = 1 - drag * timestep;
         Vector3 velocity = forceDirection / mass * timestep;
-        Vector3 gravity = Physics.gravity * timestep * timestep;
-        Vector3 startPosition = gameObject.transform.Find("Main Camera").Find("FirePoint").position;
+        Vector3 gravity = new Vector3(0f,-9,0f) * timestep * timestep;
+        Vector3 startPosition = firePoint.transform.position;
 
         if (segments == null || segments.Length != maxSegmentCount)
         {
@@ -38,7 +40,7 @@ public class ProjectileRenderer : MonoBehaviour
         segments[0] = startPosition;
         numSegments = 1;
 
-        for (int i = 0; i < maxIterations && numSegments < maxSegmentCount; i++)
+        for (int i = 0; i < maxIterations && numSegments < maxSegmentCount && startPosition.y > killFloor; i++)
         {
             velocity += gravity;
             velocity *= stepDrag;
@@ -57,16 +59,7 @@ public class ProjectileRenderer : MonoBehaviour
 
     private void Draw()
     {
-/*        Color startColor = Color.cyan;
-        Color endColor = Color.cyan;
-        startColor.a = 0f;
-        endColor.a = 0f;*/
-
         lineRenderer.transform.position = segments[0];
-
-/*        lineRenderer.startColor = startColor;
-        lineRenderer.endColor = endColor;*/
-
         lineRenderer.positionCount = numSegments;
         for (int i = 0; i < numSegments; i++)
         {

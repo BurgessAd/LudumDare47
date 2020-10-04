@@ -8,6 +8,10 @@ public class PlayerMovement : MonoBehaviour
     private float forwardSpeed = 0f;
     private float sideSpeed = 0f;
 
+    private float speed = 8;
+
+    private float camOffset = 1f;
+
     private float slowFactor = 10f;
 
     // Start is called before the first frame update
@@ -23,27 +27,32 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public void Tick()
+
     {
-        RaycastHit hit;
-        float lastDistToFloor = 1f;
-        if (Physics.Raycast(transform.position, new Vector3(0, -1, 0), out hit, Mathf.Infinity)){ lastDistToFloor = hit.distance; }
-        
-
-        forwardSpeed = Input.GetAxis("Vertical") / slowFactor;
-        sideSpeed = Input.GetAxis("Horizontal") / slowFactor;
+		
+        //movement for the player
+        forwardSpeed = Input.GetAxis("Vertical");
+        sideSpeed = Input.GetAxis("Horizontal");
 
 
-        Transform camTansform = transform.Find("Main Camera").gameObject.transform;
+        Transform camTransform = Camera.main.gameObject.transform;
 
-        Vector3 newPos = transform.position + (camTansform.forward * forwardSpeed) + (camTansform.right * sideSpeed); 
+        Vector3 velocity = camTransform.forward * forwardSpeed + camTransform.right * sideSpeed;
+        velocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+        velocity *= speed;
+        Rigidbody rb = gameObject.GetComponent<Rigidbody>();
+        rb.velocity = new Vector3(velocity.x, rb.velocity.y, velocity.z);
+        rb.AddForce(-9 * Vector3.up);
+        //jump with space key
 
-        transform.position = new Vector3(newPos.x, transform.position.y, newPos.z);
-
-        if (Physics.Raycast(transform.position, new Vector3(0, -1, 0), out hit, Mathf.Infinity) && lastDistToFloor != hit.distance) {
-            transform.position = new Vector3(newPos.x, transform.position.y + (lastDistToFloor - hit.distance), newPos.z);
+        if (Input.GetKeyDown("space")&&rb.velocity.y==0)
+        {
+            rb.velocity += Vector3.up * 15;
         }
 
-        
+        Camera.main.transform.position = gameObject.transform.position+ Vector3.up*camOffset;
+
+
 
     }
 

@@ -44,9 +44,25 @@ public class Lasso : MonoBehaviour
     {
         this.lineRenderer = this.GetComponent<LineRenderer>();
     }
-    
+    //added to remove lasso publicly
+    public void Kill()
+	{
+        attatched = false;
+        madeLasso = false;
+        lineRenderer.enabled = false;
+	}
+
     void Update()
     {   
+
+        //throw lasso on mouse1 if there is no collider out there and if it is not attached to anything
+/*        if(Input.GetButtonDown("Fire1")){
+            Detatch();
+            Destroy(lassoCollider);
+            FireLasso();
+            madeLasso = true;
+            lineRenderer.enabled = true;
+        }*/
         //if there is a collider and the rope isnt attached to anything else set the end of the lasso to the collider
         if(lassoCollider != null && !attatched){
             lassoEnd = lassoCollider.GetComponent<Transform>();
@@ -128,9 +144,9 @@ public class Lasso : MonoBehaviour
         }
     }
 
-    public void Attatch(GameObject Entity){
-        Debug.Log("attatching to " + Entity);
-        lassoEnd = Entity.GetComponent<Transform>();
+    public void AttatchToCow(GameObject cow){
+        //Debug.Log("attatching to cow");
+        lassoEnd = cow.GetComponent<Transform>();
         attatched = true;
         RemoveLoop();
     }
@@ -139,12 +155,13 @@ public class Lasso : MonoBehaviour
         lassoLoop.GetComponentInChildren<LineRenderer>().enabled = false;
     }
 
-    void Detatch(){
+    public void Detatch(){
+        
         attatched = false;
         lineRenderer.enabled = false;
     }
 
-    void FireLasso(){
+    void FireLasso(float force){
         lassoCollider = Instantiate(lassoColliderPrefab, firePoint.position, Quaternion.Euler(0,0,0), transform);
         Rigidbody collider = lassoCollider.GetComponent<Rigidbody>();
         collider.AddForce(playerCam.forward*force, ForceMode.Impulse);
@@ -152,6 +169,15 @@ public class Lasso : MonoBehaviour
         offset.y = playerCam.forward.y;
         offset.z = playerCam.forward.z*offsetScale;
         //StartCoroutine(Despawn(despawnTime));
+    }
+
+    public void callToFireLasso(float force)
+    {
+        Detatch();
+        Destroy(lassoCollider);
+        FireLasso(force);
+        madeLasso = true;
+        lineRenderer.enabled = true;
     }
 
     void RenderLasso(){

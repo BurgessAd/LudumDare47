@@ -11,7 +11,6 @@ public class LassoCollision : MonoBehaviour
     
     void Awake(){
         player =  GameObject.FindGameObjectWithTag("Player");
-        playerTransform = player.GetComponent<Transform>();
         lasso = player.GetComponent<Lasso>();
     }
 
@@ -21,9 +20,17 @@ public class LassoCollision : MonoBehaviour
 
         //these statements find the tag of the gameObject we collide with
         if(Entity.tag == "Cow"){
-            Debug.Log("We hit Cow");
+            //Debug.Log("We hit Cow");
+            AnimalComponent hitCow = Entity.GetComponentInParent<AnimalComponent>();
+            //Activates cows lasso on traits
+            hitCow.OnLasso();
             //Debug.Log(Entity.transform.position - playerTransform.position);
-            lasso.Attatch(Entity);
+            //Debug.Log(Entity.name);
+            //sets local copy of player's cow to wrangled cow
+            player.GetComponent<PlayerStateManager>().cow = collision.gameObject;
+            player.GetComponent<PlayerStateManager>().m_StateMachine.RequestTransition(typeof(PlayerLassoWithObject));
+            //attatches to Leash of Cow
+            lasso.AttatchToCow(Entity.transform.Find("Leash").gameObject);
             Destroy(gameObject);
         }
         if(Entity.tag == "Floor"){
