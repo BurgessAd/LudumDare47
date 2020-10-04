@@ -11,7 +11,6 @@ public class LassoCollision : MonoBehaviour
     
     void Awake(){
         player =  GameObject.FindGameObjectWithTag("Player");
-        playerTransform = player.GetComponent<Transform>();
         lasso = player.GetComponent<Lasso>();
     }
 

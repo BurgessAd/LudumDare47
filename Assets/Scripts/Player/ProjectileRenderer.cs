@@ -21,7 +21,6 @@ public class ProjectileRenderer : MonoBehaviour
     {
         this.lineRenderer = lineRenderer;
         Vector3 forceDirection = Camera.main.transform.forward;
-        Debug.Log(forceDirection.ToString());
         forceDirection *= force;
 
        // Rigidbody rigidbody;

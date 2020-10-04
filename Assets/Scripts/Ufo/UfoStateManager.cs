@@ -71,7 +71,7 @@ public class UfoStateManager : MonoBehaviour
 
         public override void Tick()
         {
-            if (!stateManager.ufoMain.inSwoop) { RequestTransition<UfoAbduct>(); }
+            if (!stateManager.ufoMain.inSwoopDown) { RequestTransition<UfoAbduct>(); }
             
         }
         public override void OnEnter()
