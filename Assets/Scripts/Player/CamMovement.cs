@@ -27,7 +27,7 @@ public class CamMovement : MonoBehaviour
         if (pitch > maxPitch) pitch = maxPitch;
         if (-pitch > maxPitch) pitch = -maxPitch;
         transform.eulerAngles = new Vector3(-pitch, yaw, 0f);
-// transform.parent.Find("FirePoint").transform.eulerAngles = new Vector3(-pitch, yaw, 0f);
+       // transform.Find("FirePoint").transform.eulerAngles = transform.eulerAngles;
     }
 
     void FixedUpdate()

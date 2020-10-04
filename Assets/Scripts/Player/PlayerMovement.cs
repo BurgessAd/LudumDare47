@@ -7,7 +7,11 @@ public class PlayerMovement : MonoBehaviour
 {
     private float forwardSpeed = 0f;
     private float sideSpeed = 0f;
+
     private float speed = 8;
+
+    private float camOffset = 1f;
+
     private float slowFactor = 10f;
 
     // Start is called before the first frame update
@@ -23,6 +27,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public void Tick()
+
     {
  
         forwardSpeed = Input.GetAxis("Vertical");
@@ -39,9 +44,9 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(-9 * Vector3.up);
 
 
-     
+        Camera.main.transform.position = gameObject.transform.position+ Vector3.up*camOffset;
 
-        
+
 
     }
 
