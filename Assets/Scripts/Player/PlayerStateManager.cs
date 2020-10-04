@@ -102,7 +102,6 @@ public class PlayerLassoAiming : IState
         stateManager.playerMovement.Tick();
         if (Input.GetMouseButtonUp(0))
         {
-
             RequestTransition<PlayerLassoThrown>();
         }
     }
@@ -149,7 +148,7 @@ public class PlayerLassoReturning : IState
 
 public class PlayerLassoWithObject : IState
 {
-    private float strength = 5;
+    private float strength = 20;
     private PlayerStateManager stateManager;
     private GameObject cow;
 
@@ -161,17 +160,28 @@ public class PlayerLassoWithObject : IState
     }
 
     public override void Tick()
-    { 
-
+    {
+		if (cow == null)
+		{
+            stateManager.playerTransform.gameObject.GetComponent<Lasso>().Kill();
+            RequestTransition<PlayerMoving>();
+            return;
+		}
         
         stateManager.playerMovement.Tick();
 
-		if (Input.GetMouseButton(0))
+		if (Input.GetKeyDown("c")){
+            cow.GetComponent<AnimalComponent>().OffLasso();
+            stateManager.playerTransform.gameObject.GetComponent<Lasso>().Kill();
+            RequestTransition<PlayerMoving>();
+        }
+
+		if (Input.GetMouseButtonDown(0))
 		{
             Vector3 dir = stateManager.gameObject.transform.position - cow.transform.position;
             dir = dir.normalized;
-
-            cow.GetComponent<Rigidbody>().AddForce(strength*dir);
+            dir += Vector3.up;
+            cow.GetComponent<Rigidbody>().AddForce(strength*dir,ForceMode.Impulse);
 		}
 
     }

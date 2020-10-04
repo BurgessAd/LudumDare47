@@ -25,10 +25,7 @@ public class AnimalStateHandler : MonoBehaviour
     // state machine update
     public void Update()
     {
-        if (Input.GetKeyDown("space"))
-		{
-            m_StateMachine.RequestTransition(typeof(AnimalYeetedState));
-		}
+        
         m_StateMachine.Tick();
     }
 }

@@ -6,13 +6,14 @@ using System;
 
 public class StateMachine 
 {
-    private IState m_CurrentState;
+    public IState m_CurrentState;
     private List<IState> m_States = new List<IState>();
     public StateMachine(IState InitializedState)
     {
         AddState(InitializedState);
         m_CurrentState = InitializedState;
     }
+
 
     public void AddState<T>(T newState) where T : IState 
     {

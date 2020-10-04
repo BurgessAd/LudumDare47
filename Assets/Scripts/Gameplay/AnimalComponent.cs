@@ -120,6 +120,9 @@ public class AnimalComponent : MonoBehaviour
 
     void OnDestroy()
 	{
+		if (ash.m_StateMachine.m_CurrentState.GetType()==typeof(AnimalWrangledState)){
+            player.GetComponent<Lasso>().Kill();
+        }        
         cowGameManager.cows.Remove(gameObject);
 	}
 
