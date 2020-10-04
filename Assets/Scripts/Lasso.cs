@@ -36,6 +36,7 @@ public class Lasso : MonoBehaviour
     {
         this.lineRenderer = this.GetComponent<LineRenderer>();
     }
+    //added to remove lasso publicly
     public void Kill()
 	{
         attatched = false;

@@ -30,7 +30,7 @@ public class PlayerMovement : MonoBehaviour
 
     {
 		
-
+        //movement for the player
         forwardSpeed = Input.GetAxis("Vertical");
         sideSpeed = Input.GetAxis("Horizontal");
 
@@ -43,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
         Rigidbody rb = gameObject.GetComponent<Rigidbody>();
         rb.velocity = new Vector3(velocity.x, rb.velocity.y, velocity.z);
         rb.AddForce(-9 * Vector3.up);
+        //jump with space key
 
         if (Input.GetKeyDown("space")&&rb.velocity.y==0)
         {
