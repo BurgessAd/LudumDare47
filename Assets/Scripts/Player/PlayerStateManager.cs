@@ -11,6 +11,7 @@ public class PlayerStateManager : MonoBehaviour
     public LineRenderer lineRenderer;
     public PlayerMovement playerMovement;
     public ProjectileRenderer projectileRenderer;
+
     public void Start()
     {
         camTransform = transform.GetChild(0).gameObject.transform;
@@ -19,7 +20,7 @@ public class PlayerStateManager : MonoBehaviour
 
 
         m_StateMachine = new StateMachine(new PlayerMoving(this));
-        //m_StateMachine = new StateMachine(new PlayerLassoAiming(this, transform.gameObject, 1.0f, 0.5f));
+        m_StateMachine.AddState(new PlayerLassoAiming(this, gameObject, 1.0f, 0.5f));
         m_StateMachine.AddState(new PlayerLassoReturning());
         m_StateMachine.AddState(new PlayerLassoWithObject());
     }
@@ -34,9 +35,6 @@ public class PlayerStateManager : MonoBehaviour
 
 public class PlayerMoving : IState
 {
-    private float forwardSpeed = 0f;
-    private float sideSpeed = 0f;
-    private float slowFactor = 10f;
     private PlayerStateManager stateManager;
 
     public PlayerMoving(PlayerStateManager stateManager)
@@ -47,6 +45,10 @@ public class PlayerMoving : IState
     public override void Tick()
     {
         stateManager.playerMovement.Tick();
+        if (Input.GetMouseButtonDown(0))
+        {
+            RequestTransition<PlayerLassoAiming>();
+        }
     }
 
 }
@@ -58,23 +60,38 @@ public class PlayerLassoAiming : IState
     private GameObject gameObject;
     private float mass;
     private float drag;
-
+    private float force;
+    public float minForce = 0.5f;
+    public float maxForce = 10f;
     public PlayerLassoAiming(PlayerStateManager stateManager, GameObject gameObject, float mass, float drag)
     {
         this.gameObject = gameObject;
         this.mass = mass;
         this.drag = drag;
         this.stateManager = stateManager;
-
+        this.force = minForce;
     }
     // here we cache a gameobject in the parent class and change states
     public override void Tick()
     {
-        stateManager.projectileRenderer.SimulatePath(gameObject, (stateManager.camTransform.right + stateManager.camTransform.up + stateManager.camTransform.forward), mass, drag, stateManager.lineRenderer);
 
+        if(force < maxForce)
+        {
+            force += 0.5f* Time.deltaTime;
+            
+        }
+
+        stateManager.projectileRenderer.SimulatePath(gameObject, stateManager.camTransform.forward * force, mass, drag, stateManager.lineRenderer);
         stateManager.playerMovement.Tick();
+        if (Input.GetMouseButtonUp(0))
+        {
+            RequestTransition<PlayerLassoReturning>();
+        }
     }
-
+    public override void OnExit() {
+        this.force = minForce;
+        stateManager.projectileRenderer.clear();
+    }
 }
     
 
@@ -87,6 +104,7 @@ public class PlayerLassoReturning : IState
 
     public override void Tick()
     {
+        RequestTransition<PlayerMoving>();
     }
 
 
