@@ -446,6 +446,7 @@ PrefabInstance:
     - {fileID: 0}
     - {fileID: 0}
     - {fileID: 8393447217304602949, guid: 0fd23bbcdcbad344784c6ecb9a566af1, type: 3}
+    - {fileID: 7252985191894675999, guid: 0fd23bbcdcbad344784c6ecb9a566af1, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 0fd23bbcdcbad344784c6ecb9a566af1, type: 3}
 --- !u!1 &303991547 stripped
 GameObject:
@@ -487,6 +488,8 @@ MonoBehaviour:
   lineRenderer: {fileID: 303991553}
   firePoint: {fileID: 1310651522}
   gravity: {x: 0, y: -9, z: 0}
+  madeLasso: 0
+  attatched: 0
 --- !u!120 &303991553
 LineRenderer:
   m_ObjectHideFlags: 0
@@ -494,7 +497,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 303991547}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -900,7 +903,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 453940245}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -19.4, y: 2.51, z: 15.61}
+  m_LocalPosition: {x: -19.4, y: 2.86, z: 15.61}
   m_LocalScale: {x: 2, y: 1, z: 2}
   m_Children:
   - {fileID: 506081894}
@@ -925,8 +928,8 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 12.959629, y: 4.3987827, z: 10.468178}
-  m_Center: {x: 0.14547253, y: -1, z: 1.1944313}
+  m_Size: {x: 12.959629, y: 4.3987827, z: 12.291689}
+  m_Center: {x: 0.14547253, y: -1, z: 0.2826755}
 --- !u!114 &453940248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2066,7 +2069,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: c7d5e0cb243744a47a64392d8d478898, type: 2}
     - target: {fileID: 838394020491488816, guid: d2b18bb0bdd2ef442a953785b1933565, type: 3}
       propertyPath: m_Name
-      value: Camera
+      value: Main Camera
       objectReference: {fileID: 0}
     - target: {fileID: 838394020491488823, guid: d2b18bb0bdd2ef442a953785b1933565, type: 3}
       propertyPath: m_LocalPosition.x

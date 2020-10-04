@@ -22,11 +22,14 @@ public class LassoCollision : MonoBehaviour
         if(Entity.tag == "Cow"){
             //Debug.Log("We hit Cow");
             AnimalComponent hitCow = Entity.GetComponentInParent<AnimalComponent>();
+            //Activates cows lasso on traits
             hitCow.OnLasso();
             //Debug.Log(Entity.transform.position - playerTransform.position);
             //Debug.Log(Entity.name);
+            //sets local copy of player's cow to wrangled cow
             player.GetComponent<PlayerStateManager>().cow = collision.gameObject;
             player.GetComponent<PlayerStateManager>().m_StateMachine.RequestTransition(typeof(PlayerLassoWithObject));
+            //attatches to Leash of Cow
             lasso.AttatchToCow(Entity.transform.Find("Leash").gameObject);
             Destroy(gameObject);
         }

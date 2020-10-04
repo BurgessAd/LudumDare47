@@ -145,11 +145,13 @@ public class PlayerLassoReturning : IState
 
 
 }
-
+//State for lassoing Cow
 public class PlayerLassoWithObject : IState
 {
+    //strength of throw
     private float strength = 20;
     private PlayerStateManager stateManager;
+    //lassoed cow
     private GameObject cow;
 
     public PlayerLassoWithObject(PlayerStateManager stateManager)
@@ -161,6 +163,7 @@ public class PlayerLassoWithObject : IState
 
     public override void Tick()
     {
+        //if no cow leave state
 		if (cow == null)
 		{
             stateManager.playerTransform.gameObject.GetComponent<Lasso>().Kill();
@@ -169,13 +172,13 @@ public class PlayerLassoWithObject : IState
 		}
         
         stateManager.playerMovement.Tick();
-
+        //removes lasso with c key
 		if (Input.GetKeyDown("c")){
             cow.GetComponent<AnimalComponent>().OffLasso();
             stateManager.playerTransform.gameObject.GetComponent<Lasso>().Kill();
             RequestTransition<PlayerMoving>();
         }
-
+        //fling cow with left click towards player and up
 		if (Input.GetMouseButtonDown(0))
 		{
             Vector3 dir = stateManager.gameObject.transform.position - cow.transform.position;

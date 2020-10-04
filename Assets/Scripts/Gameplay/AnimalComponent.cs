@@ -120,6 +120,7 @@ public class AnimalComponent : MonoBehaviour
 
     void OnDestroy()
 	{
+        //if wrangled cow is destroyed destroy lasso
 		if (ash.m_StateMachine.m_CurrentState.GetType()==typeof(AnimalWrangledState)){
             player.GetComponent<Lasso>().Kill();
         }        
@@ -203,10 +204,12 @@ public class AnimalComponent : MonoBehaviour
 
     public void OnWrangled()
 	{
+        //make the leash visible when wrangled
         gameObject.transform.Find("Leash").gameObject.GetComponent<MeshRenderer>().enabled = true;
 	}
     public void OffWrangled()
     {
+        //make the leash invisible when unwrangled
         gameObject.transform.Find("Leash").gameObject.GetComponent<MeshRenderer>().enabled = false;
     }
 
