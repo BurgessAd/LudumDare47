@@ -27,7 +27,6 @@ public class AnimalStateHandler : MonoBehaviour
     {
         if (Input.GetKeyDown("space"))
 		{
-            
             m_StateMachine.RequestTransition(typeof(AnimalYeetedState));
 		}
         m_StateMachine.Tick();
@@ -99,10 +98,15 @@ public class AnimalWrangledState : IState
     // here we cache a gameobject in the parent class and change states
     public override void Tick()
     {
-        
+        animalStateHandler.animalComponent.Wrangled();
     }
     public override void OnEnter()
     {
+        animalStateHandler.animalComponent.OnWrangled();
+    }
+    public override void OnExit()
+	{
+        animalStateHandler.animalComponent.OffWrangled();
 
     }
 
