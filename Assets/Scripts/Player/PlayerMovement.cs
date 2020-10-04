@@ -29,7 +29,8 @@ public class PlayerMovement : MonoBehaviour
     public void Tick()
 
     {
- 
+		
+
         forwardSpeed = Input.GetAxis("Vertical");
         sideSpeed = Input.GetAxis("Horizontal");
 
@@ -43,6 +44,10 @@ public class PlayerMovement : MonoBehaviour
         rb.velocity = new Vector3(velocity.x, rb.velocity.y, velocity.z);
         rb.AddForce(-9 * Vector3.up);
 
+        if (Input.GetKeyDown("space")&&rb.velocity.y==0)
+        {
+            rb.velocity += Vector3.up * 15;
+        }
 
         Camera.main.transform.position = gameObject.transform.position+ Vector3.up*camOffset;
 

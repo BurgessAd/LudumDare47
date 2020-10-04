@@ -17,8 +17,8 @@ public class Lasso : MonoBehaviour
     public Vector3 gravity = new Vector3(0,-9f,0);
     
     private float despawnTime = 5f;
-    private bool madeLasso = false;
-    private bool attatched = false;
+    public bool madeLasso = false;
+    public bool attatched = false;
 
     //only change the lasso length to avoid problems
     //private List<RopeSegment> ropeSegments = new List<RopeSegment>();
@@ -36,7 +36,13 @@ public class Lasso : MonoBehaviour
     {
         this.lineRenderer = this.GetComponent<LineRenderer>();
     }
-    
+    public void Kill()
+	{
+        attatched = false;
+        madeLasso = false;
+        lineRenderer.enabled = false;
+	}
+
     void Update()
     {   
         //throw lasso on mouse1 if there is no collider out there and if it is not attached to anything
@@ -74,11 +80,8 @@ public class Lasso : MonoBehaviour
         attatched = true;
     }
 
-    void Detatch(){
-		if (attatched)
-		{
-            lassoEnd.gameObject.GetComponent<AnimalComponent>().OffLasso();
-		}
+    public void Detatch(){
+        
         attatched = false;
     }
 
