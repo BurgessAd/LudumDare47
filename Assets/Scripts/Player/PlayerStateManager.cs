@@ -11,9 +11,11 @@ public class PlayerStateManager : MonoBehaviour
     public GameObject firePoint;
     public PlayerMovement playerMovement;
     public ProjectileRenderer projectileRenderer;
+    public Transform playerTransform;
 
     public void Start()
     {
+        this.playerTransform = transform;
         playerMovement = gameObject.AddComponent(typeof(PlayerMovement)) as PlayerMovement;
         projectileRenderer = gameObject.AddComponent(typeof(ProjectileRenderer)) as ProjectileRenderer;
 
@@ -21,7 +23,10 @@ public class PlayerStateManager : MonoBehaviour
         m_StateMachine.AddState(new PlayerLassoAiming(this, firePoint, 1.0f, 0.5f));
         m_StateMachine.AddState(new PlayerLassoReturning());
         m_StateMachine.AddState(new PlayerLassoWithObject());
+        m_StateMachine.AddState(new PlayerLassoThrown(this));
+
     }
+
 
 
     // state machine update
@@ -81,20 +86,39 @@ public class PlayerLassoAiming : IState
             
         }
 
-        stateManager.projectileRenderer.SimulatePath(firePoint,force, mass, drag, stateManager.lineRenderer);
+        stateManager.projectileRenderer.SimulatePath(firePoint,this.force, mass, drag, stateManager.lineRenderer);
         stateManager.playerMovement.Tick();
         if (Input.GetMouseButtonUp(0))
         {
 
-            RequestTransition<PlayerLassoReturning>();
+            RequestTransition<PlayerLassoThrown>();
         }
     }
     public override void OnExit() {
+        stateManager.playerTransform.gameObject.GetComponent<Lasso>().callToFireLasso(this.force);
         this.force = minForce;
         stateManager.projectileRenderer.clear();
     }
 }
-    
+
+
+public class PlayerLassoThrown : IState
+{
+    private PlayerStateManager stateManager;
+
+    public PlayerLassoThrown(PlayerStateManager stateManager)
+    {
+        this.stateManager = stateManager;
+    }
+    // here we cache a gameobject in the parent class and change states
+    public override void Tick()
+    {
+
+        stateManager.playerMovement.Tick();
+        RequestTransition<PlayerLassoAiming>();
+    }
+}
+
 
 public class PlayerLassoReturning : IState
 {

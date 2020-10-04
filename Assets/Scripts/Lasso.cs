@@ -28,7 +28,7 @@ public class Lasso : MonoBehaviour
     private Vector3 ropePos;
 
     void Awake(){
-        playerCam = GameObject.Find("Main Camera").GetComponent<Transform>();
+        playerCam = Camera.main.GetComponent<Transform>();
     }
    
     // Use this for initialization
@@ -40,13 +40,13 @@ public class Lasso : MonoBehaviour
     void Update()
     {   
         //throw lasso on mouse1 if there is no collider out there and if it is not attached to anything
-        if(Input.GetButtonDown("Fire1")){
+/*        if(Input.GetButtonDown("Fire1")){
             Detatch();
             Destroy(lassoCollider);
             FireLasso();
             madeLasso = true;
             lineRenderer.enabled = true;
-        }
+        }*/
         //if there is a collider and the rope isnt attached to anything else set the end of the lasso to the collider
         if(lassoCollider != null && !attatched){
             lassoEnd = lassoCollider.GetComponent<Transform>();
@@ -78,11 +78,20 @@ public class Lasso : MonoBehaviour
         attatched = false;
     }
 
-    void FireLasso(){
+    void FireLasso(float force){
         lassoCollider = Instantiate(lassoColliderPrefab, firePoint.position, Quaternion.Euler(0,0,0), transform);
         Rigidbody collider = lassoCollider.GetComponent<Rigidbody>();
         collider.AddForce(playerCam.forward*force, ForceMode.Impulse);
         //StartCoroutine(Despawn(despawnTime));
+    }
+
+    public void callToFireLasso(float force)
+    {
+        Detatch();
+        Destroy(lassoCollider);
+        FireLasso(force);
+        madeLasso = true;
+        lineRenderer.enabled = true;
     }
 
     void RenderLasso(){
