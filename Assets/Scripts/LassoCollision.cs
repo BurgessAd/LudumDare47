@@ -23,7 +23,7 @@ public class LassoCollision : MonoBehaviour
         if(Entity.tag == "Cow"){
             Debug.Log("We hit Cow");
             //Debug.Log(Entity.transform.position - playerTransform.position);
-            lasso.AttatchToCow(Entity);
+            lasso.Attatch(Entity);
             Destroy(gameObject);
         }
         if(Entity.tag == "Floor"){
