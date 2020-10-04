@@ -7,20 +7,18 @@ public class PlayerStateManager : MonoBehaviour
 
     // setting up and adding states to state machine
     private StateMachine m_StateMachine;
-    public Transform camTransform;
     public LineRenderer lineRenderer;
+    public GameObject firePoint;
     public PlayerMovement playerMovement;
     public ProjectileRenderer projectileRenderer;
 
     public void Start()
     {
-        camTransform = transform.GetChild(0).gameObject.transform;
         playerMovement = gameObject.AddComponent(typeof(PlayerMovement)) as PlayerMovement;
         projectileRenderer = gameObject.AddComponent(typeof(ProjectileRenderer)) as ProjectileRenderer;
 
-
-        m_StateMachine = new StateMachine(new PlayerMoving(this));
-        m_StateMachine.AddState(new PlayerLassoAiming(this, gameObject, 1.0f, 0.5f));
+        this.m_StateMachine = new StateMachine(new PlayerMoving(this));
+        m_StateMachine.AddState(new PlayerLassoAiming(this, firePoint, 1.0f, 0.5f));
         m_StateMachine.AddState(new PlayerLassoReturning());
         m_StateMachine.AddState(new PlayerLassoWithObject());
     }
@@ -30,6 +28,7 @@ public class PlayerStateManager : MonoBehaviour
     public void Update()
     {
         m_StateMachine.Tick();
+
     }
 }
 
@@ -51,21 +50,22 @@ public class PlayerMoving : IState
         }
     }
 
+
 }
 
 
 public class PlayerLassoAiming : IState
 {
     private PlayerStateManager stateManager;
-    private GameObject gameObject;
+    private GameObject firePoint;
     private float mass;
     private float drag;
     private float force;
-    public float minForce = 0.5f;
-    public float maxForce = 10f;
-    public PlayerLassoAiming(PlayerStateManager stateManager, GameObject gameObject, float mass, float drag)
+    public float minForce = 25f;
+    public float maxForce = 200f;
+    public PlayerLassoAiming(PlayerStateManager stateManager, GameObject firePoint, float mass, float drag)
     {
-        this.gameObject = gameObject;
+        this.firePoint = firePoint;
         this.mass = mass;
         this.drag = drag;
         this.stateManager = stateManager;
@@ -77,14 +77,15 @@ public class PlayerLassoAiming : IState
 
         if(force < maxForce)
         {
-            force += 0.5f* Time.deltaTime;
+            force += 5f* Time.deltaTime;
             
         }
 
-        stateManager.projectileRenderer.SimulatePath(gameObject, stateManager.camTransform.forward * force, mass, drag, stateManager.lineRenderer);
+        stateManager.projectileRenderer.SimulatePath(firePoint,force, mass, drag, stateManager.lineRenderer);
         stateManager.playerMovement.Tick();
         if (Input.GetMouseButtonUp(0))
         {
+
             RequestTransition<PlayerLassoReturning>();
         }
     }
@@ -114,7 +115,7 @@ public class PlayerLassoWithObject : IState
 {
     public PlayerLassoWithObject()
     {
-        ;
+        
     }
 
     public override void Tick()
