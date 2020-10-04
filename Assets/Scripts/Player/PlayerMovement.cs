@@ -34,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
         sideSpeed = Input.GetAxis("Horizontal");
 
 
-        Transform camTransform = transform.Find("Main Camera").gameObject.transform;
+        Transform camTransform = Camera.main.gameObject.transform;
 
         Vector3 velocity = camTransform.forward * forwardSpeed + camTransform.right * sideSpeed;
         velocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
