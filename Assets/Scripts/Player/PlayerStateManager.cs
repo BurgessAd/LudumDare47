@@ -77,11 +77,9 @@ public class PlayerLassoAiming : IState
     private float drag;
     private float force;
 
-    public float minForce = 0.5f;
-    public float maxForce = 10f;
-    public GameObject cow;
-
-    public PlayerLassoAiming(PlayerStateManager stateManager, GameObject gameObject, float mass, float drag)
+    public float minForce = 10f;
+    public float maxForce = 100f;
+    public PlayerLassoAiming(PlayerStateManager stateManager, GameObject firePoint, float mass, float drag)
 
     {
         this.firePoint = firePoint;
@@ -129,7 +127,7 @@ public class PlayerLassoThrown : IState
     {
 
         stateManager.playerMovement.Tick();
-        RequestTransition<PlayerLassoAiming>();
+        RequestTransition<PlayerMoving>();
     }
 }
 
