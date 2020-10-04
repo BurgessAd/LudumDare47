@@ -21,9 +21,14 @@ public class LassoCollision : MonoBehaviour
 
         //these statements find the tag of the gameObject we collide with
         if(Entity.tag == "Cow"){
-            Debug.Log("We hit Cow");
+            //Debug.Log("We hit Cow");
+            AnimalComponent hitCow = Entity.GetComponentInParent<AnimalComponent>();
+            hitCow.OnLasso();
             //Debug.Log(Entity.transform.position - playerTransform.position);
-            lasso.AttatchToCow(Entity);
+            //Debug.Log(Entity.name);
+            player.GetComponent<PlayerStateManager>().cow = collision.gameObject;
+            player.GetComponent<PlayerStateManager>().m_StateMachine.RequestTransition(typeof(PlayerLassoWithObject));
+            lasso.AttatchToCow(Entity.transform.Find("Leash").gameObject);
             Destroy(gameObject);
         }
         if(Entity.tag == "Floor"){
