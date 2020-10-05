@@ -47,10 +47,13 @@ public class AnimalComponent : MonoBehaviour
     void Update()
     {
 
+
+    }
+    public void addGravity()
+    {
         animal.GetComponent<Rigidbody>().AddForce(new Vector3(0, -9, 0));
 
     }
-
     void Move()
     {
 
@@ -227,11 +230,19 @@ public class AnimalComponent : MonoBehaviour
         GetComponent<Rigidbody>().AddForce(yeetDir * force, ForceMode.Impulse);
     }
 
+    public void Abducted()
+    {
+        ash.m_StateMachine.RequestTransition(typeof(AnimalAbductedState));
+    }
 
     public void Yeeted()
 	{
       ash.m_StateMachine.RequestTransition(typeof(AnimalWrangledState));
     }
 
-
+    public void spinAndScream()
+    {
+        // To Do implemented Scared moo noise
+        //transform.Rotate(new Vector3(0f, 2f, 0f));
+    }
 }
