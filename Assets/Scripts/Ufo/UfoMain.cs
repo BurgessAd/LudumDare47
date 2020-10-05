@@ -176,7 +176,8 @@ public class UfoMain : MonoBehaviour
     }
     public void OnCollisionEnter(Collision collision)
     {
-        hit();
+        if(collision.gameObject.tag == "Cow") { hit(); }
+        
     }
     public void hit()
     {

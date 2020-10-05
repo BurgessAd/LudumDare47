@@ -948,8 +948,8 @@ GameObject:
   - component: {fileID: 5150760948839039328}
   - component: {fileID: 1256371007472647240}
   - component: {fileID: 5227225777355625494}
-  - component: {fileID: 3006420928801306980}
   - component: {fileID: 7393219599200481288}
+  - component: {fileID: 5975108181846422773}
   m_Layer: 0
   m_Name: UFO
   m_TagString: Untagged
@@ -1032,19 +1032,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!135 &3006420928801306980
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7534520840447332770}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &7393219599200481288
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1059,6 +1046,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ufoMain: {fileID: 0}
   gameManager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
+--- !u!64 &5975108181846422773
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7534520840447332770}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &7828869087746699218
 GameObject:
   m_ObjectHideFlags: 0
@@ -1070,7 +1071,7 @@ GameObject:
   - component: {fileID: 2766436106669808650}
   - component: {fileID: 1616016145026596927}
   - component: {fileID: 4011712437902857158}
-  - component: {fileID: 7878214500592530804}
+  - component: {fileID: 7096529328234084886}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -1141,8 +1142,8 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!135 &7878214500592530804
-SphereCollider:
+--- !u!64 &7096529328234084886
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -1151,9 +1152,10 @@ SphereCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
+  serializedVersion: 4
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &8818289582535756808
 GameObject:
   m_ObjectHideFlags: 0
