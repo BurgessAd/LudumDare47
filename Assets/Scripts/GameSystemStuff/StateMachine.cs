@@ -35,6 +35,20 @@ public class StateMachine
         }
     }
 
+    public void RequestTransition(Type newState, object data)
+    {
+        for (int i = 0; i < m_States.Count; i++)
+        {
+            if (m_States[i].GetType() == newState && m_CurrentState.GetType() != newState)
+            {
+                m_CurrentState.OnExit();
+                m_CurrentState = m_States[i];
+                m_CurrentState.OnEnter(data);
+                break;
+            }
+        }
+    }
+
     public void Tick()
     {
         m_CurrentState.Tick();
@@ -52,6 +66,8 @@ public abstract class IState
     public virtual void Tick() { }
     public virtual void OnEnter() { }
     public virtual void OnExit() { }
+    public virtual void OnEnter(object data) { }
+
 }
 
 

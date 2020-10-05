@@ -125,13 +125,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 5978306983182104399}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7785877040a0ac24c9a6001248a0d443, type: 3}
+  m_Script: {fileID: 11500000, guid: 3351c3fd3187b124696c47f0e35f4d3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  camTransform: {fileID: 0}
   lineRenderer: {fileID: 0}
   firePoint: {fileID: 0}
   playerMovement: {fileID: 0}
   projectileRenderer: {fileID: 0}
+  cow: {fileID: 0}
+  playerTransform: {fileID: 0}
 --- !u!120 &1471038052304566867
 LineRenderer:
   m_ObjectHideFlags: 0
@@ -239,10 +242,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 5978306983182104399}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0cbde25bcc636c40bc9b5b0e603d9a6, type: 3}
+  m_Script: {fileID: 11500000, guid: 8be7e97cfccbbae478875222b290eb28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lassoColliderPrefab: {fileID: 3753268921653509374, guid: 266da1fefdaf28b43bec9efd398ac10a, type: 3}
+  lassoColliderPrefab: {fileID: 0}
   lineRenderer: {fileID: 1471038052304566867}
   firePoint: {fileID: 0}
   gravity: {x: 0, y: -9, z: 0}
+  madeLasso: 0
+  attatched: 0

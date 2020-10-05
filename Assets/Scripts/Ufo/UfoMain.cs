@@ -7,12 +7,16 @@ public class UfoMain : MonoBehaviour
 {
     private GameObject targetCow;
 
-    public Boolean inSwoopDown = false;
-    public Boolean inSwoopUp = false;
+    private UfoStateManager stateManager;
 
     private float speed = 15f;
+    private float Tractorbeamspeed = 5f;
     private float lowestY = 20;
-    private float roamingY = 20;
+    private float roamingY = 50;
+    private float abductDistance = 5.0f;
+    public int health = 3;
+
+    private Vector3 ExitPoint = new Vector3(50f, 50f, 50f);
     // Start is called before the first frame update
     void Start()
     {
@@ -22,43 +26,156 @@ public class UfoMain : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+    }
+    public void swoopDownTick()
+    {
         transform.Rotate(new Vector3(0f, 20f, 0f));
 
-        if (inSwoopDown)
-        {
-            Vector3 targetPosition = new Vector3(targetCow.transform.position.x, lowestY, targetCow.transform.position.z);
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed);
-            if (transform.position == targetPosition)
-            {
-                inSwoopDown = false;
-            }
-        }
+        Vector3 targetPosition = new Vector3(targetCow.transform.position.x, lowestY, targetCow.transform.position.z);
+        transform.position = Vector3.MoveTowards(transform.position, targetPosition, (speed * Time.deltaTime));
 
-        if (inSwoopUp)
+        if (transform.position == targetPosition)
         {
-            Vector3 targetPosition = new Vector3(transform.position.x, roamingY, transform.position.z);
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed);
-            if (transform.position == targetPosition)
-            {
-                inSwoopUp = false;
-            }
+            stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoAbduct));
         }
     }
 
-    public GameObject FindCow()
+    public void abductTick()
     {
-        return null;
+        transform.Rotate(new Vector3(0f, 20f, 0f));
+
+        if (targetCow != null)
+        {
+            //targetCow.transform.position = Vector3.MoveTowards(targetCow.transform.position, transform.position, speed);
+            targetCow.transform.position = new Vector3(targetCow.transform.position.x, targetCow.transform.position.y + (Tractorbeamspeed * Time.deltaTime), targetCow.transform.position.z);
+            if (Vector3.Distance(transform.position, targetCow.transform.position) <= abductDistance)
+            {
+                killCow();
+                turnBeamOff();
+                stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoReturnSweep));
+
+            }
+        }
+        else
+        {
+            stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoReturnSweep));
+        }
 
     }
 
-    public void SwoopTo(GameObject target)
+    public void swoopUpTick()
+    {
+        transform.Rotate(new Vector3(0f, 20f, 0f));
+
+        transform.position = Vector3.MoveTowards(transform.position, ExitPoint, (speed * Time.deltaTime));
+
+        if (transform.position == ExitPoint)
+        {
+            stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoIdle));
+        }
+    }
+
+    public void deathTick()
+    {
+        turnRed();
+        flip();
+    }
+    void flip()
+    {
+        transform.Rotate(new Vector3(60f*Time.deltaTime, 0f, 0f));
+    }
+    public void turnRed()
+    {
+        increaseRed(transform);
+        foreach (Transform child in transform)
+        {
+            increaseRed(child);
+        }
+
+    }
+    public void increaseRed(Transform t)
+    {
+        Color c = t.GetComponent<Renderer>().material.color;
+        float newRed = c.r + 0.333f * Time.deltaTime <= 1 ? c.r + 0.333f * Time.deltaTime : 1f;
+        t.GetComponent<Renderer>().material.color = new Color(newRed, c.g, c.b, c.a);
+    }
+
+    public void setStateManager(UfoStateManager stateManager)
+    {
+        if (this.stateManager == null)
+        {
+            this.stateManager = stateManager;
+        }
+    }
+
+
+
+    public void setTarget(GameObject target)
     {
         targetCow = target;
-        inSwoopDown = true;
-    }
-    public void Leave()
-    {
-        inSwoopUp = true;
 
+    }
+
+
+    public void abductCow()
+    {
+        targetCow.GetComponent<AnimalComponent>().Abducted();
+        turnBeamOn();
+    }
+
+    public void killCow()
+    {
+        Destroy(targetCow);
+    }
+
+    public void turnInvisible()
+    {
+        transform.GetComponent<Renderer>().enabled = false;
+    }
+    public void turnVisible()
+    {
+        transform.GetComponent<Renderer>().enabled = true;
+
+    }
+
+    public void turnBeamOn()
+    {
+        transform.Find("tractorBeam").GetComponent<MeshRenderer>().enabled = true;
+    } 
+    public void turnBeamOff()
+    {
+        transform.Find("tractorBeam").GetComponent<MeshRenderer>().enabled = false;
+
+    }
+    public void wobble()
+    {
+        float angleDelta = 1f;
+
+        // check if value not 0 and tease the rotation towards it using angleDelta
+        if (transform.rotation.x > 0)
+        {
+            angleDelta = -2f;
+        }
+        else if (transform.rotation.x < 0)
+        {
+            angleDelta = 2f;
+        }
+        transform.Rotate(new Vector3(transform.rotation.x + angleDelta, transform.rotation.y, transform.rotation.z));
+
+    }
+    public void resetRotation()
+    {
+        transform.transform.eulerAngles = new Vector3(0f, 0f, 0f);
+
+    }
+    public void OnCollisionEnter(Collision collision)
+    {
+        hit();
+    }
+    public void hit()
+    {
+        health--;
+        if (health == 0) { stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoDeath)); }
+        else { stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoStaggered), stateManager.m_StateMachine.m_CurrentState.ToString()); }
     }
 }
