@@ -46,7 +46,7 @@ public class UfoMain : MonoBehaviour
 
         if (targetCow != null)
         {
-            //targetCow.transform.position = Vector3.MoveTowards(targetCow.transform.position, transform.position, (Tractorbeamspeed * Time.deltaTime));
+            targetCow.transform.position = Vector3.MoveTowards(targetCow.transform.position, transform.position, (Tractorbeamspeed * Time.deltaTime));
             //targetCow.transform.position = new Vector3(targetCow.transform.position.x, targetCow.transform.position.y + (Tractorbeamspeed * Time.deltaTime), targetCow.transform.position.z);
             if (Vector3.Distance(transform.position, targetCow.transform.position) <= abductDistance)
             {
