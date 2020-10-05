@@ -19,6 +19,7 @@ public class LassoCollision : MonoBehaviour
         Entity = collision.gameObject;
 
         //these statements find the tag of the gameObject we collide with
+
         if(Entity.tag == "Cow"){
             AnimalComponent hitCow = Entity.GetComponentInParent<AnimalComponent>();
             //Activates cows lasso on traits

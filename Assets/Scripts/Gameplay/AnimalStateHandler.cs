@@ -19,9 +19,10 @@ public class AnimalStateHandler : MonoBehaviour
         m_StateMachine.AddState(new AnimalWrangledState(this));
         m_StateMachine.AddState(new AnimalAbductedState(this));
         m_StateMachine.AddState(new AnimalYeetedState(this));
+        m_StateMachine.AddState(new AnimalThrowingState(this));
+
     }
 
- 
     // state machine update
     public void Update()
     {
@@ -42,6 +43,7 @@ public class AnimalEvadingState : IState
     public override void Tick()
     {
         animalStateHandler.animalComponent.Evading();
+        animalStateHandler.animalComponent.addGravity();
     }
     public override void OnEnter()
     {
@@ -59,7 +61,7 @@ public class AnimalInPenState : IState
     }
     public override void Tick()
     {
-
+        animalStateHandler.animalComponent.addGravity();
     }
     public override void OnEnter()
 	{
@@ -78,6 +80,8 @@ public class AnimalIdleState : IState
     public override void Tick()
     {
         animalStateHandler.animalComponent.Idle();
+        animalStateHandler.animalComponent.addGravity();
+
     }
     public override void OnEnter()
     {
@@ -96,6 +100,8 @@ public class AnimalWrangledState : IState
     public override void Tick()
     {
         animalStateHandler.animalComponent.Wrangled();
+        animalStateHandler.animalComponent.addGravity();
+
     }
     public override void OnEnter()
     {
@@ -104,6 +110,29 @@ public class AnimalWrangledState : IState
     public override void OnExit()
 	{
         animalStateHandler.animalComponent.OffWrangled();
+
+    }
+
+
+}
+
+public class AnimalThrowingState : IState
+{
+    AnimalStateHandler animalStateHandler;
+    public AnimalThrowingState(AnimalStateHandler animalStateHandler)
+    {
+        this.animalStateHandler = animalStateHandler;
+    }
+    // here we cache a gameobject in the parent class and change states
+    public override void Tick()
+    {
+        animalStateHandler.animalComponent.addGravity();
+    }
+    public override void OnEnter()
+    {
+    }
+    public override void OnExit()
+    {
 
     }
 
@@ -121,7 +150,7 @@ public class AnimalAbductedState : IState
 
     public override void Tick()
     {
-       
+        //animalStateHandler.animalComponent.spinAndScream();
     }
     public override void OnEnter()
     {
