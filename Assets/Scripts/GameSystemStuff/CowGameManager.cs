@@ -6,11 +6,8 @@ using System.Collections.Generic;
 [CreateAssetMenu(menuName = "GameManager")]
 public class CowGameManager : ScriptableObject
 {
-	public int shit = 0;
+	public int deadCows = 0;
 	public int level = 1;
-	public List<GameObject> cows = new List<GameObject>();
+	public List<GameObject> cows = new List<GameObject>();	
 
-
-
-	
 }

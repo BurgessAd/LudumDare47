@@ -14,14 +14,14 @@ public class SceneHandler : MonoBehaviour
 	{
         FindObjectOfType<AudioManager>().stop("Background_Boingy");
         FindObjectOfType<AudioManager>().Play("Background_harmonica");
-        SceneManager.LoadScene("Scene1");
+        SceneManager.LoadScene("Level1");
 
     }
     public void Level2()
     {
         FindObjectOfType<AudioManager>().stop("Background_Boingy");
         FindObjectOfType<AudioManager>().Play("Background_Sunset");
-        SceneManager.LoadScene("Scene1");
+        SceneManager.LoadScene("Level2");
     }
 
     public void Quit()

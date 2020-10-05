@@ -11,7 +11,7 @@ public class UfoMain : MonoBehaviour
 
     private float speed = 15f;
     private float Tractorbeamspeed = 5f;
-    private float lowestY = 20;
+    private float lowestY = 50;
     private float roamingY = 50;
     private float abductDistance = 9.0f;
     public int health = 3;
