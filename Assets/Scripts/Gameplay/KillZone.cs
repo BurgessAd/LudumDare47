@@ -21,7 +21,8 @@ public class KillZone : MonoBehaviour
     }
     void OnTriggerEnter(Collider collision)
     {
-        if (collision.gameObject.GetComponent<MeshRenderer>().material.name == cowMaterial.name + " (Instance)")
+        //check if object is a cow then delete it
+        if (collision.gameObject.tag =="Cow")
         {
             Destroy(collision.gameObject.transform.parent.gameObject);
             CowsDead++;
@@ -31,9 +32,6 @@ public class KillZone : MonoBehaviour
     void OnTriggerExit(Collider collision)
     {
 
-        if (collision.gameObject.GetComponent<MeshRenderer>().material.name == cowMaterial.name + " (Instance)")
-        {
-            
-        }
+        
     }
 }
