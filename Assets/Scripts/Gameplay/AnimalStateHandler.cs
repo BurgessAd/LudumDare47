@@ -20,6 +20,7 @@ public class AnimalStateHandler : MonoBehaviour
         m_StateMachine.AddState(new AnimalAbductedState(this));
         m_StateMachine.AddState(new AnimalYeetedState(this));
         m_StateMachine.AddState(new AnimalThrowingState(this));
+        m_StateMachine.AddState(new AnimalThrownState(this));
 
     }
 
@@ -130,6 +131,28 @@ public class AnimalThrowingState : IState
     // here we cache a gameobject in the parent class and change states
     public override void Tick()
     {
+        //animalStateHandler.animalComponent.addGravity();
+    }
+    public override void OnEnter()
+    {
+
+    }
+    public override void OnExit()
+    {
+
+    }
+}
+
+public class AnimalThrownState : IState
+{
+    AnimalStateHandler animalStateHandler;
+    public AnimalThrownState(AnimalStateHandler animalStateHandler)
+    {
+        this.animalStateHandler = animalStateHandler;
+    }
+    // here we cache a gameobject in the parent class and change states
+    public override void Tick()
+    {
         animalStateHandler.animalComponent.addGravity();
     }
     public override void OnEnter()
@@ -139,8 +162,7 @@ public class AnimalThrowingState : IState
         if (i == 0) { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_1"); }
         else if (i == 1) { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_2"); }
         else if (i == 2) { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_3"); }
-        else { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_4"); }
-        
+        else { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_4"); }   
 
     }
     public override void OnExit()

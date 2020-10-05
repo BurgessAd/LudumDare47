@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class LassoCollision : MonoBehaviour
 {
-    private GameObject Entity;
+    public GameObject Entity;
     private GameObject player;
     private Lasso lasso;
     private Transform playerTransform;
