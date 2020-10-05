@@ -20,6 +20,7 @@ public class AnimalStateHandler : MonoBehaviour
         m_StateMachine.AddState(new AnimalAbductedState(this));
         m_StateMachine.AddState(new AnimalYeetedState(this));
         m_StateMachine.AddState(new AnimalThrowingState(this));
+        m_StateMachine.AddState(new AnimalThrownState(this));
 
     }
 
@@ -126,10 +127,33 @@ public class AnimalThrowingState : IState
     // here we cache a gameobject in the parent class and change states
     public override void Tick()
     {
+        //animalStateHandler.animalComponent.addGravity();
+    }
+    public override void OnEnter()
+    {
+
+    }
+    public override void OnExit()
+    {
+
+    }
+}
+
+public class AnimalThrownState : IState
+{
+    AnimalStateHandler animalStateHandler;
+    public AnimalThrownState(AnimalStateHandler animalStateHandler)
+    {
+        this.animalStateHandler = animalStateHandler;
+    }
+    // here we cache a gameobject in the parent class and change states
+    public override void Tick()
+    {
         animalStateHandler.animalComponent.addGravity();
     }
     public override void OnEnter()
     {
+
     }
     public override void OnExit()
     {
