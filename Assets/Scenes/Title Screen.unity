@@ -1020,10 +1020,10 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: The aim of the game is to get the cows into their pen! To do this you must
-    wrangle them! By holding mouse click you charge up your lasso and catch cows.
-    Once attached clicking again flings the cows. Pressing c releases the cows. Good
-    luck flinging!
+  m_Text: "The aim of the game is to get the cows into their pen! To do this you
+    must wrangle them! By holding left click you charge up your lasso and catch cows.
+    Once attached clicking again flings the cows. \nPress F and fire your lasso again
+    to swing the cows. Be gentle.\nPressing C releases the cows. Good luck flinging!"
 --- !u!222 &1246076923
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1058,7 +1058,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1325510689}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d861a57cf738cc942943d059f38b52af, type: 3}
+  m_Script: {fileID: 11500000, guid: a407cbc1c5d9934469b8a89a11c74ac8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &1325510691
@@ -1073,7 +1073,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1398960540
 GameObject:
@@ -1158,6 +1158,71 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1441000356
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 355.46448
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 129.78696
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 284.02222
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_RootOrder
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777281, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: sounds.Array.data[1].clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 50c2d59eb4877b643b14ca7ec2748498, type: 3}
+    - target: {fileID: 1371248737344777281, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: sounds.Array.data[0].clip
+      value: 
+      objectReference: {fileID: 8300000, guid: 49134e432a950814ea8b235de49f8a25, type: 3}
+    - target: {fileID: 1371248737344777286, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_Name
+      value: AudioManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
 --- !u!1 &1649469919
 GameObject:
   m_ObjectHideFlags: 0
