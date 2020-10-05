@@ -48,6 +48,7 @@ public class AnimalEvadingState : IState
     public override void OnEnter()
     {
         animalStateHandler.animalComponent.EnterEvade();
+        animalStateHandler.animalComponent.Moo();
     }
 }
 
@@ -65,8 +66,9 @@ public class AnimalInPenState : IState
     }
     public override void OnEnter()
 	{
+        animalStateHandler.animalComponent.Moo();
 
-	}
+    }
 
 }
 
@@ -85,6 +87,7 @@ public class AnimalIdleState : IState
     }
     public override void OnEnter()
     {
+        animalStateHandler.animalComponent.Moo();
         animalStateHandler.animalComponent.EnterIdle();
     }
 }
@@ -105,6 +108,7 @@ public class AnimalWrangledState : IState
     }
     public override void OnEnter()
     {
+        animalStateHandler.animalComponent.Moo();
         animalStateHandler.animalComponent.OnWrangled();
     }
     public override void OnExit()
@@ -130,6 +134,14 @@ public class AnimalThrowingState : IState
     }
     public override void OnEnter()
     {
+        animalStateHandler.animalComponent.Moo();
+        int i = (int)Random.Range(0, 4);
+        if (i == 0) { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_1"); }
+        else if (i == 1) { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_2"); }
+        else if (i == 2) { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_3"); }
+        else { Camera.FindObjectOfType<AudioManager>().Play("GoneGet_4"); }
+        
+
     }
     public override void OnExit()
     {
@@ -142,20 +154,29 @@ public class AnimalThrowingState : IState
 public class AnimalAbductedState : IState
 {
     AnimalStateHandler animalStateHandler;
+    private UfoMain ufo;
 
     public AnimalAbductedState(AnimalStateHandler animalStateHandler)
     {
        this.animalStateHandler = animalStateHandler;
 }
 
+    public override void OnEnter(object ufo)
+    {
+        this.ufo = ufo as UfoMain;
+        animalStateHandler.animalComponent.Moo();
+    }
+
     public override void Tick()
     {
-        //animalStateHandler.animalComponent.spinAndScream();
+        animalStateHandler.animalComponent.spinAndScream();
     }
-    public override void OnEnter()
+    public override void OnExit()
     {
-
+        ufo.cowEscaped();
     }
+
+
 
 
 }
@@ -175,6 +196,8 @@ public class AnimalYeetedState : IState
     public override void OnEnter()
     {
         animalStateHandler.animalComponent.EnterYeet();
+        animalStateHandler.animalComponent.Moo();
+
     }
 
 

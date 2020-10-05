@@ -142,7 +142,6 @@ public class Lasso : MonoBehaviour
         windUpCentre = firePoint.position + new Vector3(0,1.5f,0);
         windUpStart = windUpCentre + new Vector3(0,0,loopRadius);
         if(!windingUp){
-            Debug.Log("renderer enabled");
             lassoLoop.GetComponent<Transform>().position = windUpStart;
             lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = true;
         }

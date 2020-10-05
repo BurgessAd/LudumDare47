@@ -6,22 +6,34 @@ public class PlayerStateManager : MonoBehaviour
 {
 
     // setting up and adding states to state machine
-
+    [HideInInspector]
     public StateMachine m_StateMachine;
+    [HideInInspector]
+
     public Transform camTransform;
 
     public LineRenderer lineRenderer;
     public GameObject firePoint;
+
+    [HideInInspector]
     public PlayerMovement playerMovement;
+
+    [HideInInspector]
     public ProjectileRenderer projectileRenderer;
 
+    [HideInInspector]
     public GameObject cow =null;
 
+    [HideInInspector]
     public Transform playerTransform;
 
 
     public void Start()
     {
+
+        //FindObjectOfType<AudioManager>().Play("Background_Boingy");
+        
+
         this.playerTransform = transform;
         playerMovement = gameObject.AddComponent(typeof(PlayerMovement)) as PlayerMovement;
         projectileRenderer = gameObject.AddComponent(typeof(ProjectileRenderer)) as ProjectileRenderer;
@@ -106,6 +118,7 @@ public class PlayerLassoAiming : IState
         }
     }
     public override void OnExit() {
+        Camera.FindObjectOfType<AudioManager>().Play("woosh");
         stateManager.playerTransform.gameObject.GetComponent<Lasso>().callToFireLasso(this.force);
         this.force = minForce;
         stateManager.projectileRenderer.clear();
