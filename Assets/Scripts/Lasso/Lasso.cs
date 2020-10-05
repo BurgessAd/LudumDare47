@@ -20,7 +20,7 @@ public class Lasso : MonoBehaviour
     private float cowForce = 100f;
     private float time = 0.1f;
     public Vector3 gravity = new Vector3(0,-9f,0);
-    private Vector3 windUpCentre;
+    private Vector3 windUpCentre = new Vector3(0,0,0);
     private Vector3 windUpStart;
     private float loopRadius = 2;
     private Vector3 offset = new Vector3(0,0,0);
@@ -151,29 +151,46 @@ public class Lasso : MonoBehaviour
 
 
     public void WindUp(){
-        //Vector3 pos = firePoint.position;
-        //pos.y = playerCam.position.y + 2;
-        windUpCentre = firePoint.position + new Vector3(0,1.5f,0);
-        if(!windingUp){
-            lassoLoop.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,loopRadius);
-            lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = true;
-            windingUp = true;
+        float r = loopRadius;
+        //check to see if the centre has moved since last tick
+        if(windUpCentre != firePoint.position + new Vector3(0,1.5f,0)){
+            windUpCentre = firePoint.position + new Vector3(0,1.5f,0);
+            if(!windingUp){
+                lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = true;
+                windingUp = true;
+                lassoLoop.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,r);
+            }
+            //reposition the loop position by moving the loop back to 1 radius away from the centre
+            Vector3 pos = lassoLoop.GetComponent<Transform>().position;
+            pos.y = windUpCentre.y;
+            pos = (pos - windUpCentre).normalized * r + windUpCentre;
+            //(lassoLoop.GetComponent<Transform>().position - windUpCentre).normalized*loopRadius + windUpCentre;
+            lassoLoop.GetComponent<Transform>().position = pos;
         }
         lassoLoop.GetComponent<Transform>().RotateAround(windUpCentre, new Vector3(0,1,0), -1000*Time.deltaTime);
         lassoEnd = lassoLoop.GetComponent<Transform>();
-        //Debug.Log(firePoint.position);
-        //Debug.Log((lassoEnd.position - windUpCentre).magnitude);
         RenderLasso();
     }
     
     void WindUpCow(){
-        windUpCentre = firePoint.position + new Vector3(0,2f,0);
-        //giving a bigger radius for looks
-        if(!windingUp){
-            cowProjectile.GetComponent<Rigidbody>().velocity = new Vector3(0,0,0);
-            cowProjectile.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,loopRadius + 2);
+        float r = loopRadius + 3;
+        windUpCentre = firePoint.position + new Vector3(0, 1.5f, 0);
+        if (!windingUp)
+        {
+            windingUp = true;
+            cowProjectile.GetComponent<Transform>().position = windUpCentre + new Vector3(0, 0, r);
         }
-        windingUp = true;
+        Vector3 pos = cowProjectile.GetComponent<Transform>().position;
+        pos.y = windUpCentre.y;
+        pos = (pos - windUpCentre).normalized * r + windUpCentre;
+        Debug.Log(pos);
+        cowProjectile.GetComponent<Transform>().position = pos;
+        //giving a bigger radius for looks
+        // if(!windingUp){
+        //     cowProjectile.GetComponent<Rigidbody>().velocity = new Vector3(0,0,0);
+        //     cowProjectile.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,loopRadius + 2);
+        // }
+        // windingUp = true;
         cowProjectile.GetComponent<Transform>().RotateAround(windUpCentre, new Vector3(0,1,0), -1000*Time.deltaTime);
         lassoEnd = cowProjectile.GetComponent<Transform>();
         //lassoEnd = cowProjectile.gameObject.GetType
