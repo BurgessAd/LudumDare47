@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 5978306983182104403}
   - component: {fileID: 5978306983182104402}
   - component: {fileID: 5978306983182104397}
-  - component: {fileID: 8393447217304602949}
+  - component: {fileID: 4129861636893327503}
   - component: {fileID: 1471038052304566867}
-  - component: {fileID: 7252985191894675999}
+  - component: {fileID: 1900649648511471315}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -116,7 +116,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 0
---- !u!114 &8393447217304602949
+--- !u!114 &4129861636893327503
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -125,16 +125,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5978306983182104399}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3351c3fd3187b124696c47f0e35f4d3c, type: 3}
+  m_Script: {fileID: 11500000, guid: 85f3e038256438d4c98f9b5a508a2d00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  camTransform: {fileID: 0}
-  lineRenderer: {fileID: 0}
+  lassoColliderPrefab: {fileID: 3753268921653509374, guid: f36a816c2e5da194ca26a3ff073a4a1b, type: 3}
+  lassoLoop: {fileID: 5470013912794042563, guid: f4a89b3866cd35a4bbd651f9181678a6, type: 3}
+  lineRenderer: {fileID: 1471038052304566867}
   firePoint: {fileID: 0}
-  playerMovement: {fileID: 0}
-  projectileRenderer: {fileID: 0}
-  cow: {fileID: 0}
-  playerTransform: {fileID: 0}
+  gravity: {x: 0, y: -9, z: 0}
 --- !u!120 &1471038052304566867
 LineRenderer:
   m_ObjectHideFlags: 0
@@ -154,7 +152,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: c9453284d6d686443974adb55d00298b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -233,7 +231,7 @@ LineRenderer:
     generateLightingData: 0
   m_UseWorldSpace: 1
   m_Loop: 0
---- !u!114 &7252985191894675999
+--- !u!114 &1900649648511471315
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -242,12 +240,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 5978306983182104399}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8be7e97cfccbbae478875222b290eb28, type: 3}
+  m_Script: {fileID: 11500000, guid: 8ab995c3dafeee64ea8205e9b64e19fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lassoColliderPrefab: {fileID: 0}
-  lineRenderer: {fileID: 1471038052304566867}
+  camTransform: {fileID: 0}
+  lineRenderer: {fileID: 0}
   firePoint: {fileID: 0}
-  gravity: {x: 0, y: -9, z: 0}
-  madeLasso: 0
-  attatched: 0
+  playerMovement: {fileID: 0}
+  projectileRenderer: {fileID: 0}
+  cow: {fileID: 0}
+  playerTransform: {fileID: 0}

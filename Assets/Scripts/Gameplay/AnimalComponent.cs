@@ -27,7 +27,6 @@ public class AnimalComponent : MonoBehaviour
     private Vector3 moveDir = Vector3.zero;
     private Vector2 dir = Vector2.zero;
     private Vector3 surfaceNorm = new Vector3(0, 1, 0);
-
     // Start is called before the first frame update
     void Start()
     {
@@ -230,9 +229,9 @@ public class AnimalComponent : MonoBehaviour
         GetComponent<Rigidbody>().AddForce(yeetDir * force, ForceMode.Impulse);
     }
 
-    public void Abducted()
+    public void Abducted(UfoMain ufo)
     {
-        ash.m_StateMachine.RequestTransition(typeof(AnimalAbductedState));
+        ash.m_StateMachine.RequestTransition(typeof(AnimalAbductedState), ufo);
     }
 
     public void Yeeted()
@@ -242,7 +241,15 @@ public class AnimalComponent : MonoBehaviour
 
     public void spinAndScream()
     {
-        // To Do implemented Scared moo noise
-        //transform.Rotate(new Vector3(0f, 2f, 0f));
+        transform.Rotate(new Vector3(0f, 2f, 0f));
+
+    }
+
+    public void Moo()
+    {
+        string[] moos = new string[]{"Moo_A","Moo_B","Moo_D","Moo_E","Moo_F"};
+        string moo = moos[(int)Random.Range(0, moos.Length)];
+        FindObjectOfType<AudioManager>().PlayAt(moo, transform.position);
+
     }
 }

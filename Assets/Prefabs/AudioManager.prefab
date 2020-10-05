@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1371248737344777286
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1371248737344777280}
+  - component: {fileID: 1371248737344777281}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1371248737344777280
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371248737344777286}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11.087538, y: 11.83, z: -25.66536}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1371248737344777281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371248737344777286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00daebd2b00d04742939e0b925d9c374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sounds:
+  - name: Background_harmonica
+    clip: {fileID: 8300000, guid: 21da7282fe970514b8523be95d2470f7, type: 3}
+    volume: 0.702
+    loop: 1
+    source: {fileID: 0}
+  - name: Background_Sunset
+    clip: {fileID: 8300000, guid: 81a87ab885d500b4898e092ccd30108b, type: 3}
+    volume: 0.718
+    loop: 1
+    source: {fileID: 0}
+  - name: Background_Boingy
+    clip: {fileID: 8300000, guid: 81c39929f6dd02e498ff512af4afb036, type: 3}
+    volume: 0.745
+    loop: 1
+    source: {fileID: 0}
+  - name: Moo_A
+    clip: {fileID: 8300000, guid: 2b432a594c7f3914eba15a620dd3ffa4, type: 3}
+    volume: 0.279
+    loop: 0
+    source: {fileID: 0}
+  - name: Moo_B
+    clip: {fileID: 8300000, guid: ac007669a0204ed45be13c2c1697448f, type: 3}
+    volume: 0.312
+    loop: 0
+    source: {fileID: 0}
+  - name: Moo_D
+    clip: {fileID: 8300000, guid: c47363cceabbb4247a94d1d490dc0e19, type: 3}
+    volume: 0.263
+    loop: 0
+    source: {fileID: 0}
+  - name: Moo_E
+    clip: {fileID: 8300000, guid: 69cb3bc47aa2d894f8d56efe47afe8b1, type: 3}
+    volume: 0.994
+    loop: 0
+    source: {fileID: 0}
+  - name: Moo_F
+    clip: {fileID: 8300000, guid: 0d8e4f6fd731e2e428dfe3836e1ad12c, type: 3}
+    volume: 0.328
+    loop: 0
+    source: {fileID: 0}
+  - name: woosh
+    clip: {fileID: 8300000, guid: 8ad5242e69be318448769998d5d89211, type: 3}
+    volume: 0.328
+    loop: 0
+    source: {fileID: 0}
+  - name: GoneGet_1
+    clip: {fileID: 8300000, guid: 2c409992b19f2834daa268cc1537c366, type: 3}
+    volume: 0.328
+    loop: 0
+    source: {fileID: 0}
+  - name: GoneGet_2
+    clip: {fileID: 8300000, guid: acfe03688d394b94f83b8e9f46d3a380, type: 3}
+    volume: 0.328
+    loop: 0
+    source: {fileID: 0}
+  - name: GoneGet_3
+    clip: {fileID: 8300000, guid: 274652c779d9c254fa351d0bf4d2f5a2, type: 3}
+    volume: 0.328
+    loop: 0
+    source: {fileID: 0}
+  - name: GoneGet_4
+    clip: {fileID: 8300000, guid: 951151ca52adb0743a0d3eac326d0851, type: 3}
+    volume: 0.328
+    loop: 0
+    source: {fileID: 0}
+  - name: Abduction
+    clip: {fileID: 8300000, guid: 5d8936900f43eaf40b2e1cbb4f920209, type: 3}
+    volume: 0.328
+    loop: 1
+    source: {fileID: 0}
+  - name: Dead
+    clip: {fileID: 8300000, guid: 1483e1d1ed659a147b9e88d57a5576c9, type: 3}
+    volume: 0.328
+    loop: 1
+    source: {fileID: 0}
+  - name: Hover
+    clip: {fileID: 8300000, guid: 614aed9a259765a4d99434e7fcc3c413, type: 3}
+    volume: 1
+    loop: 1
+    source: {fileID: 0}
+  - name: Stagger
+    clip: {fileID: 8300000, guid: 8d3fa0f7af8155447bb2ef5b50b679e2, type: 3}
+    volume: 0.328
+    loop: 1
+    source: {fileID: 0}

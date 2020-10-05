@@ -13,7 +13,7 @@ public class UfoMain : MonoBehaviour
     private float Tractorbeamspeed = 5f;
     private float lowestY = 20;
     private float roamingY = 50;
-    private float abductDistance = 5.0f;
+    private float abductDistance = 9.0f;
     public int health = 3;
 
     private Vector3 ExitPoint = new Vector3(50f, 50f, 50f);
@@ -46,8 +46,8 @@ public class UfoMain : MonoBehaviour
 
         if (targetCow != null)
         {
-            //targetCow.transform.position = Vector3.MoveTowards(targetCow.transform.position, transform.position, speed);
-            targetCow.transform.position = new Vector3(targetCow.transform.position.x, targetCow.transform.position.y + (Tractorbeamspeed * Time.deltaTime), targetCow.transform.position.z);
+            targetCow.transform.position = Vector3.MoveTowards(targetCow.transform.position, transform.position, (Tractorbeamspeed * Time.deltaTime));
+            //targetCow.transform.position = new Vector3(targetCow.transform.position.x, targetCow.transform.position.y + (Tractorbeamspeed * Time.deltaTime), targetCow.transform.position.z);
             if (Vector3.Distance(transform.position, targetCow.transform.position) <= abductDistance)
             {
                 killCow();
@@ -119,10 +119,16 @@ public class UfoMain : MonoBehaviour
 
     public void abductCow()
     {
-        targetCow.GetComponent<AnimalComponent>().Abducted();
+        targetCow.GetComponent<AnimalComponent>().Abducted(this);
         turnBeamOn();
     }
+    public void cowEscaped()
+    {
+        turnBeamOff();
+        stateManager.m_StateMachine.RequestTransition(typeof(UfoStateManager.UfoReturnSweep));
 
+
+    }
     public void killCow()
     {
         Destroy(targetCow);
@@ -149,16 +155,16 @@ public class UfoMain : MonoBehaviour
     }
     public void wobble()
     {
-        float angleDelta = 1f;
+        float angleDelta = 0.1f;
 
         // check if value not 0 and tease the rotation towards it using angleDelta
         if (transform.rotation.x > 0)
         {
-            angleDelta = -2f;
+            angleDelta = -0.2f;
         }
         else if (transform.rotation.x < 0)
         {
-            angleDelta = 2f;
+            angleDelta = 0.2f;
         }
         transform.Rotate(new Vector3(transform.rotation.x + angleDelta, transform.rotation.y, transform.rotation.z));
 

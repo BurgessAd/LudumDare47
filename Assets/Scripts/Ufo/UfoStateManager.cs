@@ -45,12 +45,19 @@ public class UfoStateManager : MonoBehaviour
 
         public override void OnEnter()
         {
-            Debug.Log("Idle");
+            
+            FindObjectOfType<AudioManager>().PlayAt("Hover", stateManager.ufoMain.transform.position);
+        }
+
+        public override void OnExit()
+        {
+
+            FindObjectOfType<AudioManager>().stop("Hover");
         }
 
         public override void Tick()
         {
-           //  RequestTransition<UfoSearch>();
+           RequestTransition<UfoSearch>();
         }
 
     }
@@ -66,7 +73,14 @@ public class UfoStateManager : MonoBehaviour
 
         public override void OnEnter()
         {
-            Debug.Log("Search");
+
+            FindObjectOfType<AudioManager>().PlayAt("Hover", stateManager.ufoMain.transform.position);
+        }
+
+        public override void OnExit()
+        {
+
+            FindObjectOfType<AudioManager>().stop("Hover");
         }
 
         public override void Tick()
@@ -92,7 +106,14 @@ public class UfoStateManager : MonoBehaviour
 
         public override void OnEnter()
         {
-            Debug.Log("Swoop");
+
+            FindObjectOfType<AudioManager>().PlayAt("Hover", stateManager.ufoMain.transform.position);
+        }
+
+        public override void OnExit()
+        {
+
+            FindObjectOfType<AudioManager>().stop("Hover");
         }
         public override void Tick()
         {
@@ -111,9 +132,16 @@ public class UfoStateManager : MonoBehaviour
 
         }
         public override void OnEnter()
-        {
-            Debug.Log("Abduct");
+        {           
+            
+            FindObjectOfType<AudioManager>().PlayAt("Abduction", stateManager.ufoMain.transform.position);
             stateManager.ufoMain.abductCow();
+        }
+
+        public override void OnExit()
+        {
+
+            FindObjectOfType<AudioManager>().stop("Abduction");
         }
 
         public override void Tick()
@@ -136,8 +164,14 @@ public class UfoStateManager : MonoBehaviour
 
         public override void OnEnter()
         {
-            Debug.Log("Return");
-            if (t) { t = false; stateManager.ufoMain.hit(); }
+
+            FindObjectOfType<AudioManager>().PlayAt("Hover", stateManager.ufoMain.transform.position);
+        }
+
+        public override void OnExit()
+        {
+
+            FindObjectOfType<AudioManager>().stop("Hover");
         }
         public override void Tick()
         {
@@ -161,7 +195,7 @@ public class UfoStateManager : MonoBehaviour
         }
         public override void OnEnter(object lastState)
         {
-
+            FindObjectOfType<AudioManager>().PlayAt("Stagger", stateManager.ufoMain.transform.position);
             start = Time.time;
             this.lastState = lastState as string;
         }
@@ -170,16 +204,17 @@ public class UfoStateManager : MonoBehaviour
             stateManager.ufoMain.wobble();
             if(Time.time - start > 3)
             {
-                if (lastState.Contains("UfoSearch"))      { RequestTransition<UfoSearch>(); }
-                if (lastState.Contains("UfoSwooping"))    { RequestTransition<UfoSwooping>(); }
-                if (lastState.Contains("UfoAbduct"))      { RequestTransition<UfoAbduct>(); }
-                if (lastState.Contains("UfoReturnSweep")) { RequestTransition<UfoReturnSweep>(); }
-                if (lastState.Contains("UfoDeath"))       { RequestTransition<UfoDeath>(); }
+                if (lastState.Equals("UfoStateManager+UfoSearch"))      { RequestTransition<UfoSearch>(); }
+                else if (lastState.Equals("UfoStateManager+UfoSwooping"))    { RequestTransition<UfoSwooping>(); }
+                else if (lastState.Equals("UfoStateManager+UfoAbduct"))      { RequestTransition<UfoAbduct>(); }
+                else if (lastState.Equals("UfoStateManager+UfoReturnSweep")) { RequestTransition<UfoReturnSweep>(); }
+                else if (lastState.Equals("UfoStateManager+UfoDeath"))       { RequestTransition<UfoDeath>(); }
                 else { RequestTransition<UfoIdle>(); }
             }
         }
         public override void OnExit()
         {
+            FindObjectOfType<AudioManager>().stop("Stagger");
             stateManager.ufoMain.resetRotation();
         }
 
@@ -192,7 +227,7 @@ public class UfoStateManager : MonoBehaviour
         private UfoStateManager stateManager;
         public override void OnEnter()
         {
-
+            FindObjectOfType<AudioManager>().PlayAt("Dead", stateManager.ufoMain.transform.position);
             start = Time.time;
         }
         public UfoDeath(UfoStateManager stateManager)
@@ -212,6 +247,9 @@ public class UfoStateManager : MonoBehaviour
                 stateManager.ufoMain.deathTick();
             }
         }
-
+        public override void OnExit()
+        {
+            FindObjectOfType<AudioManager>().stop("Dead");
+        }
     }
 }
