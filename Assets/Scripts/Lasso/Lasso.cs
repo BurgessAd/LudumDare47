@@ -17,6 +17,7 @@ public class Lasso : MonoBehaviour
     private Transform lassoEnd;
 
     private float force = 1f;
+    private float cowForce = 100f;
     private float time = 0.1f;
     public Vector3 gravity = new Vector3(0,-9f,0);
     private Vector3 windUpCentre;
@@ -56,7 +57,8 @@ public class Lasso : MonoBehaviour
 
     void Update()
     {   
-        if(ash == null || ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalWrangledState) && !Input.GetKeyDown("f")){
+        //make sure the we have not wrangled a cow
+        if(ash == null || ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalWrangledState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrowingState) && !Input.GetKeyDown("f") && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrownState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalYeetedState)){
             //if there is a collider and the rope isnt attached to anything else set the end of the lasso to the collider
             if (lassoCollider != null && !attatched)
             {
@@ -72,13 +74,6 @@ public class Lasso : MonoBehaviour
             {
                 RenderLasso();
             }
-            if (Input.GetKeyDown("f"))
-            {
-                madeLasso = false;
-                lineRenderer.enabled = false;
-                lassoLoop.GetComponentInChildren<LineRenderer>().enabled = false;
-            }
-            //add gravity if the collider exists
             if (lassoCollider != null)
             {
                 lassoCollider.GetComponent<Rigidbody>().AddForce(gravity);
@@ -99,25 +94,42 @@ public class Lasso : MonoBehaviour
                 windingUp = false;
             }
         }
-
-        if (attatched)
+        //this handles rendering the lasso attatched to the cow
+        RenderLasso();
+        if (attatched){
+            RenderLasso();
+        }
+        if (ash != null)
+        {
+            //transition from wrangled state to throwing state
+            if (Input.GetKeyDown("f") && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalWrangledState))
             {
-                RenderLasso();
+                ash.m_StateMachine.RequestTransition(typeof(AnimalThrowingState));
             }
-        //would need the the cows state to be found here so its not confused with the wrangled state
-        if(Input.GetKey("f") && cowProjectile != null){
-            WindUpCow();
+            //leave throwing state
+            if (Input.GetKeyDown("g") && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalThrowingState))
+            {
+                ash.m_StateMachine.RequestTransition(typeof(AnimalWrangledState));
+            }
+            //would need the the cows state to be found here so its not confused with the wrangled state
+            if (Input.GetMouseButton(0) && cowProjectile != null && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalThrowingState))
+            {
+                Debug.Log(ash.m_StateMachine.m_CurrentState.GetType());
+                WindUpCow();
+            }
+            if (Input.GetMouseButtonUp(0) && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalThrowingState))
+            {
+                windingUp = false;
+                ash.m_StateMachine.RequestTransition(typeof(AnimalThrownState));
+                FireCow();
+            }
         }
-        if(Input.GetKeyUp("f")){
-            windingUp = false;
-        }
-
         
     }
 
     void FixedUpdate(){
 
-        if(ash == null || ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalWrangledState)){
+        if(ash == null || ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalWrangledState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrowingState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrownState ) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalYeetedState)){
             //throw lasso on mouse1 if there is no collider out there and if it is not attached to anything
             if (Input.GetMouseButton(0) && !attatched)
             {
@@ -135,29 +147,31 @@ public class Lasso : MonoBehaviour
                 force += 1;
             }
         }
-        
     }
 
+
     public void WindUp(){
+        //Vector3 pos = firePoint.position;
+        //pos.y = playerCam.position.y + 2;
         windUpCentre = firePoint.position + new Vector3(0,1.5f,0);
-        windUpStart = windUpCentre + new Vector3(0,0,loopRadius);
         if(!windingUp){
-            Debug.Log("renderer enabled");
-            lassoLoop.GetComponent<Transform>().position = windUpStart;
+            lassoLoop.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,loopRadius);
             lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = true;
+            windingUp = true;
         }
-        windingUp = true;
         lassoLoop.GetComponent<Transform>().RotateAround(windUpCentre, new Vector3(0,1,0), -1000*Time.deltaTime);
         lassoEnd = lassoLoop.GetComponent<Transform>();
+        //Debug.Log(firePoint.position);
+        //Debug.Log((lassoEnd.position - windUpCentre).magnitude);
         RenderLasso();
     }
     
     void WindUpCow(){
         windUpCentre = firePoint.position + new Vector3(0,2f,0);
         //giving a bigger radius for looks
-        windUpStart = windUpCentre + new Vector3(0,0,loopRadius + 2);
         if(!windingUp){
-            cowProjectile.GetComponent<Transform>().position = windUpStart;
+            cowProjectile.GetComponent<Rigidbody>().velocity = new Vector3(0,0,0);
+            cowProjectile.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,loopRadius + 2);
         }
         windingUp = true;
         cowProjectile.GetComponent<Transform>().RotateAround(windUpCentre, new Vector3(0,1,0), -1000*Time.deltaTime);
@@ -167,7 +181,9 @@ public class Lasso : MonoBehaviour
     }
 
     void FireCow(){
-
+        cowProjectile.GetComponent<Transform>().position = firePoint.position;
+        Rigidbody collider = cowProjectile.GetComponent<Rigidbody>();
+        collider.AddForce(playerCam.forward*cowForce, ForceMode.Impulse);
     }
 
     void MakeLoop(){
@@ -233,21 +249,12 @@ public class Lasso : MonoBehaviour
     }
 
     void RenderLasso(){
-        lineRenderer.SetPosition(0, firePoint.position);
-        lineRenderer.SetPosition(1, lassoEnd.position);
-        lineRenderer.enabled = true;
+        if(lassoEnd != null){
+            lineRenderer.SetPosition(0, firePoint.position);
+            lineRenderer.SetPosition(1, lassoEnd.position);
+            lineRenderer.enabled = true;
+        }
+        
     }
-
-    // IEnumerator Despawn(float despawnTime){
-    //     //I think I'm calling this then destroying a lasso at a later time (idealy this would stop when the collider is null, not check for it after waiting)
-    //     yield return new WaitForSeconds(despawnTime);
-    //     if(lassoCollider != null){
-    //         Destroy(lassoCollider);
-    //     }
-    // }
-
-
-
-
 
 }
