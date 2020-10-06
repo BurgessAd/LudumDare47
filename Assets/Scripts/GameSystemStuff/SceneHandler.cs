@@ -7,12 +7,21 @@ public class SceneHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        FindObjectOfType<AudioManager>().Play("Background_Boingy");
     }
 
     public void SwitchScene()
 	{
-        SceneManager.LoadScene("Scene1");
+        FindObjectOfType<AudioManager>().stop("Background_Boingy");
+        FindObjectOfType<AudioManager>().Play("Background_harmonica");
+        SceneManager.LoadScene("Level1");
+
+    }
+    public void Level2()
+    {
+        FindObjectOfType<AudioManager>().stop("Background_Boingy");
+        FindObjectOfType<AudioManager>().Play("Background_Sunset");
+        SceneManager.LoadScene("Level2");
     }
 
     public void Quit()

@@ -226,6 +226,7 @@ GameObject:
   - component: {fileID: 260181969}
   - component: {fileID: 260181968}
   - component: {fileID: 260181967}
+  - component: {fileID: 260181970}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -298,6 +299,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &260181970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 260181966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a407cbc1c5d9934469b8a89a11c74ac8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &262178942
 GameObject:
   m_ObjectHideFlags: 0
@@ -458,7 +471,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 483466350}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 260181970}
+        m_TargetAssemblyTypeName: SceneHandler, Assembly-CSharp
+        m_MethodName: Level2
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &483466350
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -792,6 +817,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1168854057}
   m_CullTransparentMesh: 0
+--- !u!1001 &1245519187
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -11.087538
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 11.83
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -25.66536
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_RootOrder
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777280, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371248737344777286, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
+      propertyPath: m_Name
+      value: AudioManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a84ddd03770f7a0499f3b5deca2c2296, type: 3}
 --- !u!1 &1550031483
 GameObject:
   m_ObjectHideFlags: 0
@@ -921,7 +1003,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
+  m_ScaleFactor: 0.7
   m_ReferenceResolution: {x: 800, y: 600}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0
@@ -1078,12 +1160,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Using your skills for the greater good you must now hurl your bovine companions
-    at the intruders to make sure they stay of Gavin''s farm for good!
-
-
-    CONTROLS
-    GO HERE  '
+  m_Text: Using your skills for the greater good you must now hurl your bovine companions
+    at the intruders to make sure they stay of Gavin's farm for good!
 --- !u!222 &1993545145
 CanvasRenderer:
   m_ObjectHideFlags: 0

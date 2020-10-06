@@ -45,12 +45,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sounds:
   - name: Background_harmonica
-    clip: {fileID: 8300000, guid: 21da7282fe970514b8523be95d2470f7, type: 3}
+    clip: {fileID: 8300000, guid: 49134e432a950814ea8b235de49f8a25, type: 3}
     volume: 0.702
     loop: 1
     source: {fileID: 0}
   - name: Background_Sunset
-    clip: {fileID: 8300000, guid: 81a87ab885d500b4898e092ccd30108b, type: 3}
+    clip: {fileID: 8300000, guid: 50c2d59eb4877b643b14ca7ec2748498, type: 3}
     volume: 0.718
     loop: 1
     source: {fileID: 0}

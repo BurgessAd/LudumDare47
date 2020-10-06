@@ -109,7 +109,9 @@ public class AnimalComponent : MonoBehaviour
             player.GetComponent<Lasso>().Kill();
         }        
         cowGameManager.cows.Remove(gameObject);
-	}
+        cowGameManager.deadCows += 1;
+
+    }
 
     public void OnLasso()
     {

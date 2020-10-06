@@ -18,7 +18,7 @@ GameObject:
   - component: {fileID: 1900649648511471315}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -125,7 +125,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5978306983182104399}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85f3e038256438d4c98f9b5a508a2d00, type: 3}
+  m_Script: {fileID: 11500000, guid: 8e87b02170fb4af44a2422d6ff624779, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   lassoColliderPrefab: {fileID: 3753268921653509374, guid: f36a816c2e5da194ca26a3ff073a4a1b, type: 3}
