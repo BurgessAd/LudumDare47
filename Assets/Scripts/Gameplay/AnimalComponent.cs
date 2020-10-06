@@ -9,6 +9,10 @@ public class AnimalComponent : MonoBehaviour
     private CowGameManager cowGameManager;
 
     [SerializeField]
+    private GameObject leash;
+
+
+    [SerializeField]
     private GameObject animal;
     private static GameObject player;
     private int speed = 3;
@@ -21,15 +25,17 @@ public class AnimalComponent : MonoBehaviour
     float size = 1;
     Vector3 yeetDir = new Vector3(1, 1, 0);
     
-    private Vector2 rotateDirXZ = new Vector2(10f, 10f);
     private float idleTimeout = 5;
     private float idleTimer = 0;
     private Vector3 moveDir = Vector3.zero;
     private Vector2 dir = Vector2.zero;
     private Vector3 surfaceNorm = new Vector3(0, 1, 0);
+    private Transform bodyTransform;
     // Start is called before the first frame update
     void Start()
     {
+       
+        bodyTransform = body.transform;
         cowGameManager.cows.Add(gameObject);
         ash = gameObject.AddComponent<AnimalStateHandler>();
         ash.animalComponent = this;
@@ -38,16 +44,9 @@ public class AnimalComponent : MonoBehaviour
         {
             player = GameObject.Find("Player");
         }
-        size = Random.value / 2.0f + 0.5f;
-        animal.transform.localScale = new Vector3(size, size, size);
     }
 
     // Update is called once per frame
-    void Update()
-    {
-
-
-    }
     public void addGravity()
     {
         animal.GetComponent<Rigidbody>().AddForce(new Vector3(0, -9, 0));
@@ -88,23 +87,6 @@ public class AnimalComponent : MonoBehaviour
         }
 
 
-
-        //Adds slight movement to body of cow when moving
-        if (moveDir != Vector3.zero)
-        {
-            if (body.transform.rotation.eulerAngles.x >= 92 || body.transform.rotation.eulerAngles.x <= 88)
-            {
-                rotateDirXZ = new Vector2(-rotateDirXZ.x, rotateDirXZ.y);
-            }
-
-            if (body.transform.rotation.eulerAngles.y >= 2 || body.transform.rotation.eulerAngles.y <= -2)
-            {
-                rotateDirXZ = new Vector2(rotateDirXZ.x, -rotateDirXZ.y);
-            }
-
-            body.transform.Rotate(rotateDirXZ.x * Time.deltaTime, 0f, rotateDirXZ.y * Time.deltaTime);
-
-        }
 
         //Debug.DrawRay(body.transform.position, moveDir, Color.black);
         //Rotates body towards direction it will head
@@ -207,12 +189,12 @@ public class AnimalComponent : MonoBehaviour
     public void OnWrangled()
 	{
         //make the leash visible when wrangled
-        gameObject.transform.Find("Leash").gameObject.GetComponent<MeshRenderer>().enabled = true;
+        leash.GetComponent<MeshRenderer>().enabled = true;
 	}
     public void OffWrangled()
     {
         //make the leash invisible when unwrangled
-        gameObject.transform.Find("Leash").gameObject.GetComponent<MeshRenderer>().enabled = false;
+        leash.GetComponent<MeshRenderer>().enabled = false;
     }
 
     public void Wrangled()
@@ -249,7 +231,7 @@ public class AnimalComponent : MonoBehaviour
     {
         string[] moos = new string[]{"Moo_A","Moo_B","Moo_D","Moo_E","Moo_F"};
         string moo = moos[(int)Random.Range(0, moos.Length)];
-        FindObjectOfType<AudioManager>().PlayAt(moo, transform.position);
+        //FindObjectOfType<AudioManager>().PlayAt(moo, transform.position);
 
     }
 }
