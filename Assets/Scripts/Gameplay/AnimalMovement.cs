@@ -82,6 +82,16 @@ public class AnimalMovement : MonoBehaviour
     { 
         return Vector3.Distance(m_vDestination, m_tObjectTransform.position); 
     }
+
+    public bool IsStanding() 
+    {
+        return true;
+    }
+
+    public bool HasEvadedPlayer(Transform playerTransform) 
+    {
+        return Vector3.Distance(playerTransform.position, m_tObjectTransform.position) > m_fMaximumRunDistance;
+    }
     //////////////////////////////////////////////////////////////////////////////////////////////
     public bool IsStuck() 
     { 

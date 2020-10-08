@@ -62,9 +62,28 @@ public class AnimalMovementAnimator : MonoBehaviour
         float bounceMult = m_fCurrentWindup / m_WindupTime;
         m_tBodyTransform.localRotation = Quaternion.Euler(0, 180, bounceMult * m_TiltSizeMultiplier * tiltSize);
         m_tBodyTransform.localPosition = m_vInitialPosition + new Vector3(bounceMult * m_HorizontalMovementMultiplier * tiltSize, bounceMult * m_HopHeightMultiplier * hopHeight, 0);
-    
-    
     }
+    public class AnimalStaggeredAnimationState : IState
+    {
+        private float tiltSizeMultiplier;
+        private float hopHeightMultiplier;
+        private float horizontalMovementMultiplier;
+        private float walkWindupTime;
+        private float walkPhase;
+        private Transform bodyTransform;
+
+        private float currentWindup;
+        private float currentAnimation;
+        private Vector3 initialPosition;
+        private bool canHop;
+    }
+
+    public class AnimalWalkingAnimationState : IState 
+    {
+
+    }
+
+
 
     public void SetCanHop() 
     {

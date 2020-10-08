@@ -8,6 +8,18 @@ public class CowGameManager : ScriptableObject
 {
 	public int deadCows = 0;
 	public int level = 1;
-	public List<GameObject> cows = new List<GameObject>();	
+	public List<GameObject> cows = new List<GameObject>();
+
+	private Dictionary<Type, List<GameObject>> m_EntityCache;
+
+	public void OnEntitySpawned(GameObject entity, Type entityType) 
+	{
+
+	}
+
+	public void OnEntityDestroyed(GameObject entity, Type entityType) 
+	{
+
+	}
 
 }
