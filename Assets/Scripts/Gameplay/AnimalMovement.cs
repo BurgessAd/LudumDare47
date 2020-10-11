@@ -20,6 +20,8 @@ public class AnimalMovement : MonoBehaviour
     [SerializeField]
     private int m_iLayerMask;
 
+    public float TimeOnGround { get; private set; }
+
     private Vector3 m_vDestination;
     private float m_fCurrentTimeStuck = 0.0f;
     private Vector3 m_vPositionLastFrame;

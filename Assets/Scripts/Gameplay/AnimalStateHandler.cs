@@ -7,27 +7,66 @@ using System;
 public class AnimalStateHandler : MonoBehaviour
 {
 
-    public AnimalComponent animalComponent;
-    public AnimalMovement animalMovement;
+    private AnimalComponent animalComponent;
+    private AnimalMovement animalMovement;
+    private GameObject leashPointObject;
+    private Rigidbody cowRigidBody;
 
     public event Action OnDestroy;
 
     public bool IsWrangled { get; private set; }
     public bool IsInTractorBeam { get; private set; }
-    
-    public void OnWrangledByLasso(Lasso lasso) 
+
+    // free fall handled by spline which applies force
+    // maybe have the spline dictate how much it tries to stick to it?
+    // so for free-fall spline, stick to it quite a bit
+    // and dropping
+    // but for abduction, have it vaguely push towards the centre
+
+    public GameObject GetLeashPointObject => leashPointObject;
+    public Transform GetMainTansform => cowRigidBody.transform;
+    public Rigidbody GetCowRigidBody => cowRigidBody;
+
+    public void OnWrangledByLasso() 
     {
         IsWrangled = true;
+    }
+
+    public Transform GetLeashTransform { get; private set; }
+
+    public void OnReleasedByLasso() 
+    {
+        IsWrangled = false;
+    }
+
+    public void OnStartedLassoSpinning() 
+    {
+        IsWrangled = true;
+        m_StateMachine.RequestTransition(typeof(AnimalThrowingState));
+    }
+
+    public void OnThrownByLasso() 
+    {
+        IsWrangled = false;
+        m_StateMachine.RequestTransition(typeof(AnimalFreeFallState));
     }
 
     public void OnEnterTractorBeam()
     {
         IsInTractorBeam = true;
+        m_StateMachine.ActivateStateTransition(typeof(AnimalWrangledState), typeof(AnimalAbductedAndWrangledState), true);
     }
 
     public void OnLeaveTractorBeam() 
     {
+        m_StateMachine.ActivateStateTransition(typeof(AnimalWrangledState), typeof(AnimalAbductedAndWrangledState), false);
         IsInTractorBeam = false;
+    }
+
+    public void OnKillCow() 
+    {
+        m_StateMachine.RequestTransition(typeof(AnimalDeathState));
+        enabled = false;
     }
 
     // setting up and adding states to state machine
@@ -47,12 +86,15 @@ public class AnimalStateHandler : MonoBehaviour
         // we can always wrangle a cow if it's not in a tractor beam
         m_StateMachine.AddAnyTransition(typeof(AnimalWrangledState), () => IsWrangled && !IsInTractorBeam);
 
-        m_StateMachine.AddAnyTransition(typeof(AnimalDeathState), () => );
-
         // if both abducted and wrangled, special state for these
 
         m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalAbductedAndWrangledState), () => IsInTractorBeam);
         m_StateMachine.AddTransition(typeof(AnimalAbductedState), typeof(AnimalAbductedAndWrangledState), () => IsWrangled);
+
+        // when the cow stops being wrangled, it idles
+        m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalIdleState), () => !IsWrangled);
+        // when the cow stos being abducted, it falls
+        m_StateMachine.AddTransition(typeof(AnimalAbductedState), typeof(AnimalFreeFallState), () => !IsInTractorBeam);
 
         // cow evasion behaviour; runs from player when close; idles when not.
         m_StateMachine.AddTransition(typeof(AnimalIdleState), typeof(AnimalEvadingState), () => animalMovement.GetDistanceToTarget() < 20.0f);
@@ -61,20 +103,10 @@ public class AnimalStateHandler : MonoBehaviour
         // when the cow hits the ground, it staggers for a bit
         m_StateMachine.AddTransition(typeof(AnimalFreeFallState), typeof(AnimalStaggeredState), () => animalMovement.IsStanding());
 
-        // when the cow stos being abducted, it falls
-        m_StateMachine.AddTransition(typeof(AnimalAbductedState), typeof(AnimalFreeFallState), () => !IsInTractorBeam);
+        // and then gets back up in a second
+        m_StateMachine.AddTransition(typeof(AnimalStaggeredState), typeof(AnimalIdleState), () => animalMovement.TimeOnGround > 2.0f);
 
-        // when the rope becomes too far away, or we let it go, the animal has escaped
-        m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalEvadingState), () => );
 
-        // when the animal gets close enough to the player when wrangled, we can start swinging
-        m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalThrowingState), () => animalMovement.GetDistanceToTarget() < 3.0f);
-
-        // when we let go of the mouse, we can start throwing the cow
-        m_StateMachine.AddTransition(typeof(AnimalThrowingState), typeof(AnimalFreeFallState), () => );
-
-        // we can also move from these states by dropping the cow's leash
-        m_StateMachine.AddTransition(typeof(AnimalThrowingState), typeof(AnimalEvadingState), () =>);
     }
 
     public bool IsTouchingGround() { return false; }
@@ -229,10 +261,7 @@ public class AnimalFreeFallState : IState
 
     public override void Tick()
     {
-        if (animalStateHandler.IsTouchingGround()) 
-        {
-            RequestTransition<AnimalStaggeredState>();
-        }
+
     }
 }
 
@@ -261,7 +290,7 @@ public class AnimalAbductedState : IState
     }
     public override void OnExit()
     {
-        ufo.cowEscaped();
+
     }
 }
 

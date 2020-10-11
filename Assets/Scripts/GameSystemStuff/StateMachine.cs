@@ -30,6 +30,31 @@ public class StateMachine
         newState.StateTransitionRequest += RequestTransition;
     }
 
+    public void ActivateStateTransition(Type to, bool active) 
+    {
+        for (int i = 0; i < m_AnyTransitions.Count; i++) 
+        {
+            if (m_AnyTransitions[i].TypeToTransitionTo == to) 
+            {
+                m_AnyTransitions[i].OverrideFunc(active);
+            }
+        }
+    }
+
+    public void ActivateStateTransition(Type from, Type to, bool active) 
+    {
+        if (m_StateTransitions.TryGetValue(from, out List<StateTransition> transitions)) 
+        {
+            for (int i = 0; i < transitions.Count; i++) 
+            {
+                if (transitions[i].TypeToTransitionTo == to) 
+                {
+                    transitions[i].OverrideFunc(active);
+                }
+            }
+        }
+    }
+
     public void AddTransition(Type from, Type to, Func<bool> transition) 
     {
         List<StateTransition> transitions;
@@ -118,6 +143,12 @@ public class StateTransition
         this.m_ToState = toState;
         this.m_StateTransition = stateTransition;
     }
+
+    public void OverrideFunc(bool val) 
+    {
+        m_StateTransition = () => val;
+    }
+
     public bool CanTransition => m_StateTransition();
 
     public Type TypeToTransitionTo => m_ToState;

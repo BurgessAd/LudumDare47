@@ -2,287 +2,382 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Lasso : MonoBehaviour
+public interface IAnimalAttacher
 {
-    public GameObject lassoColliderPrefab;
-    private GameObject lassoCollider;
-    public GameObject lassoLoop;
-    private GameObject cowProjectile;
+    public AnimalStateHandler GetAttachedAnimal { get; }
+}
 
-    private AnimalStateHandler ash;
-    private PlayerStateManager psm;
+public interface ILasso 
+{
+    public void ActivateLassoCollider();
+    public void DeactivateLassoCollider();
+
+    public Rigidbody GetLassoBody { get; }
+
+    public void RenderRope();
+
+    public void RenderLoop();
+
+    public void RenderThrownLoop();
+
+    public void SetRopeLineRenderer(bool enabled);
+
+    public void SetLoopLineRenderer(bool enabled);
+
+    public void SetThrownLoopLineRenderer(bool enabled);
+
+    public void SetPullEffectsLevel(float level);
+
+    public Transform GetStartTransform { get; }
+
+    public Transform GetEndTransform { get; }
+
+    public Transform GetSwingingTransform { get; }
+
+    public void ProjectObject(Rigidbody body, float projectionStrength);
+}
+
+public class Lasso : MonoBehaviour, IAnimalAttacher, ILasso
+{
+    private StateMachine m_StateMachine;
+    private AnimalStateHandler m_AttachedAnimal;
+
+    private GameObject m_LassoCollider;
+
+    [SerializeField]
+    private Transform m_LassoStartTransform;
+    [SerializeField]
+    private Transform m_LassoEndTransform;
+    [SerializeField]
+    private Transform m_SwingPointTransform;
+    [SerializeField]
+    private Rigidbody m_LassoEndRigidBody;
+
+
+
+    private Transform m_EndTransform;
     
-    public LineRenderer lineRenderer;
-    private Transform playerCam;
-    public Transform firePoint;
-    private Transform lassoEnd;
 
-    private float force = 1f;
-    private float cowForce = 10f;
-    private float time = 0.1f;
-    private float rotationSpeed = 500f;
-    public Vector3 gravity = new Vector3(0,-9f,0);
-    private Vector3 windUpCentre = new Vector3(0,0,0);
-    private Vector3 windUpStart;
-    private float loopRadius = 2;
-    private Vector3 offset = new Vector3(0,0,0);
-    //private float offsetScale = 5;
-    
-    private float despawnTime = 5f;
-    private bool madeLasso = false;
-    private bool attatched = false;
-    private bool windingUp = false;
+    public AnimalStateHandler GetAttachedAnimal => m_AttachedAnimal;
 
-    //only change the lasso length to avoid problems
-    //private List<RopeSegment> ropeSegments = new List<RopeSegment>();
-    private float ropeSegLen = 0.25f;
-    private int lassoLength = 100;
-    private float lineWidth = 0.1f;
-    private Vector3 ropePos;
+    public Rigidbody GetLassoBody => m_LassoEndRigidBody;
 
-    void Awake(){
-        playerCam = Camera.main.GetComponent<Transform>();
-        psm = GameObject.Find("Player").GetComponent<PlayerStateManager>();
-    }
-   
-    // Use this for initialization
-    void Start()
+    public Transform GetStartTransform => m_LassoStartTransform;
+
+    public Transform GetEndTransform => m_EndTransform;
+
+    public Transform GetSwingingTransform => m_SwingPointTransform;
+
+    private void Awake()
     {
-        this.lineRenderer = this.GetComponent<LineRenderer>();
+        m_StateMachine = new StateMachine(new LassoIdleState());
+        m_StateMachine.AddState(new LassoReturnState(this));
+        m_StateMachine.AddState(new LassoThrowingState(this));
+        m_StateMachine.AddState(new LassoSpinningState(this));
+        m_StateMachine.AddState(new LassoAnimalAttachedState(this, this));
+        m_StateMachine.AddState(new LassoAnimalSpinningState(this, this));
+        m_StateMachine.AddState(new LassoAnimalThrowingState(this, this));
+
+        // for if we want to start spinning
+        m_StateMachine.AddTransition(typeof(LassoIdleState), typeof(LassoSpinningState), () => Input.GetMouseButtonDown(0) && !m_AttachedAnimal);
+        
+        // for if we're spinning and want to cancel 
+        m_StateMachine.AddTransition(typeof(LassoSpinningState), typeof(LassoIdleState), () => Input.GetMouseButtonUp(1));
+        // for if we're spinning and want to throw
+        m_StateMachine.AddTransition(typeof(LassoSpinningState), typeof(LassoThrowingState), () => Input.GetMouseButtonUp(0));
+        // for if we're spinning an animal and want to cancel
+        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => { if (Input.GetMouseButtonUp(1)) { UnattachLeash(); return true; } return false; });
+        // for if we're throwing and want to cancel
+        m_StateMachine.AddTransition(typeof(LassoThrowingState), typeof(LassoReturnState), () => (Input.GetMouseButtonUp(1)) );
+        // for if we've decided we want to unattach to our target
+        m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoReturnState), () => {if (Input.GetMouseButtonUp(1)){UnattachLeash(); return true; } return false; });
+        // for if the cow has reached us
+        m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoAnimalSpinningState), () => Vector3.Distance(GetAttachedAnimal.GetLeashTransform.position, m_LassoStartTransform.position) < 3.0f);
+        // for if we want to throw the animal
+        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoAnimalThrowingState), () => Input.GetMouseButtonUp(0));
+        // instant transition back to idle state
+        m_StateMachine.AddTransition(typeof(LassoAnimalThrowingState), typeof(LassoIdleState), () => true);
     }
-    //added to remove lasso publicly
-    public void Kill()
-	{
-        attatched = false;
-        madeLasso = false;
-        lineRenderer.enabled = false;
-	}
 
-    void Update()
-    {   
-        //make sure the we have not wrangled a cow
-        if(ash == null || ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalWrangledState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrowingState) && !Input.GetKeyDown("f") && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrownState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalYeetedState)){
-            //if there is a collider and the rope isnt attached to anything else set the end of the lasso to the collider
-            if (lassoCollider != null && !attatched)
-            {
-                lassoEnd = lassoCollider.GetComponent<Transform>();
-            }
-            //render the lasso if one has been made
-            if (madeLasso && lassoCollider != null)
-            {
-                RenderLasso();
-                MakeLoop();
-            }
-            if (madeLasso && attatched)
-            {
-                RenderLasso();
-            }
-            if (lassoCollider != null)
-            {
-                lassoCollider.GetComponent<Rigidbody>().AddForce(gravity);
-            }
-            if (Input.GetMouseButtonUp(0))
-            {
-                Detach();
-                madeLasso = true;
-                lineRenderer.enabled = true;
-                rotationSpeed = 500;
+    public void ActivateLassoCollider()
+    {
+        m_LassoEndRigidBody.coll
+    }
 
-                //stop rendering the winding up loop to avoid a trail
-                if (windingUp)
-                {
-                    lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = false;
-                }
-                windingUp = false;
-            }
-        }
-        //this handles rendering the lasso attatched to the cow
-        //RenderLasso();
-        if (attatched){
-            RenderLasso();
-        }
-        if (ash != null)
+    public void DeactivateLassoCollider()
+    {
+
+    }
+
+    public void RenderRope()
+    {
+
+    }
+
+    public void RenderLoop()
+    {
+
+    }
+
+    public void RenderThrownLoop()
+    {
+
+    }
+
+    public void SetRopeLineRenderer(bool enabled)
+    {
+
+    }
+
+    public void SetLoopLineRenderer(bool enabled)
+    {
+
+    }
+
+    public void SetThrownLoopLineRenderer(bool enabled)
+    {
+
+    }
+
+    public void SetPullEffectsLevel(float level)
+    {
+
+    }
+
+    public void ProjectObject(Rigidbody body, float forceStrength)
+    {
+        body.MovePosition(m_LassoStartTransform.position);
+        body.AddForce(m_LassoStartTransform.forward * forceStrength, ForceMode.VelocityChange);
+    }
+
+    private void OnHitCow(AnimalStateHandler animalStateHandler)
+    {
+        m_StateMachine.RequestTransition(typeof(LassoAnimalAttachedState));
+        m_AttachedAnimal = animalStateHandler;
+        AttachLeash();
+    }
+
+    private void OnHitGround()
+    {
+        m_StateMachine.RequestTransition(typeof(LassoReturnState));
+    }
+
+    private void AttachLeash()
+    {
+        m_EndTransform.SetParent(GetAttachedAnimal.transform);
+        m_EndTransform = GetAttachedAnimal.GetCowRigidBody.transform;
+        m_EndTransform.localPosition = Vector3.zero;
+    }
+
+    private void UnattachLeash()
+    {
+        GetAttachedAnimal.GetCowRigidBody.transform.SetParent(null);
+        m_EndTransform = m_LassoEndTransform;
+    }
+}
+
+public class LassoSpinningState : IState
+{
+    private ILasso m_Lasso;
+
+    float m_StartAngle;
+    float m_RotationSpeed = 360 * Mathf.Deg2Rad;
+    public LassoSpinningState(ILasso lasso)
+    {
+        m_Lasso = lasso;
+    }
+
+    public override void OnEnter()
+    {
+        m_StartAngle = 0.0f;
+        m_Lasso.SetLoopLineRenderer(true);
+        m_Lasso.SetRopeLineRenderer(true);
+    }
+
+    public override void OnExit()
+    {
+        m_Lasso.SetLoopLineRenderer(false);
+        m_Lasso.SetRopeLineRenderer(false);
+    }
+
+    public override void Tick()
+    {
+        float r = 3.0f;
+        m_Lasso.GetEndTransform.position = m_Lasso.GetSwingingTransform.position + new Vector3(r * Mathf.Cos(m_StartAngle), 0, r * Mathf.Sin(m_StartAngle));
+        m_Lasso.RenderRope();
+        m_Lasso.RenderLoop();
+        m_StartAngle += m_RotationSpeed * Time.deltaTime;
+    }
+}
+
+public class LassoAnimalSpinningState : IState 
+{
+    private readonly IAnimalAttacher m_AnimalAttacher;
+    private readonly ILasso m_Lasso;
+
+    float m_StartAngle;
+    private float m_RotationSpeed = 360 * Mathf.Deg2Rad;
+
+    public LassoAnimalSpinningState(ILasso lasso, IAnimalAttacher animalAttacher)
+    {
+        m_Lasso = lasso;
+        m_AnimalAttacher = animalAttacher;
+    }
+
+    public override void OnEnter()
+    {
+        m_StartAngle = 0.0f;
+        m_Lasso.SetRopeLineRenderer(true);
+        m_AnimalAttacher.GetAttachedAnimal.OnStartedLassoSpinning();
+    }
+
+    public override void OnExit()
+    {
+        m_Lasso.SetRopeLineRenderer(false);
+        m_AnimalAttacher.GetAttachedAnimal.OnReleasedByLasso();
+    }
+
+    public override void Tick()
+    {
+        float r = 3.0f;
+        m_Lasso.GetEndTransform.position = m_Lasso.GetSwingingTransform.position + new Vector3(r * Mathf.Cos(m_StartAngle), 0, r * Mathf.Sin(m_StartAngle));
+        m_Lasso.RenderRope();
+        m_Lasso.RenderLoop();
+        m_StartAngle += m_RotationSpeed * Time.deltaTime;
+    }
+}
+
+public class LassoThrowingState : IState 
+{
+    private readonly ILasso m_Lasso;
+    public LassoThrowingState(ILasso lasso) 
+    {
+        m_Lasso = lasso;
+    }
+
+    public override void OnEnter()
+    {
+        m_Lasso.ActivateLassoCollider();
+        m_Lasso.SetRopeLineRenderer(true);
+        m_Lasso.SetThrownLoopLineRenderer(true);
+        m_Lasso.ProjectObject(m_Lasso.GetLassoBody, 10.0f);
+    }
+
+    public override void OnExit()
+    {
+        m_Lasso.SetRopeLineRenderer(false);
+        m_Lasso.SetThrownLoopLineRenderer(false);
+        m_Lasso.DeactivateLassoCollider();
+    }
+
+    public override void Tick()
+    {
+        m_Lasso.RenderThrownLoop();
+    }
+}
+
+public class LassoAnimalThrowingState : IState 
+{
+    private readonly IAnimalAttacher m_AnimalAttacher;
+    private readonly ILasso m_Lasso;
+
+    public LassoAnimalThrowingState(IAnimalAttacher animalAttacher, ILasso lasso) 
+    {
+        m_AnimalAttacher = animalAttacher;
+        m_Lasso = lasso;
+    }
+
+    public override void OnEnter()
+    {
+        m_AnimalAttacher.GetAttachedAnimal.OnThrownByLasso();
+        m_Lasso.ProjectObject(m_AnimalAttacher.GetAttachedAnimal.GetCowRigidBody, 5.0f);
+        RequestTransition<LassoIdleState>();
+    }
+}
+
+public class LassoAnimalAttachedState : IState 
+{
+    private readonly IAnimalAttacher m_AnimalAttacher;
+    private readonly ILasso m_Lasso;
+
+    float m_ForceDecreasePerSec = 2.0f;
+    float m_ForceIncreasePerClick = 1.0f;
+
+    float m_TotalForce = 0.0f;
+    float m_MaxForce = 10.0f;
+    public LassoAnimalAttachedState(ILasso lasso, IAnimalAttacher animalAttacher)
+    {
+        m_Lasso = lasso;
+        m_AnimalAttacher = animalAttacher;
+    }
+    public override void OnEnter()
+    {
+        m_TotalForce = 0.0f;
+        m_AnimalAttacher.GetAttachedAnimal.OnWrangledByLasso();
+        m_Lasso.SetRopeLineRenderer(true);
+    }
+
+    public override void OnExit()
+    {
+        m_AnimalAttacher.GetAttachedAnimal.OnReleasedByLasso();
+        m_Lasso.SetRopeLineRenderer(false);
+    }
+
+    public override void Tick()
+    {
+        m_Lasso.RenderRope();
+        Vector3 cowToPlayer = (m_Lasso.GetStartTransform.position - m_Lasso.GetEndTransform.position).normalized;
+        m_TotalForce = Mathf.Max(0.0f, m_ForceDecreasePerSec * Time.deltaTime);
+        if (Input.mouseScrollDelta.y < 0.0f) 
         {
-            //transition from wrangled state to throwing state
-            if (Input.GetKeyDown("f") && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalWrangledState))
-            {
-                ash.m_StateMachine.RequestTransition(typeof(AnimalThrowingState));
-            }
-            //leave throwing state
-            if (Input.GetKeyDown("g") && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalThrowingState))
-            {
-                ash.m_StateMachine.RequestTransition(typeof(AnimalWrangledState));
-            }
-            
-            if (Input.GetMouseButtonUp(0) && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalThrowingState))
-            {
-                windingUp = false;
-                Kill();
-                ash.m_StateMachine.RequestTransition(typeof(AnimalThrownState));
-                FireCow(cowForce);
-                psm.m_StateMachine.RequestTransition(typeof(PlayerMoving));
-                ash = null;
-                cowForce = 10f;
-                rotationSpeed = 500;
-            }
+            m_TotalForce = Mathf.Min(m_TotalForce + m_ForceIncreasePerClick, m_MaxForce);
+            m_AnimalAttacher.GetAttachedAnimal.GetCowRigidBody.AddForce(cowToPlayer * m_TotalForce, ForceMode.Impulse);
+            m_Lasso.SetPullEffectsLevel(m_TotalForce / m_MaxForce);
         }
         
     }
+}
 
-    void FixedUpdate(){
+public class LassoReturnState : IState 
+{
+    private readonly ILasso m_Lasso;
 
-        if(ash == null || ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalWrangledState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrowingState) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalThrownState ) && ash.m_StateMachine.m_CurrentState.GetType() != typeof(AnimalYeetedState)){
-            //throw lasso on mouse1 if there is no collider out there and if it is not attached to anything
-            if (Input.GetMouseButton(0) && !attatched)
-            {
-                WindUp();
-                RemoveLoop();
-                if (!windingUp)
-                {
-                    Detach();
-                }
-                if (lassoCollider != null)
-                {
-                    Destroy(lassoCollider);
-                }
-                rotationSpeed += 10;
-            }
-        }
+    float m_LassoSpeed = 0.0f;
 
-        //would need the the cows state to be found here so its not confused with the wrangled state
-        if (Input.GetMouseButton(0) && cowProjectile != null && ash.m_StateMachine.m_CurrentState.GetType() == typeof(AnimalThrowingState))
-        {
-            ash.m_StateMachine.RequestTransition(typeof(AnimalThrowingState));
-            WindUpCow();
-            cowForce += 1;
-            rotationSpeed += 10;
-        }
-    }
+    float m_MaxLassoSpeed = 10.0f;
 
-    public void WindUp(){
-        //moving the drawing position of the loop so the player can see my great rendering skills
-        float drawPoint = 1;
-
-        float r = loopRadius;
-        //check to see if the centre has moved since last tick
-        if(windUpCentre != firePoint.position + new Vector3(0,1.5f,0) + playerCam.forward.normalized*drawPoint){
-            windUpCentre = firePoint.position + new Vector3(0,1.5f,0) + playerCam.forward.normalized*drawPoint;
-            if(!windingUp){
-                lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = true;
-                windingUp = true;
-                lassoLoop.GetComponent<Transform>().position = windUpCentre + new Vector3(0,0,r);
-            }
-            //reposition the loop position by moving the loop back to 1 radius away from the centre
-            Vector3 pos = lassoLoop.GetComponent<Transform>().position;
-            pos.y = windUpCentre.y;
-            pos = (pos - windUpCentre).normalized * r + windUpCentre;
-            //(lassoLoop.GetComponent<Transform>().position - windUpCentre).normalized*loopRadius + windUpCentre;
-            lassoLoop.GetComponent<Transform>().position = pos;
-        }
-        lassoLoop.GetComponent<Transform>().RotateAround(windUpCentre, new Vector3(0,1,0), -rotationSpeed*Time.deltaTime);
-        lassoEnd = lassoLoop.GetComponent<Transform>();
-        RenderLasso();
-    }
-    
-    void WindUpCow(){
-        float drawPoint = 1;
-        float r = loopRadius + 3;
-        windUpCentre = firePoint.position + new Vector3(0, 1.5f, 0) + playerCam.forward.normalized*drawPoint;
-        if (!windingUp)
-        {
-            windingUp = true;
-            cowProjectile.GetComponent<Transform>().position = windUpCentre + new Vector3(0, 0, r);
-        }
-        Vector3 pos = cowProjectile.GetComponent<Transform>().position;
-        pos.y = windUpCentre.y;
-        pos = (pos - windUpCentre).normalized * r + windUpCentre;
-        cowProjectile.GetComponent<Transform>().position = pos;
-        cowProjectile.GetComponent<Transform>().RotateAround(windUpCentre, new Vector3(0,1,0), -rotationSpeed*Time.deltaTime);
-        lassoEnd = cowProjectile.GetComponent<Transform>();
-        RenderLasso();
-    }
-
-    void FireCow(float force){
-        cowProjectile.GetComponent<Transform>().position = firePoint.position;
-        Rigidbody collider = cowProjectile.GetComponent<Rigidbody>();
-        collider.AddForce(playerCam.forward*force, ForceMode.Impulse);
-    }
-
-    public void callToFireCow(float force)
+    float m_Acceleration = 10.0f;
+    public LassoReturnState(ILasso lasso) 
     {
-        Detach();
-        FireCow(force);
-        windingUp = false;
+        m_Lasso = lasso;
     }
 
-    void MakeLoop(){
-        lassoLoop.GetComponentInChildren<LineRenderer>().enabled = true;
-        float r = loopRadius;
-        //make number of parts
-        int parts = 100;
-        float angleSeg = 2*Mathf.PI/parts;
-        float theta = 0f;
-        lassoLoop.GetComponentInChildren<LineRenderer>().positionCount = parts;
-        for(int i = 0; i < parts; i++){
-            float x = r*Mathf.Cos(theta);
-            float z = r*Mathf.Sin(theta);
-            Vector3 pos = new Vector3(lassoCollider.GetComponent<Transform>().position.x + x, lassoCollider.GetComponent<Transform>().position.y, lassoCollider.GetComponent<Transform>().position.z + z);
-            lassoLoop.GetComponentInChildren<LineRenderer>().SetPosition(i, pos + offset);
-            theta += angleSeg;
-        }
-    }
-
-    public void AttachToCow(GameObject leash, GameObject cow){
-        lassoEnd = leash.GetComponent<Transform>();
-        attatched = true;
-        ash = cow.GetComponent<AnimalStateHandler>();
-        RemoveLoop();
-        AttachToCowToThrow(cow);
-    }
-
-    //for now will call this in the attachtocow method
-    void AttachToCowToThrow(GameObject cow){
-        cowProjectile = cow;
-    }
-
-    void RemoveLoop(){
-        lassoLoop.GetComponentInChildren<LineRenderer>().enabled = false;
-    }
-
-    public void Detach(){
-        madeLasso = false;
-        attatched = false;
-        lineRenderer.enabled = false;
-    }
-
-    void FireLasso(float force){
-        lassoCollider = Instantiate(lassoColliderPrefab, firePoint.position, Quaternion.Euler(0,0,0), transform);
-        Rigidbody collider = lassoCollider.GetComponent<Rigidbody>();
-        collider.AddForce(playerCam.forward*force, ForceMode.Impulse);
-        offset.x = playerCam.forward.normalized.x*loopRadius;
-        offset.z = playerCam.forward.normalized.z*loopRadius;
-    }
-
-    public void callToFireLasso(float force)
+    public override void OnEnter()
     {
-        Detach();
-        Destroy(lassoCollider);
-        FireLasso(force);
-        lassoCollider.GetComponent<TrailRenderer>().time = time;
-        lassoLoop.GetComponentInChildren<TrailRenderer>().enabled = false;
-        windingUp = false;
-        MakeLoop();
-        madeLasso = true;
-        lineRenderer.enabled = true;
+        m_LassoSpeed = 0.0f;
+        m_Lasso.SetRopeLineRenderer(true);
+        m_Lasso.SetThrownLoopLineRenderer(true);
     }
 
-    void RenderLasso(){
-        if(lassoEnd != null){
-            lineRenderer.SetPosition(0, firePoint.position);
-            lineRenderer.SetPosition(1, lassoEnd.position);
-            lineRenderer.enabled = true;
-        }
-        
+    public override void OnExit()
+    {
+        m_Lasso.SetRopeLineRenderer(false);
+        m_Lasso.SetThrownLoopLineRenderer(false);
+
     }
+
+    public override void Tick()
+    {
+        m_Lasso.RenderLoop();
+        m_Lasso.RenderRope();
+        m_LassoSpeed = (Mathf.Min(m_LassoSpeed + Time.deltaTime * m_Acceleration, m_MaxLassoSpeed));
+        Vector3 loopToPlayer = (m_Lasso.GetStartTransform.position - m_Lasso.GetEndTransform.position).normalized;
+        m_Lasso.GetEndTransform.rotation = Quaternion.LookRotation(-loopToPlayer, Vector3.up);
+        m_Lasso.GetLassoBody.velocity = m_LassoSpeed * loopToPlayer;
+    }
+}
+
+public class LassoIdleState : IState 
+{
 
 }
