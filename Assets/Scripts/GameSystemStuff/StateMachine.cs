@@ -7,7 +7,7 @@ using System;
 public class StateMachine 
 {
     public IState m_CurrentState;
-    private List<IState> m_States = new List<IState>();
+    private readonly List<IState> m_States = new List<IState>();
 
     private Dictionary<Type, List<StateTransition>> m_StateTransitions = new Dictionary<Type, List<StateTransition>>();
 
@@ -15,14 +15,6 @@ public class StateMachine
     private List<StateTransition> m_SpecificTransitions;
 
     private static List<StateTransition> m_EmptyList = new List<StateTransition>();
-
-
-    public StateMachine(IState InitializedState)
-    {
-        AddState(InitializedState);
-        m_CurrentState = InitializedState;
-    }
-
 
     public void AddState<T>(T newState) where T : IState 
     {
@@ -55,6 +47,28 @@ public class StateMachine
         }
     }
 
+    public void SetInitialState(Type newState) 
+    {
+        for (int i = 0; i < m_States.Count; i++)
+        {
+            if (m_States[i].GetType() == newState)
+            {
+                if (m_StateTransitions.TryGetValue(newState, out List<StateTransition> newList))
+                {
+                    m_SpecificTransitions = newList;
+                }
+                else
+                {
+                    m_SpecificTransitions = m_EmptyList;
+                }
+
+                m_CurrentState = m_States[i];
+                m_CurrentState.OnEnter();
+                return;
+            }
+        }
+    }
+
     public void AddTransition(Type from, Type to, Func<bool> transition) 
     {
         List<StateTransition> transitions;
@@ -77,6 +91,15 @@ public class StateMachine
         {
             if (m_States[i].GetType() == newState && m_CurrentState.GetType() != newState)
             {
+                if (m_StateTransitions.TryGetValue(newState, out List<StateTransition> newList))
+                {
+                    m_SpecificTransitions = newList;
+                }
+                else
+                {
+                    m_SpecificTransitions = m_EmptyList;
+                }
+
                 m_CurrentState.OnExit();
                 m_CurrentState = m_States[i];
                 m_CurrentState.OnEnter();

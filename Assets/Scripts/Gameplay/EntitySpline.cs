@@ -11,7 +11,7 @@ public struct PathPoint
 
 public interface ParametrizedVelocity
 {
-	public Vector3 GetVelocityAtTime
+	Vector3 GetVelocityAtTime { get; }
 }
 
 public class EntitySpline
