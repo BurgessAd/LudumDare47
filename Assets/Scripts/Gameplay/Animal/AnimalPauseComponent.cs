@@ -24,7 +24,7 @@ public class AnimalPauseComponent : PauseComponent
 
     private void Start()
     {
-        m_Manager.OnEntitySpawned(gameObject, typeof(AnimalPauseComponent));
+        m_Manager.OnEntitySpawned(gameObject, EntityType.Prey);
     }
 
     public override void Pause()

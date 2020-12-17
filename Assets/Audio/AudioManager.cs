@@ -1,93 +1,88 @@
-using UnityEngine.Audio;
-using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 public class AudioManager : MonoBehaviour
 {
-	//        FindObjectOfType<AudioManager>().Play(moo);
-
-	public static AudioManager instance;
-
-	public Sound[] sounds;
-	private List<Sound> soundsToIncrease = new List<Sound>();
-	private float pitchSpeed = 1f;
+	[SerializeField]
+	private SoundObject[] sounds;
+	private readonly Dictionary<string, Sound> m_SoundDict = new Dictionary<string, Sound>();
 	void Awake()
 	{
-		if (instance != null)
+		foreach(SoundObject sound in sounds) 
 		{
-			Destroy(gameObject);
+			m_SoundDict.Add(sound.m_Identifier, new Sound(sound.defaultVolume, sound.defaultPitch, sound.loop, sound.clip, gameObject.AddComponent<AudioSource>()));
+		}
+	}
+
+	public void Play(string soundIdentifier)
+	{
+		ApplyToSound(soundIdentifier, (Sound sound) => sound.Start());
+	}
+
+	public void SetPitch(string soundIdentifier, float newPitch) 
+	{
+		ApplyToSound(soundIdentifier, (Sound sound) => sound.SetPitch(newPitch));
+	
+	}
+
+	public void SetVolume(string soundIdentifier, float volume) 
+	{
+		ApplyToSound(soundIdentifier, (Sound sound) => sound.SetVolume(volume));
+	}
+
+	public void StopPlaying(string soundIdentifier)
+	{
+		ApplyToSound(soundIdentifier, (Sound sound) => sound.Stop());
+	}
+
+	public void ApplyToSound(in string sound, in Action<Sound> soundAction) 
+	{
+		if (m_SoundDict.TryGetValue(sound, out Sound value))
+		{
+			soundAction.Invoke(value);
 		}
 		else
 		{
-			instance = this;
-			DontDestroyOnLoad(gameObject);
-		}
-
-		foreach (Sound s in sounds)
-		{
-			s.source = gameObject.AddComponent<AudioSource>();
-			s.source.clip = s.clip;
-			s.source.loop = s.loop;
-
+			Debug.Log("Could not find sound with identifier " + sound + " in object " + gameObject.name);
 		}
 	}
+}
 
-	public void Play(string sound)
+public class Sound 
+{
+	private readonly AudioClip m_AudioClip;
+	private readonly AudioSource m_AudioSource;
+	private readonly float m_fDefaultVolume;
+	private readonly float m_fDefaultPitch;
+
+	public Sound(in float defaultVolume, in float defaultPitch, in bool doesLoop, in AudioClip clipToPlay, in AudioSource sourceToplayFrom) 
 	{
-		Sound s = Array.Find(sounds, item => item.name == sound);
-		if (s == null)
-		{
-			Debug.LogWarning("Sound: " + name + " not found!");
-			return;
-		}
-
-		s.source.volume = s.volume;
-		s.source.pitch = 1f;
-
-		s.source.Play();
-	}
-	public void PlayAt(string sound, Vector3 position)
-	{
-		Sound s = Array.Find(sounds, item => item.name == sound);
-		if (s == null)
-		{
-			Debug.LogWarning("Sound: " + name + " not found!");
-			return;
-		}
-
-		s.source.volume = s.volume;
-		s.source.pitch = 0f;
-
-		AudioSource.PlayClipAtPoint(s.clip, position);
+		m_AudioClip = clipToPlay;
+		m_AudioSource = sourceToplayFrom;
+		m_fDefaultPitch = defaultPitch;
+		m_fDefaultVolume = defaultVolume;
+		m_AudioSource.loop = doesLoop;
+		m_AudioSource.clip = m_AudioClip;
 	}
 
-	public Sound PlayAtReturn(string sound, Vector3 position)
+	public void Start() 
 	{
-		Sound s = Array.Find(sounds, item => item.name == sound);
-
-
-		s.source.volume = s.volume;
-		s.source.pitch = 0f;
-
-		AudioSource.PlayClipAtPoint(s.clip, position);
-
-		return s;
-	}
-	public void stop(string sound)
-	{
-		Sound s = Array.Find(sounds, item => item.name == sound);
-		s.source.Stop();
+		m_AudioSource.Play();
 	}
 
-	private void Update()
-    {
+	public void Stop() 
+	{
+		m_AudioSource.Stop();
+	}
 
-/*		//While the pitch is below 1, decrease it as time passes.
-		if (audioSource.pitch > 1)
-		{
-			audioSource.pitch += Time.deltaTime * pitchSpeed;
-		}*/
-		
+	public void SetPitch(in float pitchPercent) 
+	{
+		m_AudioSource.pitch = pitchPercent * m_fDefaultPitch;
+	}
+
+	public void SetVolume(in float volumePercent) 
+	{
+		m_AudioSource.volume = volumePercent * m_fDefaultVolume;
 	}
 }

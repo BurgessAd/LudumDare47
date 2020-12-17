@@ -1,5 +1,5 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
+using UnityEngine.UI;
 using UnityEngine;
 using System;
 using UnityEngine.SceneManagement;
@@ -18,7 +18,7 @@ public class LevelManager : MonoBehaviour
 	[SerializeField]
 	private CanvasGroup m_MainCanvas;
 	[SerializeField]
-	private CanvasGroup m_StartCanvas;
+	private CanvasGroup m_StartCountdownCanvas;
 	[SerializeField]
 	private CanvasGroup m_PauseCanvas;
 	[SerializeField]
@@ -26,7 +26,18 @@ public class LevelManager : MonoBehaviour
 	[SerializeField]
 	private CanvasGroup m_EndFailureCanvas;
 	[SerializeField]
+	private CanvasGroup m_StartButtonCanvas;
+	[SerializeField]
 	private Animator m_LevelTransitionAnimator;
+	[SerializeField]
+	private Text m_CountdownText;
+	[SerializeField]
+	private Animator m_LevelCountdownAnimator;
+
+	[SerializeField]
+	private float m_MapSize;
+	[SerializeField]
+	private Transform m_Transform;
 
 	private StateMachine m_LevelState;
 
@@ -43,9 +54,27 @@ public class LevelManager : MonoBehaviour
 		m_LevelState.AddState(new EndFailureState(this, m_EndFailureCanvas));
 		m_LevelState.AddState(new EndSuccessState(this, m_EndSuccessCanvas));
 		m_LevelState.AddState(new PlayingState(this, m_MainCanvas));
-		m_LevelState.SetInitialState(typeof(PlayingState));
-		m_Manager.NewLevelLoaded(this, m_LevelIndex);
+		m_LevelState.AddState(new StartState(this, m_StartButtonCanvas));
+		m_LevelState.SetInitialState(typeof(StartState));
+		m_LevelTransitionAnimator.Play("Base Layer.TransitionIn");
+
 		m_LevelIndex = SceneManager.GetActiveScene().buildIndex;
+	}
+
+	private void Start()
+	{
+		if (m_Manager.ShouldQuickRestart)
+		{
+			m_StartButtonCanvas.alpha = 0.0f;
+			m_StartButtonCanvas.blocksRaycasts = false;
+			m_StartButtonCanvas.interactable = false;
+			PlayerReloadedLevel();
+		}
+		else 
+		{
+			SetCurrentCanvas(m_StartButtonCanvas, () => { m_StartButtonCanvas.blocksRaycasts = true; m_StartButtonCanvas.interactable = true; });
+		}
+		m_Manager.NewLevelLoaded(this);
 	}
 
 	private void Update() 
@@ -53,10 +82,15 @@ public class LevelManager : MonoBehaviour
 		m_LevelState.Tick();
 	}
 
-	public void SetCurrentCanvas(CanvasGroup canvas, Action callOnComplete) 
+	private void OnDrawGizmosSelected()
+	{
+		Gizmos.DrawWireSphere(GetMapCentre, m_MapSize);
+	}
+
+	public void SetCurrentCanvas(CanvasGroup canvas, Action callOnComplete, in float delay = 0.0f) 
 	{
 		ClearCanvas();
-		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setOnComplete(callOnComplete);
+		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setOnComplete(callOnComplete).setDelay(delay);
 		m_CurrentOpenCanvas = canvas;
 	}
 
@@ -72,16 +106,44 @@ public class LevelManager : MonoBehaviour
 
 	private IEnumerator BeginSceneTransition()
 	{
-		m_Manager.ClearLevelData();
-		m_LevelTransitionAnimator.SetTrigger("Start");
+		m_LevelTransitionAnimator.Play("Base Layer.TransitionOut");
 		yield return new WaitForSeconds(m_fTransitionTime);
+		m_Manager.ClearLevelData();
 		SceneManager.LoadScene(m_LevelToLoad);
+	}
+
+	private IEnumerator BeginCountdown() 
+	{
+		m_CountdownText.text = "3";
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
+		yield return new WaitForSecondsRealtime(1.0f);
+		m_CountdownText.text = "2";
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
+		yield return new WaitForSecondsRealtime(1.0f);
+		m_CountdownText.text = "1";
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
+		yield return new WaitForSecondsRealtime(1.0f);
+		m_CountdownText.text = "Go!";
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
+		yield return new WaitForSecondsRealtime(0.2f);
+		m_LevelState.RequestTransition(typeof(PlayingState));
+
+	}
+
+	private IEnumerator StartLevelWithoutCountdown() 
+	{
+		yield return new WaitForSecondsRealtime(3.0f);
+		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
 	public void PauseLevel(bool pause) 
 	{
 		m_Manager.SetPauseState(pause);
 	}
+
+	public float GetMapRadius => m_MapSize;
+
+	public Vector3 GetMapCentre => m_Transform.position;
 
 	// called by UI
 	public void LoadNextLevel()
@@ -115,6 +177,20 @@ public class LevelManager : MonoBehaviour
 	public void ResumeLevel()
 	{
 		m_LevelState.RequestTransition(typeof(PlayingState));
+	}
+
+
+	public void PlayerStartedLevel() 
+	{
+		m_Manager.OnPlayerStartedLevel();
+		SetCurrentCanvas(m_StartCountdownCanvas, () => { });
+		StartCoroutine(BeginCountdown());
+	}
+
+	public void PlayerReloadedLevel()
+	{
+		m_Manager.OnPlayerStartedLevel();
+		StartCoroutine(StartLevelWithoutCountdown());
 	}
 }
 
@@ -181,7 +257,7 @@ public class EndFailureState : IState
 	}
 	public override void OnEnter()
 	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; });
+		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; }, delay: 1.0f);
 	}
 }
 
@@ -196,14 +272,18 @@ public class EndSuccessState : IState
 	}
 	public override void OnEnter()
 	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; });
+		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; }, delay: 1.0f);
+		
 	}
 }
 
 public class StartState : IState 
 {
-	public override void OnEnter()
+	private readonly LevelManager m_LevelLoader;
+	private readonly CanvasGroup m_CanvasGroup;
+	public StartState(LevelManager loader, CanvasGroup startGroup) 
 	{
-		
+		m_LevelLoader = loader;
+		m_CanvasGroup = startGroup;
 	}
 }

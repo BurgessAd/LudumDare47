@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class PlayerCameraComponent : MonoBehaviour
 {
@@ -12,6 +13,9 @@ public class PlayerCameraComponent : MonoBehaviour
 
     [SerializeField]
     private Camera m_PlayerCamera;
+
+    [SerializeField]
+    private EZCameraShake.CameraShaker m_CameraShaker;
 
     private float m_fCamPoint;
     private float m_fCurrentFOVPercentage = 0.0f;
@@ -30,16 +34,44 @@ public class PlayerCameraComponent : MonoBehaviour
     private Transform m_tFocusTransform;
     private StateMachine m_CameraStateMachine;
 
+    [SerializeField]
+    private Animator m_CameraAnimator;
+
+    public Type m_CachedType;
+
     public void SetFocusedTransform(Transform focusTransform) 
     {
         m_tFocusTransform = focusTransform;
         m_CameraStateMachine.RequestTransition(typeof(ObjectFocusLook));
+        m_CachedType = typeof(ObjectFocusLook);
+    }
+
+    public void OnImpactAnimation() 
+    {
+        m_CameraAnimator.SetTrigger("LandingImpact");
+        m_CameraShaker.ShakeOnce(5.0f, .5f, 0.1f, 0.3f);
+    }
+
+    public void SetViewBobbingStrength(float strength) 
+    {
+
     }
 
     public void ClearFocusedTransform() 
     {
         m_tFocusTransform = null;
         m_CameraStateMachine.RequestTransition(typeof(PlayerControlledLook));
+        m_CachedType = typeof(PlayerControlledLook);
+    }
+
+    public void SetCameraIdle() 
+    {
+        m_CameraStateMachine.RequestTransition(typeof(CameraIdleState));
+    }
+
+    public void UnsetCameraIdle() 
+    {
+        m_CameraStateMachine.RequestTransition(m_CachedType);
     }
 
     void Start()
@@ -47,6 +79,7 @@ public class PlayerCameraComponent : MonoBehaviour
         m_CameraStateMachine = new StateMachine();
         m_CameraStateMachine.AddState(new PlayerControlledLook(this));
         m_CameraStateMachine.AddState(new ObjectFocusLook(this));
+        m_CameraStateMachine.AddState(new CameraIdleState());
         m_CameraStateMachine.SetInitialState(typeof(PlayerControlledLook));
         m_tCamTransform = transform;
     }
@@ -121,4 +154,9 @@ public class ObjectFocusLook : IState
         mouseLook.ProcessLookTowardsTransform();
         mouseLook.ProcessTargetFOV();
     }
+}
+
+public class CameraIdleState : IState 
+{
+    
 }

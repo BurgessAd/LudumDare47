@@ -13,10 +13,10 @@ public class PlayerPauseComponent : PauseComponent
     [SerializeField]
     private CowGameManager m_Manager;
 
-    private void Start()
+    private void Awake()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        m_Manager.OnEntitySpawned(gameObject, typeof(PlayerPauseComponent));
+        m_Manager.OnEntitySpawned(gameObject, EntityType.Player);
+        m_Manager.RegisterPlayer(transform);
     }
 
     public override void Pause()

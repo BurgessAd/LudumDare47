@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: dd09ed9411842f74589ab4ae0bfbc2e9
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - m_ViewDataDictionary: {instanceID: 0}
+  - targetObject: {instanceID: 0}
+  - densityMap: {instanceID: 0}
+  - grassMaterial: {fileID: 2100000, guid: 07641f0f739427c449bbc2e8d7ea1303, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

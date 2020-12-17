@@ -10,7 +10,7 @@ public class LassoPauseComponent : PauseComponent
     private LassoStartComponent m_LassoStartComponent;
     private void Start()
     {
-        m_Manager.OnEntitySpawned(gameObject, typeof(LassoPauseComponent));
+        m_Manager.OnEntitySpawned(gameObject, EntityType.Player);
     }
 
     public override void Pause()

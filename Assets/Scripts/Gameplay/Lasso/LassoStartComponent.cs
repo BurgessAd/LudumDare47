@@ -33,6 +33,9 @@ public class LassoStartComponent : MonoBehaviour, IAnimalAttacher
     private PlayerCameraComponent m_PlayerCam;
 
     [SerializeField]
+    private AudioManager m_AudioManager;
+
+    [SerializeField]
     private LineRenderer m_LassoHandToLoopLineRenderer;
 
     [SerializeField]
@@ -48,7 +51,7 @@ public class LassoStartComponent : MonoBehaviour, IAnimalAttacher
     [SerializeField]
     private float m_fGravity;
 
-
+    public AudioManager GetAudioManager => m_AudioManager;
 
     private Transform m_EndTransform;
     
@@ -110,7 +113,7 @@ public class LassoStartComponent : MonoBehaviour, IAnimalAttacher
         // for if the cow has reached us
         m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoAnimalSpinningState), () => Vector3.Distance(GetAttachedAnimal.GetLeashTransform.position, m_LassoStartTransform.position) < 2.0f);
         // for if we want to throw the animal
-        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => { if (Input.GetMouseButtonUp(0)) { GetAttachedAnimal.OnThrownByLasso(); ProjectObject(GetAttachedAnimal.GetCowRigidBody); UnattachLeash(); return true; } return false; });
+        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => { if (Input.GetMouseButtonUp(0)) { GetAttachedAnimal.OnThrownByLasso(); ProjectCow(); UnattachLeash(); return true; } return false; });
         // instant transition back to idle state
         m_StateMachine.SetInitialState(typeof(LassoIdleState));
 
@@ -167,7 +170,7 @@ public class LassoStartComponent : MonoBehaviour, IAnimalAttacher
         Vector3 startPos = m_LassoGrabPoint.position;
         Vector3 forwardDir = m_LassoGrabPoint.forward;
         Vector3 projectionDir = m_ProjectionPoint.forward;
-        int posCount = 20;
+        int posCount = 40;
         float elevationAngle = Mathf.Atan(Vector3.Dot(projectionDir, Vector3.up)/Vector3.Dot(projectionDir, forwardDir));
         m_TrajectoryLineRenderer.positionCount = posCount;
         for (int i = 0; i < posCount; i++) 
@@ -203,11 +206,16 @@ public class LassoStartComponent : MonoBehaviour, IAnimalAttacher
 
     public void ProjectCow() 
     {
-        cachedThrowSpeed = m_fThrowSpeed;
-        cachedStartPos = m_ProjectionPoint.position;
-        cachedStartTime = 0.0f;
-        cachedForwardDir = m_LassoGrabPoint.forward;
-        cachedElevationAngle = Mathf.Atan(Vector3.Dot(m_ProjectionPoint.forward, Vector3.up) / Vector3.Dot(m_ProjectionPoint.forward, cachedForwardDir));
+        GetAttachedAnimal.GetThrowable.ThrowObject
+            (
+            m_fThrowSpeed,
+            UnityEngine.Random.Range(200.0f, 300.0f),
+            m_ProjectionPoint.position,
+            m_LassoGrabPoint.forward,
+            Mathf.Atan(Vector3.Dot(m_ProjectionPoint.forward, Vector3.up) / Vector3.Dot(m_ProjectionPoint.forward, cachedForwardDir)),
+            m_fGravity,
+            Random.insideUnitSphere
+            );
     }
 
     public void SetSpinState(bool set) 
@@ -272,18 +280,6 @@ public class LassoStartComponent : MonoBehaviour, IAnimalAttacher
         m_LassoSpinningLoopLineRenderer.enabled = enabled;
     }
 
-    public void SetThrownLoopLineRenderer(bool enabled)
-    {
-
-    }
-
-    public void ProjectObject(Rigidbody body)
-    {
-        body.position = m_ProjectionPoint.position;
-        body.velocity = m_ProjectionPoint.forward * m_fThrowSpeed;
-        body.angularVelocity = Random.insideUnitSphere * Random.Range(8.0f, 15.0f);
-    }
-
     private void OnHitCow(AnimalComponent animalStateHandler)
     {
        
@@ -339,7 +335,6 @@ public class LassoSpinningState : IState
 
     public override void OnEnter()
     {
-        Debug.Log("EnteredState LassoSpinning");
         m_StartAngle = 0.0f;
         m_fChosenStrength = 1.0f;
         m_fCurrentStrength = 1.0f;
@@ -399,15 +394,15 @@ public class LassoAnimalSpinningState : IState
     float m_fMaxSpeedSpinning = 3.6f;
     float m_fInitialSpeedSpinning = 1.6f;
 
-    float m_fMaxHeight = 3.0f;
-    float m_fMinHeight = 1.0f;
+    float m_fMaxHeight = 1.0f;
+    float m_fMinHeight = 0.5f;
 
     float m_fMaxRadius = 2.0f;
     float m_fInitialRadius = 4.0f;
 
     float m_fCurrentTimeSpinning = 0.0f;
     float m_StartAngle;
-    private float m_RotationSpeed = 360 * Mathf.Deg2Rad;
+    private float m_RotationSpeed = 60 * Mathf.Deg2Rad;
 
     public LassoAnimalSpinningState(LassoStartComponent lasso, IAnimalAttacher animalAttacher)
     {
@@ -418,7 +413,7 @@ public class LassoAnimalSpinningState : IState
     public override void OnEnter()
     {
         m_Lasso.SetSpinState(true);
-        m_Lasso.SetMaxThrowSpeed(30.0f);
+        m_Lasso.SetMaxThrowSpeed(100.0f);
         m_fChosenStrength = 1.0f;
         m_fCurrentStrength = 1.0f;
         m_fCurrentTimeSpinning = 0.0f;
@@ -427,7 +422,6 @@ public class LassoAnimalSpinningState : IState
         m_AnimalAttacher.GetAttachedAnimal.OnStartedLassoSpinning();
         m_Lasso.SetPlayerSpeed(0.05f);
         m_AnimalAttacher.GetAttachedAnimal.GetBodyTransform.rotation = Quaternion.identity;
-        Debug.Log("EnteredState LassoAnimalSpinning");
     }
 
     public override void OnExit()
@@ -520,9 +514,8 @@ public class LassoAnimalAttachedState : IState
     }
     public override void OnEnter()
     {
-        Debug.Log("EnteredState LassoAnimalAttached");
         m_TotalForce = 0.0f;
-        m_fTimeSinceClicked = 0.0f;
+        m_fTimeSinceClicked = 1.0f;
         m_fCurrentMiniDecayTime = 0.0f;
         m_Lasso.SetRopeLineRenderer(true);
         m_Lasso.SetPullingAnimal(true);
@@ -573,7 +566,6 @@ public class LassoReturnState : IState
 
     public override void OnEnter()
     {
-        Debug.Log("EnteredState LassoReturn");
         m_LassoSpeed = 0.0f;
         m_Lasso.SetRopeLineRenderer(true);
         m_Lasso.SetLoopLineRenderer(true);

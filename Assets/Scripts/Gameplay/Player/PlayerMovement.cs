@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Security.Principal;
 using UnityEngine;
-
+using System;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField]
@@ -26,6 +26,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private float m_fMaxSpeed = 4;
 
+    [SerializeField]
+    private PlayerCameraComponent m_CameraComponent;
+
+    [SerializeField]
     private float m_fSpeed;
 
     private float m_fCurrentMultiplier = 1.0f;
@@ -35,7 +39,9 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 m_vVelocity;
 
-    bool m_bIsGrounded = false;
+    bool m_bHasJumped = false;
+
+    bool m_bIsGrounded;
 
     // Start is called before the first frame update
     void Start()
@@ -44,15 +50,26 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         m_fSpeed = m_fMaxSpeed * m_fCurrentMultiplier;
         m_bIsGrounded = Physics.CheckSphere(m_tGroundTransform.position, m_fGroundDistance, groundMask);
         //movement for the player
 
-        if (m_bIsGrounded && m_vVelocity.y < 0)
+        if (m_CharacterController.isGrounded)
         {
-            m_vVelocity.y = -2.0f;
+            if (m_bHasJumped) 
+            {
+                m_CameraComponent.OnImpactAnimation();
+                m_bHasJumped = false;
+            }
+
+            m_vVelocity.y = -20;
+   
+        }
+        else 
+        {
+            m_vVelocity.y += m_fGravity * Time.fixedDeltaTime;
         }
 
 
@@ -60,16 +77,16 @@ public class PlayerMovement : MonoBehaviour
         float sideSpeed = Input.GetAxis("Horizontal");
 
         Vector3 move = m_tBodyTransform.right * sideSpeed + m_tBodyTransform.forward * forwardSpeed;
-        m_CharacterController.Move(move * m_fSpeed * Time.deltaTime);
 
-        if (Input.GetButtonDown("Jump") && m_bIsGrounded) 
+        if (Input.GetButtonDown("Jump") && m_CharacterController.isGrounded) 
         {
             m_vVelocity.y = Mathf.Sqrt(m_fJumpHeight * -2f * m_fCurrentMultiplier * m_fGravity);
+            m_bHasJumped = true;
         }
 
-        m_vVelocity.y += m_fGravity * Time.deltaTime;
+        
 
-        m_CharacterController.Move(m_vVelocity * Time.deltaTime);
+        m_CharacterController.Move(move * m_fSpeed * Time.fixedDeltaTime + m_vVelocity * Time.fixedDeltaTime);
     }
 
     public void SetMovementSpeedMult(float mult)

@@ -8,7 +8,7 @@ public class AnimalKillableComponent : MonoBehaviour, IKillableComponent
     private CowGameManager m_ManagerComponent;
     void IKillableComponent.OnKilled()
     {
-        m_ManagerComponent.OnEntityDestroyed(gameObject, typeof(AnimalPauseComponent));
+        m_ManagerComponent.OnEntityDestroyed(gameObject, EntityType.Prey);
         Destroy(gameObject);
     }
 }
