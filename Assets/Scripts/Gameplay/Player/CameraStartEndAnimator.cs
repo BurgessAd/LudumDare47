@@ -5,21 +5,16 @@ using System;
 public class CameraStartEndAnimator : MonoBehaviour
 {
     private ObjectPositionAnimator m_Animator;
-    [SerializeField]
-    private Transform m_StartEndTransform;
-    [SerializeField]
-    private Transform m_DefaultCameraTransform;
-    [SerializeField]
-    private Rotator m_Rotator;
-    private Transform m_CurrentTransform = null;
-    [SerializeField]
-    private float m_AnimDuration;
+    [SerializeField] private Transform m_StartEndTransform;
+    [SerializeField] private Transform m_ThisTransform;
+    [SerializeField] private Transform m_DefaultCameraTransform;
+    [SerializeField] private Transform m_CurrentTransform = null;
 
-    [SerializeField]
-    private AnimationCurve m_PositionAnimCurve;
-
-    [SerializeField]
-    private AnimationCurve m_RotationAnimCurve;
+    [SerializeField] private float m_AnimDuration;
+    [SerializeField] private AnimationCurve m_PositionAnimCurveSlow;
+    [SerializeField] private AnimationCurve m_RotationAnimCurveSlow;
+    [SerializeField] private AnimationCurve m_PositionAnimCurveQuick;
+    [SerializeField] private AnimationCurve m_RotationAnimCurveQuick;
 
     // Start is called before the first frame update
     void Awake()
@@ -32,17 +27,22 @@ public class CameraStartEndAnimator : MonoBehaviour
     {
         m_Animator.OnAnimComplete = null;
         m_CurrentTransform.SetParent(null);
-        m_Animator.SetRotationCurve(m_RotationAnimCurve, m_CurrentTransform.rotation, m_StartEndTransform.rotation);
-        m_Animator.SetPositionCurves(m_PositionAnimCurve, m_CurrentTransform.position, m_StartEndTransform.position);
+       
         m_Animator.StartAnimatingPositionAndRotation(m_AnimDuration);
         m_Animator.OnAnimComplete += OnAnimOutFinished;
+    }
+
+    public void OnInstantStartLevel() 
+    {
+        m_CurrentTransform.SetParent(m_DefaultCameraTransform);
+        m_CurrentTransform.localPosition = Vector3.zero;
+        m_CurrentTransform.localRotation = Quaternion.identity;
     }
 
     private void OnAnimOutFinished() 
     {
         m_Animator.OnAnimComplete -= OnAnimOutFinished;
         m_CurrentTransform.SetParent(m_StartEndTransform);
-        m_Rotator.enabled = true;
     }
 
     public void AddOnCompleteCallback(Action OnCompleteAction) 
@@ -50,15 +50,18 @@ public class CameraStartEndAnimator : MonoBehaviour
         m_Animator.OnAnimComplete += OnCompleteAction;
     }
 
-    public void AnimateIn()
+    public void AnimateIn(in float animDuration)
     {
         m_Animator.OnAnimComplete = null;
         m_CurrentTransform.SetParent(null);
-        m_Rotator.enabled = false;
-        m_Animator.SetRotationCurve(m_RotationAnimCurve, m_CurrentTransform.rotation, m_DefaultCameraTransform.rotation);
-        m_Animator.SetPositionCurves(m_PositionAnimCurve, m_CurrentTransform.position, m_DefaultCameraTransform.position);
-        m_Animator.StartAnimatingPositionAndRotation(m_AnimDuration);
+        m_Animator.SetPositionCurves(m_PositionAnimCurveSlow, m_RotationAnimCurveSlow, m_CurrentTransform, m_DefaultCameraTransform);
+        m_Animator.StartAnimatingPositionAndRotation(animDuration);
         m_Animator.OnAnimComplete += OnAnimInFinished;
+    }
+
+    public void AnimateInQuick() 
+    {
+
     }
 
     private void OnAnimInFinished() 

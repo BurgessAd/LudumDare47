@@ -300,21 +300,23 @@ Shader "Hidden/Clouds"
                 float cosAngle = dot(rayDir, _WorldSpaceLightPos0.xyz);
                 float phaseVal = phase(cosAngle);
 
-                float dstTravelled = randomOffset;
+                float dstTravelled = 0;
                 float dstLimit = min(depth-dstToBox, dstInsideBox);
                 
                 
-                float numSteps = 3;
-                const float stepSize = 5;
+                const float stepSize = 3;
 
                 // March through volume:
                 float transmittance = 1;
                 float3 lightEnergy = 0;
-                if (dstTravelled > 0)
+
+                if (dstLimit > 0)
                 {
-                    while (dstTravelled < dstLimit)
+                    int numSteps = int(dstLimit / stepSize);
+
+                    for (int i = 0; i < numSteps; i++)
                     {
-                        rayPos = entryPoint + rayDir * dstTravelled;
+                        rayPos = entryPoint + rayDir * stepSize * (i + 0.5f);
                         float density = sampleDensity(rayPos);
 
                         if (density > 0) {
@@ -326,25 +328,18 @@ Shader "Hidden/Clouds"
                                 break;
                             }
                         }
-                        dstTravelled += stepSize;
                     }
 
-                    rayPos = entryPoint + rayDir * dstLimit;
-                    float lastStepLength = stepSize - dstTravelled + dstLimit;
+                    float lastStepSize = dstLimit % stepSize;
+                    rayPos = entryPoint + (numSteps * stepSize + lastStepSize * 0.5f) * rayDir;
                     float density = sampleDensity(rayPos);
-                    // light finishes in cloud - tint the background colour to be in shadow
-                    if (density > 0) 
-                    {
-                        float marchedTransmittance = lightmarch(rayPos);
-                        lightEnergy += density * lastStepLength * transmittance * marchedTransmittance * phaseVal;
-                        transmittance *= exp(-density * lastStepLength * lightAbsorptionThroughCloud);
-                        float3 backgroundCol = tex2D(_MainTex, i.uv) * marchedTransmittance;
-                        float3 cloudCol = lightEnergy * _LightColor0;
-                        float3 col = backgroundCol * transmittance + cloudCol;
-                        return float4(col, 0);
-                    }
 
-                    
+                    if (density > 0)
+                    {
+                        lightEnergy += density * lastStepSize * transmittance * lightmarch(rayPos) * phaseVal;
+                        transmittance *= exp(-density * lastStepSize * lightAbsorptionThroughCloud);
+                    }
+                                             
                 }
 
 

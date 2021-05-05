@@ -18,6 +18,11 @@ public class NoiseGenEditor : Editor {
             EditorApplication.QueuePlayerLoopUpdate ();
         }
 
+        if (GUILayout.Button("Full Update"))
+        {
+            noise.UpdateAllNoise();
+        }
+
         if (GUILayout.Button ("Save")) {
             Save ();
         }

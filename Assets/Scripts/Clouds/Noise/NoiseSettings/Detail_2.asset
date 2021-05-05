@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Detail_2
   m_EditorClassIdentifier: 
   seed: 4
-  numDivisionsA: 9
-  numDivisionsB: 16
-  numDivisionsC: 32
+  numDivisionsA: 1
+  numDivisionsB: 4
+  numDivisionsC: 4
   persistence: -2.38
   tile: 1
   invert: 1

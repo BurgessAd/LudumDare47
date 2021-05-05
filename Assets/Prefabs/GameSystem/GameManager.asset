@@ -12,4 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61f75a6044d35a247a6119a541d2406a, type: 3}
   m_Name: GameManager
   m_EditorClassIdentifier: 
-  m_bQuickRestart: 0
+  m_PlayerEntityInformation: {fileID: 11400000, guid: a171ef1ac7ad69046af761265214b3fd,
+    type: 2}
+  m_TerrainLayerMask:
+    serializedVersion: 2
+    m_Bits: 2304
+  m_RestartState: 2
+  m_LevelData:
+  - {fileID: 11400000, guid: 1a9db3b737d523c41b571353f9a15e3f, type: 2}

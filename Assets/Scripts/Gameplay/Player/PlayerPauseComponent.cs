@@ -10,14 +10,6 @@ public class PlayerPauseComponent : PauseComponent
     private PlayerMovement m_PlayerMovement = null;
     [SerializeField]
     private PlayerCameraComponent m_MouseLook;
-    [SerializeField]
-    private CowGameManager m_Manager;
-
-    private void Awake()
-    {
-        m_Manager.OnEntitySpawned(gameObject, EntityType.Player);
-        m_Manager.RegisterPlayer(transform);
-    }
 
     public override void Pause()
     {

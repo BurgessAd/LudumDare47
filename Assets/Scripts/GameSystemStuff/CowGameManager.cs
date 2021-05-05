@@ -1,46 +1,103 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+
 [CreateAssetMenu(menuName = "GameManager")]
 public class CowGameManager : ScriptableObject
 {
-	public struct EntityData
+	[SerializeField] private EntityInformation m_PlayerEntityInformation;
+	[SerializeField] private LayerMask m_TerrainLayerMask;
+	[SerializeField] private RestartState m_RestartState;
+
+	private readonly Dictionary<EntityInformation, List<EntityToken>> m_EntityCache = new Dictionary<EntityInformation, List<EntityToken>>();
+	private readonly List<Tuple<EntityInformation, CounterType, CounterBase>> m_CounterDict = new List<Tuple<EntityInformation, CounterType, CounterBase>>();
+	private readonly Dictionary<UIObjectReference, GameObject> m_UICache = new Dictionary<UIObjectReference, GameObject>();
+
+	[SerializeField] private List<LevelData> m_LevelData = new List<LevelData>();
+
+	private int m_CurrentLevelIndex = 0;
+
+	public enum RestartState 
 	{
-		public readonly Transform EntityTransform;
-		public readonly GameObject EntityObject;
-		public EntityData(Transform transform, GameObject gameObject)
-		{
-			EntityTransform = transform;
-			EntityObject = gameObject;
-		}
+		Intro,
+		Quick,
+		Debug
 	}
 
-	public void RegisterQuickRestart() 
+	public void MoveToNextLevel() 
 	{
-		m_bQuickRestart = true;
+		SceneManager.LoadScene(m_CurrentLevelIndex++);
 	}
-	[SerializeField]
-	private bool m_bQuickRestart;
 
-	
-	public bool ShouldQuickRestart => m_bQuickRestart;
-	private Transform m_PlayerTransform;
-	
+	public void RestartCurrentLevel() 
+	{
+		SceneManager.LoadScene(m_CurrentLevelIndex);
+	}
+
+	public void MoveToMenu() 
+	{
+
+	}
+
+	public int GetCurrentLevelIndex() 
+	{
+		return m_CurrentLevelIndex;
+	}
+
+	public Transform GetCameraTransform => m_CameraTransform;
+	public Transform GetPlayerCameraContainerTransform => m_PlayerCameraContainerTransform;
 	private Transform m_CameraTransform;
-	private readonly Dictionary<EntityType, List<EntityToken>> m_EntityCache = new Dictionary<EntityType, List<EntityToken>>();
-	private readonly Dictionary<string, CounterBase> m_CounterBaseDict = new Dictionary<string, CounterBase>();
-
+	private Transform m_PlayerCameraContainerTransform;
 	private LevelManager m_CurrentLevel = null;
 	private uint m_NumSuccesses = 0u;
 	private uint m_SuccessesRequired = 0u;
 	private bool m_bIsPaused = false;
-	private static readonly Dictionary<EntityType, List<EntityType>> m_HostileTypes = new Dictionary<EntityType, List<EntityType>>
+	public void OnUIElementSpawned(UIObjectElement element, UIObjectReference reference) 
 	{
-		{ EntityType.Predator, new List<EntityType> {EntityType.Player, EntityType.Alien }},
-		{ EntityType.Prey, new List<EntityType>{ EntityType.Player, EntityType.Alien, EntityType.Predator }} 
-	};
+		m_UICache.Add(reference, element.gameObject);
+	}
 
-	public void ConstrainPointToPlayArea(ref Vector3 point) 
+	public GameObject GetUIElementFromReference(in UIObjectReference reference) 
+	{
+		return m_UICache[reference];
+	}
+
+	public bool TryGetCounter(in CounterType type, in  EntityInformation entityType, out CounterBase counter)
+	{
+		counter = null;
+		foreach (var element in m_CounterDict) 
+		{
+			if (element.Item1 == entityType && element.Item2 == type) 
+			{
+				counter = element.Item3;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void AddCounterToDict(in CounterType type, in EntityInformation entityType, in CounterBase counter) 
+	{
+		m_CounterDict.Add(new Tuple<EntityInformation, CounterType, CounterBase>(entityType, type, counter));
+	}
+
+	public RestartState GetRestartState() 
+	{ 
+		return m_RestartState; 
+	}
+
+	public float GetMapRadius => m_CurrentLevel.GetMapRadius;
+	public GameObject GetPlayer => m_EntityCache[m_PlayerEntityInformation][0].GetEntity;
+
+	public LevelManager GetCurrentLevel => m_CurrentLevel;
+
+	public void RegisterQuickRestart()
+	{
+		m_RestartState = RestartState.Quick;
+	}
+
+	public void ConstrainPointToPlayArea(ref Vector3 point)
 	{
 		float yPoint = point.y;
 		Vector3 projectedDistance = Vector3.ProjectOnPlane(point - m_CurrentLevel.GetMapCentre, Vector3.up);
@@ -50,70 +107,74 @@ public class CowGameManager : ScriptableObject
 		point.y = yPoint;
 	}
 
-	public float GetMapRadius() 
+	public EntityToken GetTokenForEntity(in GameObject gameObject, in EntityInformation entityType) 
 	{
-		return m_CurrentLevel.GetMapRadius;
-	}
-	
-	public bool GetClosestHostileTransform(in EntityType entityType, in Vector3 currentPos, out Transform outTransform)
-	{
-		outTransform = null;
-		float cachedDist = Mathf.Infinity;
-		foreach (EntityType hostileType in m_HostileTypes[entityType])
+		if (m_EntityCache.TryGetValue(entityType, out List<EntityToken> value)) 
 		{
-			if (m_EntityCache.ContainsKey(hostileType))
-			foreach (EntityToken token in m_EntityCache[hostileType])
+			for(int i = 0; i < value.Count; i++) 
 			{
-				float dist = Vector3.Distance(token.Entity.transform.position, currentPos);
-				if (dist < cachedDist)
+				if (value[i].GetEntity == gameObject) 
 				{
-					cachedDist = dist;
-					outTransform = token.Entity.transform;
+					return value[i];
 				}
 			}
-		}
-		return outTransform != null;
-	}
-
-	private static readonly List<EntityType> AbductableTypes = new List<EntityType> { EntityType.Prey, EntityType.Predator };
-
-	public Transform GetCowToAbduct() 
-	{
-		int numAbductables = 0;
-		for (int i = 0; i < AbductableTypes.Count; i++) 
-		{
-			numAbductables += m_EntityCache[AbductableTypes[i]].Count;
-		}
-		int entityChoice = UnityEngine.Random.Range(0, numAbductables);
-		for (int i = 0; i < AbductableTypes.Count; i++) 
-		{
-			if (entityChoice - m_EntityCache[AbductableTypes[i]].Count < 0) 
-			{
-				if (m_EntityCache[AbductableTypes[i]][entityChoice].EntityState != EntityState.Occupied) 
-				{
-					m_EntityCache[AbductableTypes[i]][entityChoice].SetEntityState(EntityState.Occupied);
-					return m_EntityCache[AbductableTypes[i]][entityChoice].Entity.transform;
-				}				
-			}
-			entityChoice -= m_EntityCache[AbductableTypes[i]].Count;
 		}
 		return null;
 	}
 
-	public void ToggleLevelPausing()
-	{
-		if (m_bIsPaused)
-		{
-			Cursor.lockState = CursorLockMode.Locked;
-			UnpauseGame();
-		}
-		else
-		{
-			Cursor.lockState = CursorLockMode.None;
-			PauseGame();
-		}
-		m_bIsPaused = !m_bIsPaused;
+	// UFO goes for closest unoccupied
+	// Predator goes for closest unabducted
 
+	public bool GetClosestTransformsMatchingList(in Vector3 currentPos, in List<EntityInformation> entities, out List<EntityToken> outEntityToken, in List<EntityAbductionState> validEntities = null) 
+	{
+		outEntityToken = new List<EntityToken>();
+		return false;
+	}
+
+	public bool GetClosestTransformMatchingList(in Vector3 currentPos, in List<EntityInformation> entities, out EntityToken outEntityToken, List<EntityAbductionState> validEntities) 
+	{
+		if (validEntities == null) 
+		{
+			validEntities = new List<EntityAbductionState> { EntityAbductionState.Abducted, EntityAbductionState.Free, EntityAbductionState.Hunted };
+		}
+		outEntityToken = null;
+		float cachedSqDist = Mathf.Infinity;
+		foreach(EntityInformation entityInformation in entities) 
+		{
+			if (m_EntityCache.ContainsKey(entityInformation))
+			{
+				// for all entities in the cache
+				foreach (EntityToken token in m_EntityCache[entityInformation])
+				{
+					// if the entity is in a valid state for the purposes of this request
+					if (validEntities != null)
+					{
+						foreach (EntityAbductionState data in validEntities)
+						{
+							if (token.GetEntityState == data)
+							{
+								float sqDist = Vector3.SqrMagnitude(token.GetEntity.transform.position - currentPos);
+								if (sqDist < cachedSqDist)
+								{
+									cachedSqDist = sqDist;
+									outEntityToken = token;
+								}
+							}
+						}
+					}
+					else 
+					{
+						float sqDist = Vector3.SqrMagnitude(token.GetEntity.transform.position - currentPos);
+						if (sqDist < cachedSqDist)
+						{
+							cachedSqDist = sqDist;
+							outEntityToken = token;
+						}
+					}
+				}
+			}
+		}
+		return outEntityToken != null;
 	}
 
 	private void PauseGame()
@@ -122,16 +183,28 @@ public class CowGameManager : ScriptableObject
 		{
 			for (int i = 0; i < objs.Count; i++)
 			{
-				objs[i].Entity.GetComponent<PauseComponent>().Pause();
+				PauseGameForObject(objs[i]);
 			}
 		}
 	}
 
-	public void SetPauseState(bool pauseState)
+	private void PauseGameForObject(in EntityToken @object) 
 	{
-		if (m_bIsPaused != pauseState)
+		@object.GetEntity.GetComponent<PauseComponent>().Pause();
+	}
+
+	public void SetPausedState(bool pauseState)
+	{
+
+		if (pauseState)
 		{
-			ToggleLevelPausing();
+			Cursor.lockState = CursorLockMode.None;
+			PauseGame();
+		}
+		else
+		{
+			Cursor.lockState = CursorLockMode.Locked;
+			UnpauseGame();
 		}
 	}
 
@@ -141,24 +214,78 @@ public class CowGameManager : ScriptableObject
 		{
 			for (int i = 0; i < objs.Count; i++)
 			{
-				objs[i].Entity.GetComponent<PauseComponent>().Unpause();
+				objs[i].GetEntity.GetComponent<PauseComponent>().Unpause();
 			}
 		}
 	}
 
-	public void OnEntitySpawned(GameObject entity, EntityType entityType)
+	public void OnEntitySpawned(GameObject entity, EntityInformation entityType)
 	{
 		if (!m_EntityCache.TryGetValue(entityType, out List<EntityToken> entities))
 		{
 			entities = new List<EntityToken>();
 			m_EntityCache.Add(entityType, entities);
 		}
-		entities.Add(new EntityToken(entity));
+		EntityToken newToken = new EntityToken(entity);
+		entities.Add(newToken);
+		if (m_bIsPaused)
+			newToken.GetEntity.GetComponent<PauseComponent>().Pause();
+			
 	}
 
-	public void RegisterPlayer(Transform thisTransform) 
+	public bool IsGroundLayer(in int layer) 
 	{
-		m_PlayerTransform = thisTransform;
+		return UnityUtils.IsLayerInMask(m_TerrainLayerMask, layer);
+	}
+
+	public void OnEntityKilled(GameObject entity, EntityInformation entityType)
+	{
+
+		for (int i = 0; i < m_EntityCache[entityType].Count; i++)
+		{
+			if (m_EntityCache[entityType][i].GetEntity == entity)
+			{
+				m_EntityCache[entityType].RemoveAt(i);
+				break;
+			}
+		}
+
+		if (entity.TryGetComponent(out EntityTypeComponent tagComponent))
+		{
+			if (TryGetCounter(CounterType.Destroyed, tagComponent.GetEntityInformation, out CounterBase counter))
+			{
+				counter.IncrementCounter();
+			}
+		}
+		if (m_EntityCache[entityType].Count == 0) { m_EntityCache.Remove(entityType); }
+	}
+
+	public void OnCowEnterGoal(GameObject entity)
+	{
+		if (entity.TryGetComponent(out EntityTypeComponent tagComponent))
+		{
+			if (TryGetCounter(CounterType.Goal, tagComponent.GetEntityInformation, out CounterBase counter))
+			{
+				counter.IncrementCounter();
+			}
+		}
+	}
+
+	public void OnCowLeaveGoal(GameObject entity)
+	{
+		if (entity.TryGetComponent(out EntityTypeComponent tagComponent))
+		{
+			if (TryGetCounter(CounterType.Goal, tagComponent.GetEntityInformation, out CounterBase counter))
+			{
+				counter.DecrementCounter();
+			}
+		}
+	}
+
+	public void OnPlayerKilled()
+	{
+		m_CurrentLevel.RestartLevel();
+		RegisterQuickRestart();
 	}
 
 	public void RegisterCamera(Transform camTransform) 
@@ -166,49 +293,9 @@ public class CowGameManager : ScriptableObject
 		m_CameraTransform = camTransform;
 	}
 
-	public void OnEntityDestroyed(GameObject entity, EntityType entityType)
+	public void RegisterInitialCameraContainerTransform(Transform containerTransform) 
 	{
-	
-		for (int i = 0; i < m_EntityCache[entityType].Count; i++) 
-		{
-			if (m_EntityCache[entityType][i].Entity == entity) 
-			{
-				m_EntityCache[entityType].RemoveAt(i);
-				break;
-			}
-		}
-
-		if (entity.TryGetComponent(out GameTagComponent tagComponent))
-		{
-			if (m_CounterBaseDict.TryGetValue(tagComponent.GetObjectTag + " destroyed", out CounterBase baseValue))
-			{
-				baseValue.IncrementCounter();
-			}
-		}
-		if (m_EntityCache[entityType].Count == 0) { m_EntityCache.Remove(entityType); }
-	}
-
-
-	public void OnCowEnterGoal(GameObject entity)
-	{
-		if (entity.TryGetComponent(out GameTagComponent tagComponent))
-		{
-			if (m_CounterBaseDict.TryGetValue(tagComponent.GetObjectTag + " goal", out CounterBase baseValue))
-			{
-				baseValue.IncrementCounter();
-			}
-		}
-	}
-
-	public void OnCowLeaveGoal(GameObject entity)
-	{
-		if (entity.TryGetComponent(out GameTagComponent tagComponent))
-		{
-			if (m_CounterBaseDict.TryGetValue(tagComponent.GetObjectTag + " goal", out CounterBase baseValue))
-			{
-				baseValue.DecrementCounter();
-			}
-		}
+		m_PlayerCameraContainerTransform = containerTransform;
 	}
 
 	public void RegisterSuccessCounter(CounterBase counter)
@@ -223,30 +310,22 @@ public class CowGameManager : ScriptableObject
 		counter.OnCounterCapped += OnDefeated;
 	}
 
-	public void RegisterCounter(CounterBase counter) 
+	public void RegisterCounter(CounterBase counter, CounterType counterType, EntityInformation entityInformation) 
 	{
-		m_CounterBaseDict.Add(counter.GetBindingString, counter);
+		m_CounterDict.Add(new Tuple<EntityInformation, CounterType, CounterBase>(entityInformation, counterType, counter));
 	}
 
 	private void OnDefeated() 
 	{
 		m_CurrentLevel.OnLevelFailed();
-		RegisterQuickRestart();
-		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateOut();
+		RegisterQuickRestart();	
 	}
-
-	public void OnPlayerStartedLevel() 
-	{
-		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn();
-	}
-
 
 	private void OnSuccess() 
 	{
 		m_NumSuccesses++;
 		if (m_NumSuccesses == m_SuccessesRequired) 
 		{
-			m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateOut();
 			m_CurrentLevel.OnLevelSucceeded();
 		}
 	}
@@ -258,57 +337,44 @@ public class CowGameManager : ScriptableObject
 
 	public void NewLevelLoaded(LevelManager newLevel) 
 	{
-		m_bIsPaused = false;
-		SetPauseState(true);
+		m_CurrentLevelIndex = SceneManager.GetActiveScene().buildIndex;
 		m_CurrentLevel = newLevel;
-		m_bQuickRestart = false;
+		newLevel.SetLevelData(m_LevelData[m_CurrentLevelIndex]);
 	}
 
 	public void ClearLevelData()
 	{
 		m_EntityCache.Clear();
-		m_CounterBaseDict.Clear();
-		m_PlayerTransform = null;
+		m_CounterDict.Clear();
+		m_UICache.Clear();
 		m_NumSuccesses = 0u;
 		m_SuccessesRequired = 0u;
 	}
-
-	public LevelManager GetCurrentLevel => m_CurrentLevel;
-
-	public void OnPlayerKilled() 
-	{
-		m_CurrentLevel.RestartLevel();
-		RegisterQuickRestart();
-	}
 }
 
-public enum EntityState 
+public enum EntityAbductionState 
 {
 	Free,
-	Occupied
+	Hunted,
+	Abducted
 }
 
-public enum EntityType 
+public class EntityToken 
 {
-	Player,
-	Prey,
-	Predator,
-	Alien
-}
-public struct EntityToken 
-{
-	public GameObject Entity;
-	public EntityState EntityState;
-
 	public EntityToken(in GameObject go) 
 	{
-		Entity = go;
-		EntityState = EntityState.Free;
+		GetEntity = go;
+		GetEntityTransform = go.transform;
+		GetEntityState = EntityAbductionState.Free;
 	}
-	public void SetEntityState(in EntityState state) 
+	public void SetAbductionState(in EntityAbductionState reservationType) 
 	{
-		EntityState = state;
+		GetEntityState = reservationType;
 	}
 
-	public EntityState GetEntityState => EntityState; 
+	public EntityAbductionState GetEntityState { get; private set; }
+
+	public Transform GetEntityTransform { get; }
+
+	public GameObject GetEntity { get; }
 }

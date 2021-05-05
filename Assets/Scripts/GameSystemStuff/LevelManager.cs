@@ -2,79 +2,156 @@
 using UnityEngine.UI;
 using UnityEngine;
 using System;
-using UnityEngine.SceneManagement;
+using System.Collections.Generic;
+using TMPro;
 
+[RequireComponent(typeof(CustomAnimation))]
 public class LevelManager : MonoBehaviour
 {
 	[Header("Animation parameters")]
-	[SerializeField]
-	private float m_fTransitionTime;
-	[SerializeField]
-	private float m_fMenuTransitionTime;
+	[SerializeField] private float m_fTransitionTime;
+	[SerializeField] private float m_fMenuTransitionTime;
+
+	[Header("Level parameters")]
+	[SerializeField] private float m_MapSize;
 
 	[Header("Object references")]
-	[SerializeField]
-	private CowGameManager m_Manager;
-	[SerializeField]
-	private CanvasGroup m_MainCanvas;
-	[SerializeField]
-	private CanvasGroup m_StartCountdownCanvas;
-	[SerializeField]
-	private CanvasGroup m_PauseCanvas;
-	[SerializeField]
-	private CanvasGroup m_EndSuccessCanvas;
-	[SerializeField]
-	private CanvasGroup m_EndFailureCanvas;
-	[SerializeField]
-	private CanvasGroup m_StartButtonCanvas;
-	[SerializeField]
-	private Animator m_LevelTransitionAnimator;
-	[SerializeField]
-	private Text m_CountdownText;
-	[SerializeField]
-	private Animator m_LevelCountdownAnimator;
+	[SerializeField] private CowGameManager m_Manager;
+	[SerializeField] private CustomAnimation m_LevelEnterAnimation;
+	[SerializeField] private Animator m_LevelTransitionAnimator;
+	[SerializeField] private Animator m_LevelEnterAnimator;
+	[SerializeField] private Animator m_LevelCountdownAnimator;
+	[SerializeField] private Text m_CountdownText;
+	[SerializeField] private TextMeshProUGUI m_LevelIntroTextLeft;
+	[SerializeField] private TextMeshProUGUI m_LevelIntroTextRight;
+	[SerializeField] private Transform m_Transform;
+	[SerializeField] private Transform m_CameraTransform;
+	[SerializeField] private Transform m_PlayerCameraContainerTransform;
 
-	[SerializeField]
-	private float m_MapSize;
-	[SerializeField]
-	private Transform m_Transform;
+	[Header("Canvas references")]
+	[SerializeField] private CanvasGroup m_MainCanvas;
+	[SerializeField] private CanvasGroup m_StartCountdownCanvas;
+	[SerializeField] private CanvasGroup m_PauseCanvas;
+	[SerializeField] private CanvasGroup m_EndSuccessCanvas;
+	[SerializeField] private CanvasGroup m_EndFailureCanvas;
+	[SerializeField] private CanvasGroup m_StartButtonCanvas;
+	[SerializeField] private CanvasGroup m_TextCanvas;
+
+	[Header("Level Details")]
+	[SerializeField] private string m_LevelName;
+	[SerializeField] private string m_LevelTip1;
+	[SerializeField] private string m_LevelTip2;
+
+	private LevelData m_LevelData;
+	 
+	public void SetLevelData(LevelData levelData) 
+	{
+		m_LevelData = levelData;
+	}
+
+	public Transform GetCamTransform => m_CameraTransform;
+
+	public event Action OnLevelStarted;
+
+	public event Action OnLevelPaused;
+
+	public event Action OnLevelUnpaused;
+
+	public event Action OnLevelFinished;
 
 	private StateMachine m_LevelState;
 
-	private int m_LevelIndex;
+	bool m_bIsPaused = false;
 
 	private CanvasGroup m_CurrentOpenCanvas;
 
-	private int m_LevelToLoad;
-
 	private void Awake()
 	{
-		m_LevelState = new StateMachine();
+		m_LevelState = new StateMachine(new StartState(this, m_StartButtonCanvas));
 		m_LevelState.AddState(new PausedState(this, m_PauseCanvas));
 		m_LevelState.AddState(new EndFailureState(this, m_EndFailureCanvas));
 		m_LevelState.AddState(new EndSuccessState(this, m_EndSuccessCanvas));
 		m_LevelState.AddState(new PlayingState(this, m_MainCanvas));
-		m_LevelState.AddState(new StartState(this, m_StartButtonCanvas));
-		m_LevelState.SetInitialState(typeof(StartState));
 		m_LevelTransitionAnimator.Play("Base Layer.TransitionIn");
 
-		m_LevelIndex = SceneManager.GetActiveScene().buildIndex;
+
+		PauseLevel(true);
+		m_Manager.NewLevelLoaded(this);
 	}
 
 	private void Start()
 	{
-		if (m_Manager.ShouldQuickRestart)
+		m_LevelState.InitializeStateMachine();
+		m_CameraTransform = m_Manager.GetCameraTransform;
+		switch (m_Manager.GetRestartState()) 
 		{
+		case (CowGameManager.RestartState.Debug):
+			m_CameraTransform.SetParent(m_Manager.GetPlayerCameraContainerTransform);
+			m_CameraTransform.localPosition = Vector3.zero;
+			m_CameraTransform.localRotation = Quaternion.identity;
+			OnLevelStarted();
+			m_LevelState.RequestTransition(typeof(PlayingState));
+			break;
+		case (CowGameManager.RestartState.Quick):
 			m_StartButtonCanvas.alpha = 0.0f;
 			m_StartButtonCanvas.blocksRaycasts = false;
 			m_StartButtonCanvas.interactable = false;
-			PlayerReloadedLevel();
+			m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(3.0f);
+			StartCoroutine(StartLevelWithoutCountdown());
+			break;
+		default:
+			m_LevelEnterAnimation.AddClipStartedCallbackToClip(0, OnFirstIntroAnimationPortionShown);
+			m_LevelEnterAnimation.AddClipStartedCallbackToClip(1, OnSecondIntroAnimationPortionShown);
+			m_LevelEnterAnimation.AddClipStartedCallbackToClip(2, OnThirdIntroAnimationPortionShown);
+			m_LevelEnterAnimation.AddOnTransitionInCompleteCallbackToClip(3, OnCanStartLevel);
+			m_LevelEnterAnimation.StartAnimation();
+			break;
 		}
-		else 
-		{
-			SetCurrentCanvas(m_StartButtonCanvas, () => { m_StartButtonCanvas.blocksRaycasts = true; m_StartButtonCanvas.interactable = true; });
-		}
-		m_Manager.NewLevelLoaded(this);
+	}
+
+	private void ShowIntroText(CustomAnimation.AnimationClip clip) 
+	{
+		float animInOutTime = 1.0f;
+		float animInOutBuffer = 0.1f;
+		float lengthCanBeShownFor = Mathf.Max(0, clip.animationTime - clip.entranceAnimationDelay - clip.exitAnimationDelay - clip.entranceAnimationTime/2 - clip.exitAnimationTime - 2 * animInOutTime - 2 * animInOutBuffer);
+		LeanTween.cancel(m_TextCanvas.gameObject);
+		LeanTween.alphaCanvas(m_TextCanvas, 1.0f, animInOutTime).setDelay(animInOutBuffer + clip.entranceAnimationDelay + clip.entranceAnimationTime/2).setOnComplete(() => LeanTween.alphaCanvas(m_TextCanvas, 0.0f, animInOutTime).setDelay(lengthCanBeShownFor));
+	}
+
+	private void OnFirstIntroAnimationPortionShown(CustomAnimation.AnimationClip clip) 
+	{
+		m_LevelIntroTextLeft.text = "Level " + (m_Manager.GetCurrentLevelIndex() + 1).ToString();
+		m_LevelIntroTextRight.text = m_LevelData.GetLevelName();
+		ShowIntroText(clip);
+	}
+
+	private void OnSecondIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
+	{
+		m_LevelIntroTextLeft.text = "Time to Beat";
+		m_LevelIntroTextRight.text = TurnTimeToString(m_LevelData.GetTargetTime());
+		ShowIntroText(clip);
+	}
+
+	private string TurnTimeToString(in float time) 
+	{
+		int seconds = Mathf.FloorToInt( time % 60);
+		int minutes = Mathf.FloorToInt(time / 60);
+		return minutes.ToString() + ":" + seconds.ToString();
+	}
+	private void OnThirdIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
+	{
+		m_LevelIntroTextLeft.text = "I dont know what to put here.";
+		m_LevelIntroTextRight.text = "Difficulty?";
+		ShowIntroText(clip);
+	}
+
+	private void OnCanStartLevel(CustomAnimation.AnimationClip _) 
+	{
+		m_CameraTransform.SetParent(m_Manager.GetPlayerCameraContainerTransform);
+		m_CameraTransform.localPosition = Vector3.zero;
+		m_CameraTransform.localRotation = Quaternion.identity;
+		OnLevelStarted();
+		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
 	private void Update() 
@@ -82,15 +159,17 @@ public class LevelManager : MonoBehaviour
 		m_LevelState.Tick();
 	}
 
-	private void OnDrawGizmosSelected()
-	{
-		Gizmos.DrawWireSphere(GetMapCentre, m_MapSize);
-	}
-
 	public void SetCurrentCanvas(CanvasGroup canvas, Action callOnComplete, in float delay = 0.0f) 
 	{
 		ClearCanvas();
 		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setOnComplete(callOnComplete).setDelay(delay);
+		m_CurrentOpenCanvas = canvas;
+	}
+
+	public void SetCurrentCanvas(CanvasGroup canvas, in float delay = 0.0f)
+	{
+		ClearCanvas();
+		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setDelay(delay);
 		m_CurrentOpenCanvas = canvas;
 	}
 
@@ -104,41 +183,56 @@ public class LevelManager : MonoBehaviour
 		}
 	}
 
-	private IEnumerator BeginSceneTransition()
+	private IEnumerator BeginSceneTransition(Action queuedOnFinish)
 	{
 		m_LevelTransitionAnimator.Play("Base Layer.TransitionOut");
 		yield return new WaitForSeconds(m_fTransitionTime);
 		m_Manager.ClearLevelData();
-		SceneManager.LoadScene(m_LevelToLoad);
+		queuedOnFinish();
 	}
 
 	private IEnumerator BeginCountdown() 
 	{
+
 		m_CountdownText.text = "3";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
-		yield return new WaitForSecondsRealtime(1.0f);
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
+		yield return new WaitForSeconds(1.0f);
 		m_CountdownText.text = "2";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
-		yield return new WaitForSecondsRealtime(1.0f);
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
+		yield return new WaitForSeconds(1.0f);
 		m_CountdownText.text = "1";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
-		yield return new WaitForSecondsRealtime(1.0f);
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
+		yield return new WaitForSeconds(1.0f);
 		m_CountdownText.text = "Go!";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation");
-		yield return new WaitForSecondsRealtime(0.2f);
+		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
+		yield return new WaitForSeconds(0.2f);
+		OnLevelStarted();
 		m_LevelState.RequestTransition(typeof(PlayingState));
 
 	}
 
 	private IEnumerator StartLevelWithoutCountdown() 
 	{
-		yield return new WaitForSecondsRealtime(3.0f);
+		yield return new WaitForSeconds(3.0f);
+		OnLevelStarted();
 		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
-	public void PauseLevel(bool pause) 
+	public void PauseLevel(bool shouldPause) 
 	{
-		m_Manager.SetPauseState(pause);
+		if (m_bIsPaused != shouldPause) 
+		{
+			if (shouldPause) 
+			{
+				OnLevelPaused?.Invoke();
+			}
+			else 
+			{
+				OnLevelUnpaused?.Invoke();
+			}
+			m_Manager.SetPausedState(shouldPause);
+			m_bIsPaused = shouldPause;
+		}
 	}
 
 	public float GetMapRadius => m_MapSize;
@@ -148,29 +242,31 @@ public class LevelManager : MonoBehaviour
 	// called by UI
 	public void LoadNextLevel()
 	{
-		m_LevelToLoad = m_LevelIndex + 1;
-		StartCoroutine(BeginSceneTransition());
+		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToNextLevel()));
 	}
 
 	public void RestartLevel()
 	{
-		m_LevelToLoad = m_LevelIndex;
-		StartCoroutine(BeginSceneTransition());
+		m_Manager.RegisterQuickRestart();
+		StartCoroutine(BeginSceneTransition(() => m_Manager.RestartCurrentLevel()));
 	}
 
 	public void LoadMenu()
 	{
-		m_LevelToLoad = 0;
-		StartCoroutine(BeginSceneTransition());
+		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToMenu()));
 	}
 
 	public void OnLevelSucceeded() 
 	{
+		OnLevelFinished();
+		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateOut();
 		m_LevelState.RequestTransition(typeof(EndSuccessState)); 
 	}
 
 	public void OnLevelFailed() 
 	{
+		OnLevelFinished();
+		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateOut();
 		m_LevelState.RequestTransition(typeof(EndFailureState));
 	}
 
@@ -179,22 +275,16 @@ public class LevelManager : MonoBehaviour
 		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
-
 	public void PlayerStartedLevel() 
 	{
-		m_Manager.OnPlayerStartedLevel();
 		SetCurrentCanvas(m_StartCountdownCanvas, () => { });
+		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(3.2f);
 		StartCoroutine(BeginCountdown());
 	}
 
-	public void PlayerReloadedLevel()
-	{
-		m_Manager.OnPlayerStartedLevel();
-		StartCoroutine(StartLevelWithoutCountdown());
-	}
 }
 
-public class PlayingState : IState 
+public class PlayingState : AStateBase 
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
@@ -223,7 +313,7 @@ public class PlayingState : IState
 	}
 }
 
-public class PausedState : IState 
+public class PausedState : AStateBase 
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
@@ -246,7 +336,7 @@ public class PausedState : IState
 	}
 }
 
-public class EndFailureState : IState 
+public class EndFailureState : AStateBase 
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
@@ -261,7 +351,7 @@ public class EndFailureState : IState
 	}
 }
 
-public class EndSuccessState : IState
+public class EndSuccessState : AStateBase
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
@@ -277,7 +367,7 @@ public class EndSuccessState : IState
 	}
 }
 
-public class StartState : IState 
+public class StartState : AStateBase 
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;

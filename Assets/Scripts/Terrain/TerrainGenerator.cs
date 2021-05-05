@@ -97,9 +97,6 @@ public class TerrainGenerator : ScriptableObject
 	public void Awake()
 	{
 		ReleaseBuffers();
-		EditorApplication.playModeStateChanged += ReleaseBuffersOnFinish;
-		AssemblyReloadEvents.beforeAssemblyReload += ReleaseBuffersOnRecompile;
-		AssemblyReloadEvents.afterAssemblyReload += ReleaseBuffersOnRecompile;
 	}
 	int i = 0;
 
@@ -153,17 +150,7 @@ public class TerrainGenerator : ScriptableObject
 	}
 
 	int k = 0;
-	public void ReleaseBuffersOnFinish(PlayModeStateChange state)
-	{
-		if (k ==  0)
-		{
-			k += 1;
-		}
-		else
-		{
-			ReleaseBuffers();
-		}
-	}
+
 
 	void ReleaseBuffersOnRecompile()
 	{

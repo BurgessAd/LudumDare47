@@ -8,12 +8,13 @@ public class LassoPauseComponent : PauseComponent
     private CowGameManager m_Manager;
     [SerializeField]
     private LassoStartComponent m_LassoStartComponent;
-    private void Start()
-    {
-        m_Manager.OnEntitySpawned(gameObject, EntityType.Player);
-    }
-
-    public override void Pause()
+    [SerializeField]
+    private EntityTypeComponent m_EntityInformation;
+	private void Awake()
+	{
+        m_Manager.OnEntitySpawned(gameObject, m_EntityInformation.GetEntityInformation);
+	}
+	public override void Pause()
     {
         m_LassoStartComponent.enabled = false;
     }

@@ -5,39 +5,46 @@ using System;
 
 public class PlayerCameraComponent : MonoBehaviour
 {
-    [SerializeField]
-    private float m_fMouseSensitivity = 100.0f;
-
-    [SerializeField]
-    private Transform m_tBodyTransform;
-
-    [SerializeField]
-    private Camera m_PlayerCamera;
-
-    [SerializeField]
-    private EZCameraShake.CameraShaker m_CameraShaker;
+    [SerializeField] private float m_fMouseSensitivity = 100.0f;
+    [SerializeField] private Transform m_tBodyTransform;
+    [SerializeField] private Camera m_PlayerCamera;
+    [SerializeField] private EZCameraShake.CameraShaker m_CameraShaker;
+    [SerializeField] private float m_fMaxFOVChangePerSecond = 1.0f;
+    [SerializeField] private float m_fDefaultFOV;
+    [SerializeField] private AnimationCurve m_FOVTugAnimator;
+    [SerializeField] private AnimationCurve m_FOVForceAnimator;
+    [SerializeField] private AnimationCurve m_GroundImpactSpeedSize;
 
     private float m_fCamPoint;
-    private float m_fCurrentFOVPercentage = 0.0f;
-    private float m_fTargetFOVPercentage;
-    [Header("FOV Animation Params")]
-    [SerializeField]
-    private float m_fFOVAnimateTime = 1.0f;
-
-    [SerializeField]
-    private float m_fDefaultFOV;
-
-    [SerializeField]
-    private float m_fMaxWranglingFOV;
-
+    float m_fTargetFOV;
+    float m_fCurrentFOV;
     private Transform m_tCamTransform;
     private Transform m_tFocusTransform;
     private StateMachine m_CameraStateMachine;
+    private Type m_CachedType;
 
-    [SerializeField]
-    private Animator m_CameraAnimator;
+    [Header("FOV Animation Params")]
+    [SerializeField] private Animator m_CameraAnimator;
+    [SerializeField] private PlayerMovement m_PlayerMovement;
+    [SerializeField] private LassoStartComponent m_LassoStart;
+    [SerializeField] private string m_JumpString;
+    [SerializeField] private string m_GroundedAnimString;
+    [SerializeField] private string m_MovementSpeedAnimString;
 
-    public Type m_CachedType;
+    private void OnSetPullStrength(float force, float yankSize) 
+    {
+        m_fTargetFOV = m_FOVTugAnimator.Evaluate(yankSize) * force + m_FOVForceAnimator.Evaluate(force) + m_fDefaultFOV;
+    }
+
+    private void OnSetPullingObject(ThrowableObjectComponent pullingObject) 
+    {
+        SetFocusedTransform(pullingObject.GetCameraFocusTransform);
+    }
+
+    private void OnStoppedPullingObject() 
+    {
+        ClearFocusedTransform();
+    }
 
     public void SetFocusedTransform(Transform focusTransform) 
     {
@@ -46,20 +53,33 @@ public class PlayerCameraComponent : MonoBehaviour
         m_CachedType = typeof(ObjectFocusLook);
     }
 
-    public void OnImpactAnimation() 
+    private void OnJumped() 
     {
-        m_CameraAnimator.SetTrigger("LandingImpact");
-        m_CameraShaker.ShakeOnce(5.0f, .5f, 0.1f, 0.3f);
+        m_CameraAnimator.SetBool(m_JumpString, true);
     }
 
-    public void SetViewBobbingStrength(float strength) 
+    private void OnLeftGround() 
     {
+        m_CameraAnimator.SetBool(m_GroundedAnimString, false);
+    }
 
+    private void OnHitGround(float impactSpeed) 
+    {
+        m_CameraAnimator.SetBool(m_JumpString, false);
+        float animationSize = m_GroundImpactSpeedSize.Evaluate(Mathf.Abs(impactSpeed));
+        m_CameraAnimator.SetBool(m_GroundedAnimString, true);
+        m_CameraShaker.ShakeOnce(animationSize, animationSize / 2, 0.15f, 0.45f);
+    }
+
+    public void OnSetMovementSpeed(float speed) 
+    {
+        m_CameraAnimator.SetFloat(m_MovementSpeedAnimString, speed);
     }
 
     public void ClearFocusedTransform() 
     {
         m_tFocusTransform = null;
+        m_fTargetFOV = m_fDefaultFOV;
         m_CameraStateMachine.RequestTransition(typeof(PlayerControlledLook));
         m_CachedType = typeof(PlayerControlledLook);
     }
@@ -76,23 +96,26 @@ public class PlayerCameraComponent : MonoBehaviour
 
     void Start()
     {
-        m_CameraStateMachine = new StateMachine();
-        m_CameraStateMachine.AddState(new PlayerControlledLook(this));
+        m_CameraStateMachine = new StateMachine(new PlayerControlledLook(this));
         m_CameraStateMachine.AddState(new ObjectFocusLook(this));
         m_CameraStateMachine.AddState(new CameraIdleState());
-        m_CameraStateMachine.SetInitialState(typeof(PlayerControlledLook));
         m_tCamTransform = transform;
-    }
+        m_fTargetFOV = m_fDefaultFOV;
+        m_fCurrentFOV = m_fDefaultFOV;
+        m_LassoStart.OnSetPullingStrength += OnSetPullStrength;
+        m_LassoStart.OnSetPullingObject += OnSetPullingObject;
+        m_LassoStart.OnStoppedPullingObject += OnStoppedPullingObject;
 
+        m_PlayerMovement.OnHitGround += OnHitGround;
+        m_PlayerMovement.OnSuccessfulJump += OnJumped;
+        m_PlayerMovement.OnSetMovementSpeed += OnSetMovementSpeed;
+        m_PlayerMovement.OnNotHitGround += OnLeftGround;
+    }
+     
     public void ProcessTargetFOV() 
     {
-        m_fCurrentFOVPercentage += Mathf.Clamp(m_fTargetFOVPercentage - m_fCurrentFOVPercentage, -Time.deltaTime / m_fFOVAnimateTime, Time.deltaTime / m_fFOVAnimateTime);
-        m_PlayerCamera.fieldOfView = m_fCurrentFOVPercentage * m_fMaxWranglingFOV + (1 - m_fCurrentFOVPercentage) * m_fDefaultFOV;
-    }
-
-    public void SetFOVTargetStrength(in float targetFOV) 
-    {
-        m_fTargetFOVPercentage = targetFOV;
+        m_fCurrentFOV += Mathf.Clamp(m_fTargetFOV - m_fCurrentFOV, -Time.deltaTime * m_fMaxFOVChangePerSecond, Time.deltaTime * m_fMaxFOVChangePerSecond);
+        m_PlayerCamera.fieldOfView = m_fCurrentFOV;
     }
 
     public void ProcessMouseInput() 
@@ -101,7 +124,7 @@ public class PlayerCameraComponent : MonoBehaviour
         float mouseY = Input.GetAxis("Mouse Y") * m_fMouseSensitivity * Time.deltaTime;
 
         m_fCamPoint -= mouseY;
-        m_fCamPoint = Mathf.Clamp(m_fCamPoint, -90f, 90f);
+        m_fCamPoint = Mathf.Clamp(m_fCamPoint, -80f, 80f);
 
         m_tCamTransform.localRotation = Quaternion.Euler(m_fCamPoint, 0.0f, 0.0f);
         m_tBodyTransform.Rotate(Vector3.up * mouseX);
@@ -127,7 +150,7 @@ public class PlayerCameraComponent : MonoBehaviour
     }
 }
 
-public class PlayerControlledLook : IState
+public class PlayerControlledLook : AStateBase
 {
     private readonly PlayerCameraComponent mouseLook;
     public PlayerControlledLook(PlayerCameraComponent mouseLook) 
@@ -142,7 +165,7 @@ public class PlayerControlledLook : IState
     }
 }
 
-public class ObjectFocusLook : IState 
+public class ObjectFocusLook : AStateBase 
 {
     private readonly PlayerCameraComponent mouseLook;
     public ObjectFocusLook(PlayerCameraComponent mouseLook)
@@ -156,7 +179,7 @@ public class ObjectFocusLook : IState
     }
 }
 
-public class CameraIdleState : IState 
+public class CameraIdleState : AStateBase 
 {
     
 }

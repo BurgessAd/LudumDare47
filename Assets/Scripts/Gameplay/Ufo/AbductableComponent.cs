@@ -1,43 +1,113 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System;
-public abstract class AbductableComponent : MonoBehaviour
+[RequireComponent(typeof(HealthComponent))]
+public class AbductableComponent : MonoBehaviour
 {
+    [Header("References to External GameObjects")]
+    [SerializeField]
+    private ParticleSystem m_AbductionParticleEffects;
+    [SerializeField]
+    private Transform m_AbductionParticleEffectsTransform;
+    [SerializeField]
+    private Transform m_CowGeometryTransform;
+    [SerializeField]
+    private HealthComponent m_HealthComponent;
     [SerializeField]
     private CowGameManager m_Manager;
-
     [SerializeField]
-    private float m_fAbductRotateSpeed;
+    private EntityTypeComponent m_TypeComponent;
+    [Header("Animation Params")]
+    [SerializeField]
+    private float m_fAbductionResistance;
+    [SerializeField]
+    private float m_fRotationResistance;
+    [SerializeField]
+    private AnimationCurve m_OnAbductedAnimCurve;
+    [SerializeField]
+    private float m_OnAbductedAnimTime;
+
 
     private Rigidbody m_Body;
 
     private Transform m_Transform;
 
-    private IEnumerator m_AbductionRotate;
+    private Vector3 m_ChosenRotationAxis;
 
-    Vector3 m_ChosenRotationAxis;
+    private bool m_bIsBeingAbducted;
 
     public Transform GetTransform => m_Transform;
+    public Transform GetBodyTransform => m_CowGeometryTransform;
     public Rigidbody GetBody => m_Body;
-    public virtual void OnBeginAbducting() 
+    public float GetAbductionResistance => m_fAbductionResistance;
+    public float GetRotationResitance => m_fRotationResistance;
+    public Vector3 GetRotationAxis => m_ChosenRotationAxis;
+
+    public event Action<UfoMain, AbductableComponent> OnStartedAbducting;
+    public event Action<UfoMain, AbductableComponent> OnEndedAbducting;
+
+
+    private void Awake()
     {
-        StartCoroutine(m_AbductionRotate);
+        if (m_AbductionParticleEffects)
+        m_AbductionParticleEffects.Stop();
+        m_Body = GetComponent<Rigidbody>();
+        m_Transform = GetComponent<Transform>();
     }
 
-    private IEnumerator TractorBeamRotation() 
+    public void OnBeginAbducting(UfoMain ufo) 
     {
+        m_AbductionParticleEffects.Play();
+        m_bIsBeingAbducted = true;
         m_ChosenRotationAxis = UnityEngine.Random.onUnitSphere;
-        while (true) 
+        OnStartedAbducting?.Invoke(ufo, this);
+        m_Manager.GetTokenForEntity(gameObject, m_TypeComponent.GetEntityInformation).SetAbductionState(EntityAbductionState.Abducted);
+    }
+
+    public Vector3 CurrentDesiredVelocity;
+
+    private void OnDrawGizmos()
+    {
+        if (m_bIsBeingAbducted) 
         {
-            // accelerate/decellerate to desired rotational axis
-            // using angular rotations
-            yield return null;
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(GetBody.position, GetBody.position + CurrentDesiredVelocity.normalized * 5);
         }
     }
 
-    public virtual void OnEndAbducting() 
+
+    public void SetAbductionEffectsQuat(in Quaternion quat)
     {
-        StopCoroutine(m_AbductionRotate);
+        m_AbductionParticleEffectsTransform.rotation = quat;
+    }
+
+    public void OnEndAbducting(UfoMain ufo) 
+    {
+        m_AbductionParticleEffects.Stop();
+        m_bIsBeingAbducted = false;
+        OnEndedAbducting?.Invoke(ufo, this);
+        m_Manager.GetTokenForEntity(gameObject, m_TypeComponent.GetEntityInformation).SetAbductionState(EntityAbductionState.Free);
+    }
+
+    public bool HasRegisteredAbduction => hasRegisteredAbduction;
+    private float abductedTime = 0;
+    private bool hasRegisteredAbduction = false;
+    private Vector3 cachedInitialCowScale;
+    private IEnumerator AbductionDeathAnimation() 
+    {
+        cachedInitialCowScale = m_CowGeometryTransform.localScale;
+        while (abductedTime < m_OnAbductedAnimTime) 
+        {
+            m_CowGeometryTransform.localScale = cachedInitialCowScale * m_OnAbductedAnimCurve.Evaluate(abductedTime / m_OnAbductedAnimTime);
+            abductedTime += Time.deltaTime;
+            yield return null;
+        }
+        m_HealthComponent.OnTakeLethalDamage(DamageType.UFODamage);
+    }
+
+    public void OnAbducted() 
+    {
+        hasRegisteredAbduction = true;
+        StartCoroutine(AbductionDeathAnimation());
     }
 }

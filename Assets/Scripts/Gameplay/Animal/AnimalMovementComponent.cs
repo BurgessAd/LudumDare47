@@ -3,26 +3,15 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class AnimalMovementComponent : MonoBehaviour
 {
-    [SerializeField]
-    private float m_fMaximumWanderDistance;
-
-    [SerializeField]
-    private float m_fStuckTime;
-
-    [SerializeField]
-    private float m_fStuckSpeed;
-
-    [SerializeField]
-    private float m_RunSpeed;
-
-    [SerializeField]
-    private float m_IdleSpeed;
-
-    [SerializeField]
-    private float m_Acceleration;
-
-    [SerializeField]
-    private Rigidbody m_AnimalRigidBody;
+    [SerializeField] private float m_fMaximumWanderDistance;
+    [SerializeField] private float m_fStuckTime;
+    [SerializeField] private float m_fStuckSpeed;
+    [SerializeField] private float m_RunSpeed;
+    [SerializeField] private float m_IdleSpeed;
+    [SerializeField] private float m_IdleAcceleration;
+    [SerializeField] private float m_RunAcceleration;
+    [SerializeField] private Rigidbody m_AnimalRigidBody;
+    [SerializeField] private CharacterController m_AnimalCharacterController;
 
     public float TimeOnGround { get; private set; }
 
@@ -97,7 +86,10 @@ public class AnimalMovementComponent : MonoBehaviour
 
     public void ClearDestination() 
     {
-        m_NavMeshAgent.ResetPath();
+        if (m_NavMeshAgent.isOnNavMesh) 
+        {
+            m_NavMeshAgent.ResetPath();
+        }  
     }
 
     public void RunInDirection(Vector3 dir) 
@@ -111,7 +103,8 @@ public class AnimalMovementComponent : MonoBehaviour
             targetForward = Vector3.ProjectOnPlane(targetForward, targetUp);
         }
         Vector3 currentVelocity = m_AnimalRigidBody.velocity;
-        m_AnimalRigidBody.velocity = currentVelocity + targetForward * m_Acceleration * Time.deltaTime - currentVelocity.normalized * m_Acceleration * (currentVelocity.magnitude/m_RunSpeed) * Time.deltaTime;
+        Vector3 velocityChange = targetForward * m_IdleAcceleration * Time.deltaTime - currentVelocity.normalized * m_IdleAcceleration * (currentVelocity.magnitude / (m_RunSpeed * 10)) * Time.deltaTime;
+        m_AnimalRigidBody.AddForce( velocityChange ,ForceMode.VelocityChange);
     }
 
 
@@ -124,36 +117,18 @@ public class AnimalMovementComponent : MonoBehaviour
     public void SetWalking() 
     {
         m_NavMeshAgent.speed = m_IdleSpeed;
+        m_NavMeshAgent.acceleration = m_IdleAcceleration;
     }
 
     public void SetRunning() 
     {
         m_NavMeshAgent.speed = m_RunSpeed;
+        m_NavMeshAgent.acceleration = m_RunAcceleration;
     }
     //////////////////////////////////////////////////////////////////////////////////////////////
-    public float GetDistanceToTarget() 
-    { 
-        return Vector3.Distance(m_vDestination, m_tObjectTransform.position); 
-    }
-
     public bool HasReachedDestination() 
     {
-        return Vector3.Distance(m_vDestination, m_tObjectTransform.position) < 0.5f;
-    }
-
-    public bool IsAtDestination() 
-    {
-        return Vector3.Distance(m_vDestination, m_tObjectTransform.position) < 1.0f || IsStuck();
-    }
-
-    public float GetDistanceToTransform(in Transform m_tTransform) 
-    {
-        return Vector3.Distance(m_tObjectTransform.position, m_tTransform.position);
-    }
-
-    public bool IsStanding() 
-    {
-        return true;
+        return Vector3.SqrMagnitude(m_vDestination - m_tObjectTransform.position) < 0.5f || !m_NavMeshAgent.hasPath;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,6 +151,28 @@ public class AnimalMovementComponent : MonoBehaviour
         Vector3 runTo = direction * distanceToRun + m_tObjectTransform.position;
 
         if (NavMesh.SamplePosition(runTo, out NavMeshHit hit, distanceToRun, m_iLayerMask))
+        {
+            if (m_NavMeshAgent.SetDestination(hit.position)) 
+            {
+                m_vDestination = hit.position;
+                return true;
+            }
+        }
+        return false;
+    }
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    // function chooses a destination within range m_fMaximumRunDistance directly away from objectTransform on the navmesh
+    public bool RunTowardsObject(Transform tRunTowardTransform, float runDistance, float distanceFrom = 0f) 
+    {
+        enabled = true;
+        m_fCurrentTimeStuck = 0.0f;
+        if ((Vector3.ProjectOnPlane(m_tObjectTransform.position - tRunTowardTransform.position, Vector3.up)).sqrMagnitude < distanceFrom * distanceFrom)
+		{
+            m_NavMeshAgent.isStopped = true;
+            return true;
+		}
+        m_NavMeshAgent.isStopped = false;
+        if(NavMesh.SamplePosition(tRunTowardTransform.position, out NavMeshHit hit, runDistance, m_iLayerMask)) 
         {
             if (m_NavMeshAgent.SetDestination(hit.position)) 
             {

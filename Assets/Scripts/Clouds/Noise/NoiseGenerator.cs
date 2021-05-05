@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class NoiseGenerator : MonoBehaviour {
 
@@ -48,7 +49,26 @@ public class NoiseGenerator : MonoBehaviour {
     [SerializeField, HideInInspector]
     public RenderTexture detailTexture;
 
-    public void UpdateNoise () {
+    public void UpdateAllNoise() 
+    {
+        foreach (CloudNoiseType noiseType in Enum.GetValues(typeof(CloudNoiseType))) 
+        {
+            activeTextureType = noiseType;
+            foreach (TextureChannel channel in Enum.GetValues(typeof(TextureChannel))) 
+            {
+                activeChannel = channel;
+                updateNoise = true;
+                UpdateNoise();
+            }
+        }
+    }
+
+	private void Awake()
+	{
+        UpdateAllNoise();
+	}
+
+	public void UpdateNoise () {
         ValidateParamaters ();
         CreateTexture (ref shapeTexture, shapeResolution, shapeNoiseName);
         CreateTexture (ref detailTexture, detailResolution, detailNoiseName);
