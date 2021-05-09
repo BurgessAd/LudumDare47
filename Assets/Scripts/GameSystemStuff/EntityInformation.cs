@@ -5,7 +5,9 @@ using UnityEngine;
 public class EntityInformation : ScriptableObject
 {
     [SerializeField] private List<EntityInformation> m_Hunts;
-    [SerializeField] private List<EntityInformation> m_HuntedBy;
+    [SerializeField] private List<EntityInformation> m_ScaredOf;
+    [SerializeField] private List<EntityInformation> m_Attacks;
     public ref List<EntityInformation> GetHunts => ref m_Hunts;
-    public ref List<EntityInformation> GetHuntedBy => ref m_HuntedBy;
+    public ref List<EntityInformation> GetScaredOf => ref m_ScaredOf;
+    public ref List<EntityInformation> GetAttacks => ref m_Attacks;
 }

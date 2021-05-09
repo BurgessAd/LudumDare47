@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using EZCameraShake;
 
-public class AttackComponentRam : AttackComponentBase
+public class AttackTypeRam : AttackBase
 {
 	[SerializeField] private float m_RamForce;
 	[SerializeField] private float m_ElevationAngleAboveGround;

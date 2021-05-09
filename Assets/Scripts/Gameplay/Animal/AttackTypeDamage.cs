@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AttackComponentDamage : AttackComponentBase
+public class AttackTypeDamage : AttackBase
 {
 	[Range(0u, 5u)]
 	[SerializeField] private uint m_DamageAmount;

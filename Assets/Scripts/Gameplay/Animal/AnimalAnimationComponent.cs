@@ -13,9 +13,6 @@ public class AnimalAnimationComponent : MonoBehaviour
     [SerializeField] public AnimationCurve m_TiltAnimationCurve;
     [SerializeField] public AnimationCurve m_WalkHorizontalAnimationCurve;
     [SerializeField] public AnimationCurve m_StepSoundCurve;
-    [SerializeField] public AnimationCurve m_AttackPitchAnimationCurve;
-    [SerializeField] public AnimationCurve m_AttackForwardAnimationCurve;
-    [SerializeField] public AnimationCurve m_AttackHopAnimationCurve;
     [SerializeField] public AnimationCurve m_DamagedHopAnimationCurve;
     [SerializeField] private AnimationCurve m_DamagedVisualsAnimationCurve;
 
@@ -150,9 +147,6 @@ public class AnimalAnimationComponent : MonoBehaviour
             m_AnimatorStateMachine.SetParam("animalAgent", m_Agent);
 
             m_AnimatorStateMachine.SetParam("damagedHopCurve", m_DamagedHopAnimationCurve);
-            m_AnimatorStateMachine.SetParam("attackForwardCurve", m_AttackForwardAnimationCurve);
-            m_AnimatorStateMachine.SetParam("attackHopCurve", m_AttackHopAnimationCurve);
-            m_AnimatorStateMachine.SetParam("attackPitchCurve", m_AttackPitchAnimationCurve);
 
             m_AnimatorStateMachine.SetParam("animationSizeScalar", m_fAnimationSizeScalar);
 
@@ -160,6 +154,13 @@ public class AnimalAnimationComponent : MonoBehaviour
             m_AnimatorStateMachine.SetParam("damagedMeshRenderers", m_DamagedMeshRenderers);
             m_AnimatorStateMachine.SetParam("damagedFlashColour", m_DamagedColor);
         }  
+    }
+
+    public void SetCurrentAttackAnimation(in AttackBase m_NewAttack) 
+    {
+        m_AnimatorStateMachine.SetParam("attackForwardCurve", m_NewAttack.GetForwardCurve());
+        m_AnimatorStateMachine.SetParam("attackHopCurve", m_NewAttack.GetHopCurve());
+        m_AnimatorStateMachine.SetParam("attackPitchCurve", m_NewAttack.GetPitchCurve());
     }
 
     private void Awake()

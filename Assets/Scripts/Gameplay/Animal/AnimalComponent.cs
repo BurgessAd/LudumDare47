@@ -52,13 +52,21 @@ public abstract class AnimalComponent : MonoBehaviour
     [SerializeField] private float m_fAttackStartRange = default;
     [SerializeField] private float m_fAttackCooldownTime = default;
 
-    [SerializeField] private AttackComponentBase m_AttackComponent;
+    [SerializeField] private AttackBase m_RamAttackComponent;
+    [SerializeField] private AttackBase m_
+
+    [SerializeField] private AttackBase m_AttackComponent;
 
     private bool m_bShouldStagger = false;
     private float m_fFullness = 0.0f;
     protected float m_TimeGrounded = 0.0f;
     private float m_CurrentStaggerCooldown;
     private float m_CurrentBreedingCooldown;
+    public enum m_AttackType 
+    {
+        Hunting,
+        Ramming      
+    }
 
     private readonly Type[] m_CanStaggerStates = new Type[] {typeof(AnimalFreeFallState), typeof(AnimalLassoThrownState)};
 
@@ -71,7 +79,7 @@ public abstract class AnimalComponent : MonoBehaviour
     protected EntityTypeComponent m_AnimalInformation = default;
     protected AbductableComponent m_AbductableComponent = default;
     protected HealthComponent m_AnimalHealthComponent = default;
-    protected AttackComponentBase m_AttackableComponent = default;
+    protected AttackBase m_AttackableComponent = default;
     protected ThrowableObjectComponent m_ThrowableComponent = default;
 
 	#region Component Event Handlers
@@ -127,7 +135,7 @@ public abstract class AnimalComponent : MonoBehaviour
         m_StateMachine.RequestTransition(typeof(AnimalLassoThrownState));
     }
 
-    private void OnTakeDamage(GameObject source, GameObject target, DamageType damageType)
+    private void OnTakeDamage(GameObject source, GameObject target, DamageType damageType, float currentHealthPercentage)
     {
         if (damageType == DamageType.PredatorDamage)
         {
@@ -229,7 +237,10 @@ public abstract class AnimalComponent : MonoBehaviour
 
     private void OnBreedingCompleted() 
     {
-
+        OnSuccessfullyBred();
+        Debug.Log("Successful breeding!");
+        m_TargetTransform.GetComponent<AnimalComponent>().OnSuccessfullyBred();
+        InitiateCancelBreedingAttempt();
     }
 
     private void SetAbductionPhysics() 
@@ -271,7 +282,7 @@ public abstract class AnimalComponent : MonoBehaviour
 
     protected bool ShouldStopActionToEvadeNext() 
     {
-        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetHuntedBy, out EntityToken objToken, null))
+        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetScaredOf, out EntityToken objToken, null))
         {
             float distSq = Vector3.SqrMagnitude(objToken.GetEntity.transform.position - m_AnimalMainTransform.position);
             float distToEscSq = m_ScaredDistance * m_ScaredDistance * 1.0f;
@@ -282,7 +293,7 @@ public abstract class AnimalComponent : MonoBehaviour
 
     protected bool ShouldEvade()
     {
-        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetHuntedBy, out EntityToken objToken, null))
+        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetScaredOf, out EntityToken objToken, null))
         {
             float distSq = Vector3.SqrMagnitude(objToken.GetEntity.transform.position - m_AnimalMainTransform.position);
             float distToEscSq = m_ScaredDistance * m_ScaredDistance * 1.0f;
@@ -313,8 +324,24 @@ public abstract class AnimalComponent : MonoBehaviour
     {
         if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetHunts, out EntityToken objToken, null))
         {
-            // check if it's abducted or not. 
-            // if it's not abducted, hunt it.
+            if (TryHuntObject(objToken)) 
+            {
+                m_AnimalAnimator.SetCurrentAttackAnimation();
+                return true;
+            }
+        }
+
+        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetAttacks, out EntityToken objAtkToken, null))
+        {
+            if (TryHuntObject(objAtkToken))
+            {
+                return true;
+            }
+        }
+        return false;
+
+        bool TryHuntObject(in EntityToken objToken)
+        {
             float distSq = Vector3.SqrMagnitude(objToken.GetEntity.transform.position - m_AnimalMainTransform.position);
             float distToEscSq = m_HuntBeginDistance * m_HuntBeginDistance;
             if (distSq < distToEscSq)
@@ -325,8 +352,9 @@ public abstract class AnimalComponent : MonoBehaviour
                 m_StateMachine.SetParam("evadingTransform", objToken.GetEntityTransform);
                 return true;
             }
+            return false;
         }
-        return false;
+
     }
 
 
@@ -388,7 +416,7 @@ public abstract class AnimalComponent : MonoBehaviour
     {
         if (IsReadyToBreed())
         {
-            if (m_Manager.GetClosestTransformsMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetHuntedBy, out List<EntityToken> objTokens))
+            if (m_Manager.GetClosestTransformsMatchingList(m_AnimalMainTransform.position, m_AnimalInformation.GetEntityInformation.GetScaredOf, out List<EntityToken> objTokens))
             {
                 for (int i = 0; i < objTokens.Count; i++)
                 {
@@ -425,13 +453,6 @@ public abstract class AnimalComponent : MonoBehaviour
         m_TargetTransform.GetComponent<HealthComponent>().OnEntityDied += (GameObject _, GameObject damageDir, DamageType type) => InitiateCancelBreedingAttempt();
         m_TargetTransform.GetComponent<AbductableComponent>().OnStartedAbducting += (UfoMain main, AbductableComponent abductable) => InitiateCancelBreedingAttempt();
         m_bIsMated = true;
-    }
-
-    private void SuccessfullyBred() 
-    {
-        OnSuccessfullyBred();
-        m_TargetTransform.GetComponent<AnimalComponent>().OnSuccessfullyBred();
-        InitiateCancelBreedingAttempt();
     }
 
     private void InitiateCancelBreedingAttempt() 
@@ -564,7 +585,7 @@ public abstract class AnimalComponent : MonoBehaviour
         m_AnimalInformation = GetComponent<EntityTypeComponent>();
         m_AnimalHealthComponent = GetComponent<HealthComponent>();
         m_ThrowableComponent = GetComponent<ThrowableObjectComponent>();
-        m_AttackableComponent = GetComponent<AttackComponentBase>();
+        m_AttackableComponent = GetComponent<AttackBase>();
 
         m_ThrowableComponent.OnTuggedByLasso += OnPulledByLasso;
         m_ThrowableComponent.OnStartSpinning += OnStartedLassoSpinning;
@@ -630,7 +651,7 @@ public abstract class AnimalComponent : MonoBehaviour
         m_StateMachine.SetCallback("setGeneralPhysics", SetGeneralPhysics);
         m_StateMachine.SetCallback("disablePhysics", DisablePhysics);
         m_StateMachine.SetCallback("requestIdleState", RequestIdleState);
-        m_StateMachine.SetCallback("onBreedingCompleted", );
+        m_StateMachine.SetCallback("onBreedingCompleted", OnBreedingCompleted);
 
 
 
