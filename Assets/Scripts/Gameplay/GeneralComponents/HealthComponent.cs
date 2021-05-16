@@ -25,6 +25,7 @@ public class HealthComponent : MonoBehaviour
 
     private bool m_IsInvulnerable = false;
 
+    [SerializeField]
     private float m_CurrentHealth = 0;
 
     private bool m_bIsKilled = false;
@@ -43,6 +44,18 @@ public class HealthComponent : MonoBehaviour
         m_CurrentHealth = health;
         m_Manager.OnEntitySpawned(gameObject, GetComponent<EntityTypeComponent>().GetEntityInformation);
         m_bIsKilled = false;
+    }
+
+    public void ReplenishHealth(in float healthAmount) 
+    {
+        if (GetCurrentHealthPercentage == 0) 
+        {
+            Revive(healthAmount);
+        }
+		else
+        {
+            m_CurrentHealth = Mathf.Min(m_CurrentHealth + healthAmount, m_MaxHealth);
+        }
     }
 
     public void Revive() 

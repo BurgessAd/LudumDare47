@@ -8,6 +8,7 @@ public class PlayerCameraComponent : MonoBehaviour
     [SerializeField] private float m_fMouseSensitivity = 100.0f;
     [SerializeField] private Transform m_tBodyTransform;
     [SerializeField] private Camera m_PlayerCamera;
+    [SerializeField] private CowGameManager m_Manager;
     [SerializeField] private EZCameraShake.CameraShaker m_CameraShaker;
     [SerializeField] private float m_fMaxFOVChangePerSecond = 1.0f;
     [SerializeField] private float m_fDefaultFOV;
@@ -106,6 +107,7 @@ public class PlayerCameraComponent : MonoBehaviour
         m_LassoStart.OnSetPullingObject += OnSetPullingObject;
         m_LassoStart.OnStoppedPullingObject += OnStoppedPullingObject;
 
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
         m_PlayerMovement.OnHitGround += OnHitGround;
         m_PlayerMovement.OnSuccessfulJump += OnJumped;
         m_PlayerMovement.OnSetMovementSpeed += OnSetMovementSpeed;

@@ -53,9 +53,9 @@ public abstract class AnimalComponent : MonoBehaviour
     [SerializeField] private float m_fAttackCooldownTime = default;
 
     [SerializeField] private AttackBase m_RamAttackComponent;
-    [SerializeField] private AttackBase m_
+    [SerializeField] private AttackBase m_EatAttackComponent;
 
-    [SerializeField] private AttackBase m_AttackComponent;
+    private AttackBase m_CurrentAttackComponent;
 
     private bool m_bShouldStagger = false;
     private float m_fFullness = 0.0f;
@@ -326,7 +326,8 @@ public abstract class AnimalComponent : MonoBehaviour
         {
             if (TryHuntObject(objToken)) 
             {
-                m_AnimalAnimator.SetCurrentAttackAnimation();
+                m_CurrentAttackComponent = m_EatAttackComponent;
+                m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackComponent);
                 return true;
             }
         }
@@ -335,28 +336,27 @@ public abstract class AnimalComponent : MonoBehaviour
         {
             if (TryHuntObject(objAtkToken))
             {
+                m_CurrentAttackComponent = m_RamAttackComponent;
+                m_AnimalAnimator.SetCurrentAttackAnimation(m_RamAttackComponent);
                 return true;
             }
         }
         return false;
-
-        bool TryHuntObject(in EntityToken objToken)
-        {
-            float distSq = Vector3.SqrMagnitude(objToken.GetEntity.transform.position - m_AnimalMainTransform.position);
-            float distToEscSq = m_HuntBeginDistance * m_HuntBeginDistance;
-            if (distSq < distToEscSq)
-            {
-                m_TargetTransform = objToken.GetEntityTransform;
-                m_TargetTransform.GetComponent<HealthComponent>().OnEntityDied += (GameObject _, GameObject damageDir, DamageType type) => OnTargetInvalidated();
-                m_TargetTransform.GetComponent<AbductableComponent>().OnStartedAbducting += (UfoMain main, AbductableComponent abductable) => OnTargetInvalidated();
-                m_StateMachine.SetParam("evadingTransform", objToken.GetEntityTransform);
-                return true;
-            }
-            return false;
-        }
-
     }
-
+    bool TryHuntObject(in EntityToken objToken)
+    {
+        float distSq = Vector3.SqrMagnitude(objToken.GetEntity.transform.position - m_AnimalMainTransform.position);
+        float distToEscSq = m_HuntBeginDistance * m_HuntBeginDistance;
+        if (distSq < distToEscSq)
+        {
+            m_TargetTransform = objToken.GetEntityTransform;
+            m_TargetTransform.GetComponent<HealthComponent>().OnEntityDied += (GameObject _, GameObject damageDir, DamageType type) => OnTargetInvalidated();
+            m_TargetTransform.GetComponent<AbductableComponent>().OnStartedAbducting += (UfoMain main, AbductableComponent abductable) => OnTargetInvalidated();
+            m_StateMachine.SetParam("evadingTransform", objToken.GetEntityTransform);
+            return true;
+        }
+        return false;
+    }
 
     private bool CanAttackEnemy()
     {
@@ -377,7 +377,7 @@ public abstract class AnimalComponent : MonoBehaviour
 
     private void AttemptAttackTarget()
     {
-        m_AttackComponent.AttackTarget(m_TargetTransform.gameObject);
+        m_CurrentAttackComponent.AttackTarget(m_TargetTransform.gameObject);
         OnTargetInvalidated();
     }
 
@@ -689,11 +689,62 @@ public abstract class AnimalComponent : MonoBehaviour
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalIdleState), () => HasLostTarget(m_HuntEndDistance));
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalAttackState), CanAttackEnemy);
 
+        m_Manager.AddToPauseUnpause(Pause, Unpause);
         // we dont want to clear target transform when going from chase to attack
         // we dont want to clear target transform going from breeding chase to breeding
 
         // what if we transition straight from 
     }
+
+    private Vector3 m_BodyVelocity = Vector3.zero;
+    private Vector3 m_BodyAngularVelocity = Vector3.zero;
+    private bool m_bWasUsingNavmeshAgent = false;
+    private bool m_bWasUsingRigidBody = false;
+
+    public void Pause()
+    {
+        if (m_AnimalAgent.enabled)
+        {
+            m_bWasUsingNavmeshAgent = true;
+            m_BodyVelocity = m_AnimalAgent.velocity;
+        }
+        if (!m_AnimalRigidBody.isKinematic)
+        {
+            m_BodyVelocity = Vector3.zero;
+            m_BodyAngularVelocity = Vector3.zero;
+            m_AnimalRigidBody.velocity = Vector3.zero;
+            m_AnimalRigidBody.angularVelocity = Vector3.zero;
+            m_bWasUsingRigidBody = true;
+            m_AnimalRigidBody.isKinematic = true;
+
+        }
+
+        m_AnimalAgent.enabled = false;
+        m_AnimalAnimator.enabled = false;
+        m_AnimalMovement.enabled = false;
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        if (m_bWasUsingNavmeshAgent)
+        {
+            m_AnimalAgent.velocity = m_BodyVelocity;
+            m_AnimalAgent.enabled = true;
+            m_bWasUsingNavmeshAgent = false;
+        }
+        if (m_bWasUsingRigidBody)
+        {
+            m_bWasUsingRigidBody = false;
+            m_AnimalRigidBody.velocity = m_BodyVelocity;
+            m_AnimalRigidBody.angularVelocity = m_BodyAngularVelocity;
+        }
+
+        m_AnimalAnimator.enabled = true;
+        m_AnimalMovement.enabled = true;
+        enabled = true;
+    }
+
     protected void Start()
     {
         m_StateMachine.InitializeStateMachine();

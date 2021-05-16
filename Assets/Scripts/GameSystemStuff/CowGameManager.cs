@@ -9,6 +9,8 @@ public class CowGameManager : ScriptableObject
 	[SerializeField] private EntityInformation m_PlayerEntityInformation;
 	[SerializeField] private LayerMask m_TerrainLayerMask;
 	[SerializeField] private RestartState m_RestartState;
+	public event Action OnPaused;
+	public event Action OnUnpaused;
 
 	private readonly Dictionary<EntityInformation, List<EntityToken>> m_EntityCache = new Dictionary<EntityInformation, List<EntityToken>>();
 	private readonly List<Tuple<EntityInformation, CounterType, CounterBase>> m_CounterDict = new List<Tuple<EntityInformation, CounterType, CounterBase>>();
@@ -56,6 +58,14 @@ public class CowGameManager : ScriptableObject
 	public void OnUIElementSpawned(UIObjectElement element, UIObjectReference reference) 
 	{
 		m_UICache.Add(reference, element.gameObject);
+	}
+
+	public void AddToPauseUnpause(in Action pauseFunc, in Action unpauseFunc) 
+	{
+		OnPaused += pauseFunc;
+		OnUnpaused += unpauseFunc;
+		if (m_bIsPaused) OnPaused.Invoke();
+		else OnUnpaused.Invoke();
 	}
 
 	public GameObject GetUIElementFromReference(in UIObjectReference reference) 
@@ -177,47 +187,21 @@ public class CowGameManager : ScriptableObject
 		return outEntityToken != null;
 	}
 
-	private void PauseGame()
-	{
-		foreach (var objs in m_EntityCache.Values)
-		{
-			for (int i = 0; i < objs.Count; i++)
-			{
-				PauseGameForObject(objs[i]);
-			}
-		}
-	}
-
-	private void PauseGameForObject(in EntityToken @object) 
-	{
-		@object.GetEntity.GetComponent<PauseComponent>().Pause();
-	}
-
 	public void SetPausedState(bool pauseState)
 	{
 
 		if (pauseState)
 		{
 			Cursor.lockState = CursorLockMode.None;
-			PauseGame();
+			OnPaused();
 		}
 		else
 		{
 			Cursor.lockState = CursorLockMode.Locked;
-			UnpauseGame();
+			OnUnpaused();
 		}
 	}
 
-	private void UnpauseGame()
-	{
-		foreach (var objs in m_EntityCache.Values)
-		{
-			for (int i = 0; i < objs.Count; i++)
-			{
-				objs[i].GetEntity.GetComponent<PauseComponent>().Unpause();
-			}
-		}
-	}
 
 	public void OnEntitySpawned(GameObject entity, EntityInformation entityType)
 	{
@@ -227,10 +211,7 @@ public class CowGameManager : ScriptableObject
 			m_EntityCache.Add(entityType, entities);
 		}
 		EntityToken newToken = new EntityToken(entity);
-		entities.Add(newToken);
-		if (m_bIsPaused)
-			newToken.GetEntity.GetComponent<PauseComponent>().Pause();
-			
+		entities.Add(newToken);		
 	}
 
 	public bool IsGroundLayer(in int layer) 

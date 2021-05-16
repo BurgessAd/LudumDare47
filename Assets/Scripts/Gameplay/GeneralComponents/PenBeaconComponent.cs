@@ -26,17 +26,16 @@ public class PenBeaconComponent : MonoBehaviour
         m_PlayerTransform.GetComponent<HealthComponent>().OnEntityDied += (GameObject, Vector3, DamageType) => OnLevelFinished();
 
 
-        m_GameManager.GetCurrentLevel.OnLevelStarted += OnLevelStarted;
-        m_GameManager.GetCurrentLevel.OnLevelFinished += OnLevelFinished;
-        m_GameManager.GetCurrentLevel.OnLevelPaused += OnLevelPaused;
-        m_GameManager.GetCurrentLevel.OnLevelUnpaused += OnLevelUnpaused;
-
-
-    }
+		m_GameManager.GetCurrentLevel.OnLevelStarted += OnLevelStarted;
+		m_GameManager.GetCurrentLevel.OnLevelFinished += OnLevelFinished;
+        m_GameManager.AddToPauseUnpause(OnLevelPaused, OnLevelUnpaused);
+	}
     private void OnLevelStarted() 
     {
         m_BeaconStateMachine.RequestTransition(typeof(PenBeaconPlayState));
     }
+
+
 
     private void OnLevelFinished() 
     {
