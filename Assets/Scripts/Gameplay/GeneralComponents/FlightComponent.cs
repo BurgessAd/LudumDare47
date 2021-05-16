@@ -15,6 +15,7 @@ public class FlightComponent : MonoBehaviour
 
     [SerializeField]
     private float m_StoppedTolerance;
+    [SerializeField] private CowGameManager m_Manager;
 
     bool m_bHasStopped = false;
     bool m_bHoldCommand = false;
@@ -30,6 +31,7 @@ public class FlightComponent : MonoBehaviour
         m_Body = GetComponent<Rigidbody>();
         m_Transform = transform;
         UpdateAction = HasReachedDestination;
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
     }
 
 

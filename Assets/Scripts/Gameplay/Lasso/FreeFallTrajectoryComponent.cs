@@ -7,6 +7,7 @@ public class FreeFallTrajectoryComponent : MonoBehaviour
  
     [SerializeField]
     private Rigidbody m_rMovingBody;
+    [SerializeField] private CowGameManager m_Manager;
 
     public event Action<Collision> OnObjectHitGround;
     public event Action OnObjectNotInFreeFall;
@@ -14,9 +15,24 @@ public class FreeFallTrajectoryComponent : MonoBehaviour
 	private void Awake()
 	{
         enabled = false;
-	}
+        m_GameManager.AddToPauseUnpause(OnPaused, OnUnpaused);
+    }
 
-	public void ThrowObject(in ProjectileParams projectileParams) 
+    bool wasPausedWhilstFalling = false;
+
+    private void OnPaused() 
+    {
+        wasPausedWhilstFalling = enabled;
+        enabled = false;
+    }
+
+    private void OnUnpaused()
+    {
+        enabled = wasPausedWhilstFalling;
+        wasPausedWhilstFalling = false;
+    }
+
+    public void ThrowObject(in ProjectileParams projectileParams) 
     {
         m_fCurrentTime = 0.0f;
         projectile = projectileParams;

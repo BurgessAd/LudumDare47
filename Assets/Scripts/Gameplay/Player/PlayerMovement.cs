@@ -13,6 +13,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform m_tBodyTransform = null;
     [SerializeField] private float m_fMaxSpeed = 4;
     [SerializeField] private PlayerCameraComponent m_CameraComponent;
+    [SerializeField] private CowGameManager m_Manager;
  
     [SerializeField] private float m_fJumpHeight = 3.0f;
     [SerializeField] private float m_fImpactSpeedReductionPerSecondGrounded;
@@ -52,6 +53,7 @@ public class PlayerMovement : MonoBehaviour
         m_throwableObjectComponent.OnThrown += OnThrown;
 
         OnHitGround += OnPlayerHitGround;
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
     }
 
     void OnIsSpinningObject(ThrowableObjectComponent throwableObject) 

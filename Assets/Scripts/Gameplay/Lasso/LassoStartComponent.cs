@@ -109,6 +109,8 @@ public class LassoStartComponent : MonoBehaviour
         m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => (!Input.GetMouseButton(0) && !m_LassoParams.SpinningIsInitializing), () => { ProjectObject(); SetLassoAsChildOfPlayer(true); });
         // instant transition back to idle state
         m_StateMachine.InitializeStateMachine();
+
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
     }
 
 	private void Start()

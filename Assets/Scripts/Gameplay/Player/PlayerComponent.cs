@@ -21,6 +21,7 @@ public class PlayerComponent : MonoBehaviour
 		m_LassoComponent.OnStoppedPullingObject += OnStopGrappling;
 		m_HealthComponent.OnEntityDied += (GameObject _, GameObject __, DamageType ___) => OnDied();
 		m_GrapplingBufferCollider.enabled = false;
+		m_GameManager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
 		m_GameManager.RegisterInitialCameraContainerTransform(m_CamContainer);
 	}
 	private void OnDied()

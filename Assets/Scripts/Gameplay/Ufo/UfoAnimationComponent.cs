@@ -18,6 +18,7 @@ public class UfoAnimationComponent : MonoBehaviour
     private ParticleSystem m_SpeedParticleSystem;
     [SerializeField]
     private float m_StaggerAnimationTime;
+    [SerializeField] private CowGameManager m_Manager;
 
     [SerializeField] private AnimationCurve m_AngularAccelerationDampening;
     [SerializeField] private AnimationCurve m_PitchAnimationCurve;
@@ -41,6 +42,7 @@ public class UfoAnimationComponent : MonoBehaviour
         m_AnimationStateMachine.AddState(new UFOStaggeredAnimationState(this));
         m_AnimationStateMachine.AddState(new UFOAbductAnimationState(this));
         m_AnimationStateMachine.AddState(new UFODeathAnimationState(this));
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
     }
 
     private void Update()

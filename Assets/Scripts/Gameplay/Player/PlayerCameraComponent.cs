@@ -112,6 +112,7 @@ public class PlayerCameraComponent : MonoBehaviour
         m_PlayerMovement.OnSuccessfulJump += OnJumped;
         m_PlayerMovement.OnSetMovementSpeed += OnSetMovementSpeed;
         m_PlayerMovement.OnNotHitGround += OnLeftGround;
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
     }
      
     public void ProcessTargetFOV() 

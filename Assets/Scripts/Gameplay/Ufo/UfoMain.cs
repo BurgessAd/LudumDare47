@@ -88,6 +88,7 @@ public class UfoMain : MonoBehaviour
 		m_UfoStateMachine.AddState(new UFOSwoopUpState(this));
 		m_TractorBeamComponent.SetParent(this);
 		m_TractorBeamComponent.OnTractorBeamFinished += () => OnCowDied(null, null, DamageType.Undefined);
+		m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
 	}
 
 	private void Start()

@@ -17,6 +17,8 @@ public class TractorBeamComponent : MonoBehaviour
     [SerializeField]
     private MeshRenderer m_MeshRenderer;
 
+    [SerializeField] private CowGameManager m_Manager;
+
     [SerializeField]
     private TractorBeamEndComponent m_TractorBeamEnd;
 
@@ -65,6 +67,16 @@ public class TractorBeamComponent : MonoBehaviour
     public void SetParent(UfoMain ufo) 
     {
         this.ufo = ufo;
+    }
+
+    private void OnPaused() 
+    {
+        m_bIsPaused = true;
+    }
+
+    private void OnUnpaused() 
+    {
+        m_bIsPaused = false;
     }
 
     private void EvaluateParams() 
@@ -182,11 +194,14 @@ public class TractorBeamComponent : MonoBehaviour
         return (offset - Vector3.Dot(axis, offset) * axis).normalized;
     }
     float m_abductingTime = 0.0f;
+    bool m_bIsPaused = false;
     public IEnumerator Abducting() 
     {
         m_bTractorBeamState = true;
         while (m_bDebugTractorBeamState || m_abductingTime > 0.0f) 
         {
+            if (m_bIsPaused)
+                yield return new WaitForFixedUpdate();
             if (m_Abducting.Count > 0)
                 m_abductingTime = 1.0f;
             else

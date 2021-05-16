@@ -16,6 +16,8 @@ public class FoodSourceComponent : MonoBehaviour
 
     [SerializeField] private string m_FoodAnimatorParamName;
 
+    [SerializeField] private CowGameManager m_Manager;
+
     private float m_fCurrentFoodSize = 1.0f;
     private HealthComponent m_HealthComponent;
     private float m_fFoodSizeChangeVelocity = 0.0f;
@@ -24,7 +26,8 @@ public class FoodSourceComponent : MonoBehaviour
 	private void Awake()
 	{
         m_HealthComponent = GetComponent<HealthComponent>();
-	}
+        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+    }
 	void Update()
     {
         m_HealthComponent.ReplenishHealth(m_RegenerationRateByCurrentHealth.Evaluate(m_HealthComponent.GetCurrentHealthPercentage) * Time.deltaTime);
