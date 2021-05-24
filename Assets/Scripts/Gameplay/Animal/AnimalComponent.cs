@@ -8,7 +8,7 @@ using System.Collections;
 [RequireComponent(typeof(HealthComponent))]
 [RequireComponent(typeof(ThrowableObjectComponent))]
 [RequireComponent(typeof(FreeFallTrajectoryComponent))]
-public abstract class AnimalComponent : MonoBehaviour
+public class AnimalComponent : MonoBehaviour
 {
     [Header("Object references")]
     [SerializeField] protected CowGameManager m_Manager = default;
@@ -27,13 +27,13 @@ public abstract class AnimalComponent : MonoBehaviour
     [SerializeField] float m_StaggerCooldown = 0.2f;
 
     [Header("Breeding Parameters")]
-    [SerializeField] float m_FoodRequirement = 1;
     [SerializeField] private float m_fBreedingChaseStartRange = default;
     [SerializeField] private float m_fBreedingChaseEndRange = default;
     [SerializeField] private float m_fBreedingStartRange = default;
     [SerializeField] private float m_fBreedingCooldownTime = default;
     [SerializeField] private float m_fBreedingHungerUsage = default;
     [SerializeField] private float m_fBreedingDuration = default;
+    [SerializeField] private float m_fMaximumFullness = default;
 
     [Header("Idle parameters")]
     [SerializeField] protected float m_LowIdleTimer = default;
@@ -52,8 +52,8 @@ public abstract class AnimalComponent : MonoBehaviour
     [SerializeField] private float m_fAttackStartRange = default;
     [SerializeField] private float m_fAttackCooldownTime = default;
 
-    [SerializeField] private AttackBase m_RamAttackComponent;
-    [SerializeField] private AttackBase m_EatAttackComponent;
+    [SerializeField] private AttackBase m_DamageAttackType;
+    [SerializeField] private AttackTypeDamage m_EatAttackType;
 
     private AttackBase m_CurrentAttackComponent;
 
@@ -62,11 +62,6 @@ public abstract class AnimalComponent : MonoBehaviour
     protected float m_TimeGrounded = 0.0f;
     private float m_CurrentStaggerCooldown;
     private float m_CurrentBreedingCooldown;
-    public enum m_AttackType 
-    {
-        Hunting,
-        Ramming      
-    }
 
     private readonly Type[] m_CanStaggerStates = new Type[] {typeof(AnimalFreeFallState), typeof(AnimalLassoThrownState)};
 
@@ -326,8 +321,8 @@ public abstract class AnimalComponent : MonoBehaviour
         {
             if (TryHuntObject(objToken)) 
             {
-                m_CurrentAttackComponent = m_EatAttackComponent;
-                m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackComponent);
+                m_CurrentAttackComponent = m_EatAttackType;
+                m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackType);
                 return true;
             }
         }
@@ -336,8 +331,8 @@ public abstract class AnimalComponent : MonoBehaviour
         {
             if (TryHuntObject(objAtkToken))
             {
-                m_CurrentAttackComponent = m_RamAttackComponent;
-                m_AnimalAnimator.SetCurrentAttackAnimation(m_RamAttackComponent);
+                m_CurrentAttackComponent = m_DamageAttackType;
+                m_AnimalAnimator.SetCurrentAttackAnimation(m_DamageAttackType);
                 return true;
             }
         }
@@ -485,7 +480,7 @@ public abstract class AnimalComponent : MonoBehaviour
 
     public bool IsReadyToBreed()
     {
-        return m_fFullness > m_FoodRequirement && Time.time - m_fLastBreedingTime > m_fBreedingCooldownTime;
+        return m_fFullness > m_fBreedingHungerUsage && Time.time - m_fLastBreedingTime > m_fBreedingCooldownTime;
     }
 
     public bool IsMated()
@@ -572,6 +567,12 @@ public abstract class AnimalComponent : MonoBehaviour
             m_TimeGrounded = Mathf.Infinity;
         }
     }
+
+    private void OnDamageObject(float damageAmount, GameObject target) 
+    {
+        m_fFullness = Mathf.Min(damageAmount + m_fFullness, m_fMaximumFullness);
+    }
+
     protected virtual void Awake()
     {
         m_AnimalMainTransform.localScale = Vector3.one * (1 + UnityEngine.Random.Range(-m_SizeVariation, m_SizeVariation));
@@ -592,6 +593,8 @@ public abstract class AnimalComponent : MonoBehaviour
         m_ThrowableComponent.OnThrown += OnThrownByLasso;
         m_ThrowableComponent.OnReleased += OnReleasedByLasso;
         m_ThrowableComponent.OnWrangled += OnWrangledByLasso;
+
+        m_EatAttackType.OnDamagedTarget += OnDamageObject;
 
         m_FreeFallComponent.OnObjectHitGround += OnHitGroundFromThrown;
 
@@ -653,8 +656,6 @@ public abstract class AnimalComponent : MonoBehaviour
         m_StateMachine.SetCallback("requestIdleState", RequestIdleState);
         m_StateMachine.SetCallback("onBreedingCompleted", OnBreedingCompleted);
 
-
-
         m_StateMachine.AddTransition(typeof(AnimalIdleState), typeof(AnimalDeathState), () => IsDead);
         m_StateMachine.AddAnyTransition(typeof(AnimalAbductedState), () => (!IsWrangled && IsInTractorBeam && !IsStaggered()));
         m_StateMachine.AddAnyTransition(typeof(AnimalWrangledState), () => (IsWrangled && !IsInTractorBeam && !IsStaggered()));
@@ -690,10 +691,6 @@ public abstract class AnimalComponent : MonoBehaviour
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalAttackState), CanAttackEnemy);
 
         m_Manager.AddToPauseUnpause(Pause, Unpause);
-        // we dont want to clear target transform when going from chase to attack
-        // we dont want to clear target transform going from breeding chase to breeding
-
-        // what if we transition straight from 
     }
 
     private Vector3 m_BodyVelocity = Vector3.zero;

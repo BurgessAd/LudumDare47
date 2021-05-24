@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7ff0617050e79842a1706cc658e4c09, type: 3}
   m_Name: Chicken
   m_EditorClassIdentifier: 
-  m_Hunts: []
-  m_HuntedBy:
-  - {fileID: 11400000, guid: a171ef1ac7ad69046af761265214b3fd, type: 2}
-  - {fileID: 11400000, guid: c896e4e354b6ea94c9559dce14220b45, type: 2}
+  m_Hunts:
+  - {fileID: 11400000, guid: 10b3caf4907e2ed489962a30d6814dbe, type: 2}
+  m_ScaredOf:
   - {fileID: 11400000, guid: cca81a070d91c3a41b1eafa0fca42585, type: 2}
+  m_Attacks: []

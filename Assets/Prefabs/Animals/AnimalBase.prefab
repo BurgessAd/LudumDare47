@@ -14601,19 +14601,19 @@ GameObject:
   m_Component:
   - component: {fileID: 6261768213309388384}
   - component: {fileID: 6261768213309388385}
+  - component: {fileID: 1498368937383450501}
   - component: {fileID: 6261768213309388414}
   - component: {fileID: 6261768213309388415}
-  - component: {fileID: 6261768213309388413}
   - component: {fileID: 6261768213309388412}
   - component: {fileID: 6261768213309388411}
-  - component: {fileID: 6261768213309388408}
   - component: {fileID: 6261768213309388389}
   - component: {fileID: 6261768213309388388}
   - component: {fileID: 6261768213309388391}
   - component: {fileID: 6261768213309388390}
+  - component: {fileID: 1882132010931915330}
   - component: {fileID: 8017869404291731759}
   - component: {fileID: 5028166405719411816}
-  - component: {fileID: 1882132010931915330}
+  - component: {fileID: -7029774317778207611}
   m_Layer: 18
   m_Name: AnimalBase
   m_TagString: Untagged
@@ -14658,6 +14658,69 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &1498368937383450501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6261768213309388409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe6a29648f0053b49b854f326b0ccf5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
+  m_AnimalMainTransform: {fileID: 6261768213309388384}
+  m_AnimalLeashTransform: {fileID: 2166936210622738242}
+  m_AnimalBodyTransform: {fileID: 0}
+  m_AnimalBodyCollider: {fileID: 0}
+  m_SizeVariation: 0.0821
+  m_StaggerTimeByImpactMomentum:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 29.929712
+      value: 0.504717
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 110.07948
+      value: 3.0047169
+      inSlope: 0.059993114
+      outSlope: 0.059993114
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.11307824
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_StaggerCooldown: 0.2
+  m_fBreedingChaseStartRange: 5
+  m_fBreedingChaseEndRange: 7
+  m_fBreedingStartRange: 1
+  m_fBreedingCooldownTime: 10
+  m_fBreedingHungerUsage: 3
+  m_fBreedingDuration: 3
+  m_fMaximumFullness: 0
+  m_LowIdleTimer: 2
+  m_HighIdleTimer: 5
+  m_ScaredDistance: 5
+  m_EvadedDistance: 7
+  m_FleeCheckInterval: 1
+  m_AnimalResistanceToPull: 1
+  m_HuntBeginDistance: 5
+  m_HuntEndDistance: 7
+  m_fHuntCheckInterval: 1
+  m_fAttackStartRange: 1
+  m_fAttackCooldownTime: 1
+  m_DamageAttackType: {fileID: -7029774317778207611}
+  m_EatAttackType: {fileID: -7029774317778207611}
 --- !u!114 &6261768213309388414
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14850,105 +14913,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  m_AttackPitchAnimationCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: -0.006437768
-      value: -0.0023584906
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.49785367
-      value: -0.4952836
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1.0021453
-      value: 0.002357771
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  m_AttackForwardAnimationCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: -0.012875536
-      value: 0.0023584906
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.49999997
-      value: 1.004717
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1.0042918
-      value: -0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  m_AttackHopAnimationCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: -0.004291845
-      value: 0.004716981
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.4914163
-      value: 1.004717
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1.0042919
-      value: 0.004716981
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
   m_DamagedHopAnimationCurve:
     serializedVersion: 2
     m_Curve:
@@ -15050,23 +15014,6 @@ MonoBehaviour:
   m_AnimalImpactSoundIdentifier: 
   m_TimeBeingPulled: 0
   m_vTargetForward: {x: 0, y: 0, z: 0}
---- !u!114 &6261768213309388413
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6261768213309388409}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11219be1b08720148b015d432fc9ab44, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Animator: {fileID: 6261768213309388415}
-  m_AnimalMovement: {fileID: 6261768213309388414}
-  m_AnimalStateHandler: {fileID: 6261768213309388408}
-  m_NavMeshAgent: {fileID: 6261768213309388385}
-  m_RigidBody: {fileID: 6261768213309388412}
 --- !u!54 &6261768213309388412
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -15096,37 +15043,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 0.23, z: 1}
   m_Center: {x: 0, y: 0.1, z: 0}
---- !u!114 &6261768213309388408
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6261768213309388409}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 81fbdc4cc1584c049801ffd897323a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
-  m_AnimalMainTransform: {fileID: 6261768213309388384}
-  m_AnimalLeashTransform: {fileID: 2166936210622738242}
-  m_AnimalBodyTransform: {fileID: 6108926775437973333}
-  m_AnimalBodyCollider: {fileID: 0}
-  m_SizeVariation: 0.027
-  m_StaggerTimeByImpactMomentum:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  m_StaggerCooldown: 0.2
-  m_LowIdleTimer: 2
-  m_HighIdleTimer: 3
-  m_ScaredDistance: 10
-  m_EvadedDistance: 10
-  m_FleeCheckInterval: 0
-  m_AnimalResistanceToPull: 10
 --- !u!114 &6261768213309388389
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15152,9 +15068,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d8bf4d925ec7f343835220eb855560f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Health: 3
+  m_MaxHealth: 3
   m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
   m_InvulnerabilityTime: 1
+  m_bCanDie: 1
+  m_CurrentHealth: 0
 --- !u!114 &6261768213309388391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15214,6 +15132,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_EntityInformation: {fileID: 0}
+--- !u!114 &1882132010931915330
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6261768213309388409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e195359a76e454c8f96f995754f02c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &8017869404291731759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15227,6 +15157,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_rMovingBody: {fileID: 6261768213309388412}
+  m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
 --- !u!114 &5028166405719411816
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15246,7 +15177,7 @@ MonoBehaviour:
   m_MainTransform: {fileID: 6261768213309388384}
   m_fMassMultiplier: 1
   m_FreeFallComponent: {fileID: 8017869404291731759}
---- !u!114 &1882132010931915330
+--- !u!114 &-7029774317778207611
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -15255,9 +15186,109 @@ MonoBehaviour:
   m_GameObject: {fileID: 6261768213309388409}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48e195359a76e454c8f96f995754f02c, type: 3}
+  m_Script: {fileID: 11500000, guid: 183797af07377e14ca671af2c952fabe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_AttackPitchAnimationCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.004282655
+      value: 0.004716981
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.49892932
+      value: 0.995283
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.9996823
+      value: 0.011234925
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_AttackForwardAnimationCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.010706638
+      value: 0.0023584906
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.503212
+      value: 1.004717
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.99357593
+      value: 0.004716981
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_AttackHopAnimationCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.006423983
+      value: -0.004716981
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.5010707
+      value: 0.9976415
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.9980349
+      value: -0.005828302
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_DamageAmount: 0.941
 --- !u!1 &6616579236971325994
 GameObject:
   m_ObjectHideFlags: 0

@@ -85,7 +85,7 @@ public class HealthComponent : MonoBehaviour
 
     public float GetCurrentHealthPercentage => m_CurrentHealth / m_MaxHealth;
 
-    public bool TakeDamageInstance(GameObject damagedBy, DamageType damageType, uint damageAmount = 1u) 
+    public bool TakeDamageInstance(GameObject damagedBy, DamageType damageType, float damageAmount = 1f) 
     {
         if (!m_IsInvulnerable)
         {
