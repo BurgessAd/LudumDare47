@@ -158,31 +158,6 @@ public class StateDefiningSize : AStateBase
 	{
 		m_CurrentDefinition = 0;
 	}
-	bool m_bIsMouseDown = false;
-	public override void LateTick() 
-	{
-		Handles.BeginGUI();
-
-		switch (m_CurrentDefinition) 
-		{
-			case (0):
-				Handles.DrawWireCube(m_GrassPatchSizeDefinitionStartAnchor, Vector3.one / 4);
-				break;
-			case (1):
-				Handles.DrawWireCube(m_GrassPatchSizeDefinitionStartAnchor, Vector3.one / 4);
-				Handles.DrawWireCube(m_GrassPatchSizeDefinitionEndAnchor, Vector3.one / 4);
-
-				Vector3 minCorner = Vector3.Min(m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
-				Vector3 maxCorner = Vector3.Max(m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
-
-				Handles.DrawLine(maxCorner, new Vector3(maxCorner.x, maxCorner.y, minCorner.z));
-				Handles.DrawLine(new Vector3(maxCorner.x, maxCorner.y, minCorner.z), minCorner);
-				Handles.DrawLine(minCorner, new Vector3(minCorner.x, minCorner.y, maxCorner.z));
-				Handles.DrawLine(new Vector3(minCorner.x, minCorner.y, maxCorner.z), maxCorner);
-				break;
-		}
-		Handles.EndGUI();
-	}
 
 	public override void Tick()
 	{
@@ -191,18 +166,6 @@ public class StateDefiningSize : AStateBase
 		HandleUtility.AddDefaultControl(controlID);
 		GUIUtility.hotControl = controlID;
 		EventType type = e.GetTypeForControl(controlID);
-
-		if (type == EventType.MouseDown)
-		{
-			m_bIsMouseDown = true;
-			e.Use();
-		}
-
-		if (type == EventType.MouseUp)
-		{
-			m_bIsMouseDown = false;
-			e.Use();
-		}
 
 		if (type == EventType.KeyDown && e.keyCode == KeyCode.Escape) 
 		{
@@ -247,10 +210,7 @@ public class StateDefiningSize : AStateBase
 				Color[] pixels = host.GetCurrentGrassPatch.GrassMap.GetPixels();
 				for (int i = 0; i < pixels.Length; i++)
 				{
-					pixels[i].r = 0;
-					pixels[i].g = 0;
-					pixels[i].b = 0;
-					pixels[i].a = 1;
+					pixels[i] = Color.white;
 				}
 				host.GetCurrentGrassPatch.GrassMap.SetPixels(pixels);
 				host.GetCurrentGrassPatch.GrassMap.Apply();

@@ -85,32 +85,32 @@ public class GrassPatchComponent : MonoBehaviour
     int i = 0;
     public void UpdateGrassSizeVisualizer(in SpriteRenderer spriteRenderer, in Vector3 anchorA, in Vector3 anchorB) 
     {
-
-        float maxResizerPixelLen = Mathf.Max(m_MapResizerTex.width, m_MapResizerTex.height);
-
-
         Vector3 worldOffset = anchorB - anchorA;
-        float maxWorldSize = Mathf.Max(Mathf.Abs(worldOffset.x), Mathf.Abs(worldOffset.z));
-        float worldToPixelScale = maxResizerPixelLen / maxWorldSize;
+
+        float xPixelsPerUnitWorld = m_MapResizerTex.width / Mathf.Abs(worldOffset.x);
+        float zPixelsPerUnitWorld = m_MapResizerTex.height / Mathf.Abs(worldOffset.z);
+
+        float pixelsPerUnitWorld = Mathf.Min(xPixelsPerUnitWorld, zPixelsPerUnitWorld);
+
+        Vector3 texSize = pixelsPerUnitWorld * worldOffset;
 
         // if we're in the negatives, reverse the pivots
-        Vector2Int pivotPoints = new Vector2Int(worldOffset.x > 0 ? 0 : 1, worldOffset.y > 0 ? 0 : 1);
+        bool flipX = worldOffset.x < 0;
+        bool flipZ = worldOffset.z < 0;
 
+        Vector2Int pivotPoints = new Vector2Int(flipX ? 1 : 0, flipZ ? 1 : 0);
 
-
-        Vector3 texSize = worldToPixelScale * worldOffset;
-        i++;
         if (i == 10) 
         {
             i = 0;
             Debug.Log(maxResizerPixelLen);
             Debug.Log(texSize);
-            Debug.Log(worldToPixelScale);
+            Debug.Log(pixelsPerUnitWorld);
         }
-        
 
-
-        spriteRenderer.sprite = Sprite.Create(m_MapResizerTex, new Rect(0, 0, (int)Mathf.Abs(texSize.x), (int)Mathf.Abs(texSize.z)), pivotPoints, worldToPixelScale);
+        spriteRenderer.sprite = Sprite.Create(m_MapResizerTex, new Rect(0, 0, (int)Mathf.Abs(texSize.x), (int)Mathf.Abs(texSize.z)), pivotPoints, pixelsPerUnitWorld);
+        spriteRenderer.flipX = flipX;
+        spriteRenderer.flipY = flipZ;
     }
 
 	public void DestroyGrassObject() 
