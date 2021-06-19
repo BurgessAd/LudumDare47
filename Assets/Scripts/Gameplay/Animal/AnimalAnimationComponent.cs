@@ -11,6 +11,8 @@ public class AnimalAnimationComponent : MonoBehaviour
     [Header("Animation Curves")]
     [SerializeField] public AnimationCurve m_HopAnimationCurve;
     [SerializeField] public AnimationCurve m_TiltAnimationCurve;
+    [SerializeField] public AnimationCurve m_YawAnimationCurve;
+    [SerializeField] public AnimationCurve m_ForwardBackwardAnimationCurve;
     [SerializeField] public AnimationCurve m_WalkHorizontalAnimationCurve;
     [SerializeField] public AnimationCurve m_StepSoundCurve;
     [SerializeField] public AnimationCurve m_DamagedHopAnimationCurve;
@@ -28,7 +30,9 @@ public class AnimalAnimationComponent : MonoBehaviour
     [Header("Movement Animation Sizes")]
     [SerializeField] private float m_TiltSizeMultiplier = 1.0f;
     [SerializeField] private float m_HopHeightMultiplier = 1.0f;
+    [SerializeField] private float m_YawSizeMultiplier = 1.0f;
     [SerializeField] private float m_HorizontalMovementMultiplier = 1.0f;
+    [SerializeField] private float m_ForwardBackwardMovementMultiplier = 1.0f;
 
 
     [Header("Miscellaneous Params")]
@@ -73,6 +77,8 @@ public class AnimalAnimationComponent : MonoBehaviour
 
     public float GetCurrentHopHeight => m_HopHeightMultiplier * m_HopAnimationCurve.Evaluate((m_CurrentAnimationTime + m_Phase) % 1);
     public float GetCurrentTilt => m_TiltSizeMultiplier * m_TiltAnimationCurve.Evaluate(m_CurrentAnimationTime);
+    public float GetCurrentForwardBackward => m_ForwardBackwardMovementMultiplier * m_ForwardBackwardAnimationCurve.Evaluate(m_CurrentAnimationTime);
+    public float GetCurrentYaw => m_YawSizeMultiplier * m_YawAnimationCurve.Evaluate(m_CurrentAnimationTime);
     public float GetCurrentStepSound => m_StepSoundCurve.Evaluate((m_CurrentAnimationTime + m_Phase) % 1);
     public float GetCurrentHorizontalMovement => m_HorizontalMovementMultiplier * m_WalkHorizontalAnimationCurve.Evaluate((m_CurrentAnimationTime + m_Phase) % 1);
     public AudioManager GetAudioManager => m_AudioManager;
@@ -122,16 +128,15 @@ public class AnimalAnimationComponent : MonoBehaviour
     }
 
     private StateMachine m_AnimatorStateMachine;
-    public void SetTargetPosition(Vector3 target) 
+    public void SetTargetDirection(Vector3 target) 
     {
-        m_AnimatorStateMachine.SetParam("targetPosition", target);
+        m_AnimatorStateMachine.SetParam("targetDirection", target.normalized);
     }
 
     private void SetParams()
     {
         if (m_AnimatorStateMachine != null) 
         {
-            m_AnimatorStateMachine.SetParam("attackAnimationDuration", m_AttackAnimationDuration);
             m_AnimatorStateMachine.SetParam("damagedAnimationDuration", m_DamagedAnimationDuration);
 
             m_AnimatorStateMachine.SetCallback("deathAnimationFinished", () => DeathAnimationFinished());
@@ -158,6 +163,7 @@ public class AnimalAnimationComponent : MonoBehaviour
 
     public void SetCurrentAttackAnimation(in AttackBase m_NewAttack) 
     {
+        m_AnimatorStateMachine.SetParam("attackAnimationDuration", m_NewAttack.GetDuration());
         m_AnimatorStateMachine.SetParam("attackForwardCurve", m_NewAttack.GetForwardCurve());
         m_AnimatorStateMachine.SetParam("attackHopCurve", m_NewAttack.GetHopCurve());
         m_AnimatorStateMachine.SetParam("attackPitchCurve", m_NewAttack.GetPitchCurve());
@@ -332,11 +338,6 @@ public class AnimalBreedingAnimationState : AStateBase
         heartParticleController.TurnOnAllSystems();
 	}
 
-	public override void Tick()
-	{
-        Vector3 targetPosition = GetParam<Vector3>("targetPosition");
-    }
-
 	public override void OnExit()
 	{
         heartParticleController.TurnOffAllSystems();
@@ -445,7 +446,11 @@ public class AnimalWalkingAnimationState : AStateBase
 
         float tiltSize = animator.GetCurrentTilt;
 
-        float horizontalMovement = animator.GetCurrentHorizontalMovement;
+        float horizontalMovement = 0;// animator.GetCurrentHorizontalMovement;
+
+        float forwardBackwardMovement = animator.GetCurrentForwardBackward;
+
+        float yawSize = animator.GetCurrentYaw;
 
         float speed = m_Agent.velocity.magnitude;
         float multiplier = Mathf.Sign(speed - 1.0f);
@@ -458,8 +463,8 @@ public class AnimalWalkingAnimationState : AStateBase
         lastStepSound = stepSound;
 
         float bounceMult = m_fCurrentWindup / m_WalkWindupTime;
-        m_AnimTransform.rotation = currentQuat * Quaternion.Euler(0, 0, bounceMult * tiltSize);
-        m_AnimTransform.localPosition = m_AnimTransform.right * bounceMult * horizontalMovement + m_AnimTransform.up * bounceMult * hopHeight;
+        m_AnimTransform.rotation = currentQuat * Quaternion.Euler(yawSize * bounceMult, 0, bounceMult * tiltSize);
+        m_AnimTransform.localPosition = m_AnimTransform.forward * bounceMult * forwardBackwardMovement + m_AnimTransform.right * bounceMult * horizontalMovement + m_AnimTransform.up * bounceMult * hopHeight;
     }
     public override void OnEnter()
     {
@@ -562,8 +567,7 @@ public class AnimalAttackAnimationState : AStateBase
     private float m_CurrentAnimTime = 0.0f;
 
     private Transform m_AnimTransform;
-    private Transform m_MainTransform;
-    bool m_HasDamaged;
+    bool m_HasDamaged = false;
 
     private float m_AnimLinearSpeed;
     private float m_AnimRotationSpeed;
@@ -577,7 +581,6 @@ public class AnimalAttackAnimationState : AStateBase
         m_CurrentAnimTime = 0.0f;
         m_HasDamaged = false;
         m_TotalAnimationDuration = GetParam<float>("attackAnimationDuration");
-        m_MainTransform = GetParam<Transform>("mainTransform");
         m_AnimTransform = GetParam<Transform>("animationTransform");
         m_AttackHopCurve = GetParam<AnimationCurve>("attackHopCurve");
         m_AttackPitchCurve = GetParam<AnimationCurve>("attackPitchCurve");
@@ -589,17 +592,20 @@ public class AnimalAttackAnimationState : AStateBase
 
     public override void Tick()
     {
-        if (m_CurrentAnimTime < 1.0f) 
+        if (m_CurrentAnimTime < m_TotalAnimationDuration) 
         {
-            Vector3 targetPosition = GetParam<Vector3>("targetPosition");
-            Quaternion lookQuat = Quaternion.LookRotation(targetPosition - m_MainTransform.position, Vector3.up);
+            Quaternion lookQuat = Quaternion.LookRotation(GetParam<Vector3>("targetDirection"), Vector3.up);
             m_CurrentAnimTime += Time.deltaTime;
             float animTime = m_CurrentAnimTime / m_TotalAnimationDuration;
 
-            Quaternion targetQuat = lookQuat * Quaternion.Euler(m_AttackPitchCurve.Evaluate(animTime), 0, 0);
+            float pitchAng = m_AttackPitchCurve.Evaluate(animTime);
+            float forwardAmount = m_AttackForwardCurve.Evaluate(animTime);
+            float hopAmount = m_AttackHopCurve.Evaluate(animTime);
+
+            Quaternion targetQuat = lookQuat * Quaternion.Euler(pitchAng, 0, 0);
             m_AnimTransform.localRotation = Quaternion.RotateTowards(m_AnimTransform.localRotation, targetQuat, m_AnimRotationSpeed);
             
-            Vector3 targetPos = m_startQuat * (new Vector3(0, m_AttackHopCurve.Evaluate(animTime), m_AttackForwardCurve.Evaluate(animTime)));
+            Vector3 targetPos = m_startQuat * (new Vector3(0, hopAmount, forwardAmount));
             m_AnimTransform.localPosition = Vector3.MoveTowards(m_AnimTransform.localPosition, targetPos, m_AnimLinearSpeed);
 
   

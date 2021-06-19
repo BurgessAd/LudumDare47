@@ -328,6 +328,8 @@ public class CowGameManager : ScriptableObject
 		m_EntityCache.Clear();
 		m_CounterDict.Clear();
 		m_UICache.Clear();
+		OnPaused = null;
+		OnUnpaused = null;
 		m_NumSuccesses = 0u;
 		m_SuccessesRequired = 0u;
 	}

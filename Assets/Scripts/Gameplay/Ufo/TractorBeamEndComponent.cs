@@ -12,12 +12,13 @@ public class TractorBeamEndComponent : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.TryGetComponent(out AbductableColliderComponent abductable)) 
+        AbductableComponent abductable = other.gameObject.GetComponent<AbductableComponent>();
+        if (abductable) 
         {
-            if (!abductable.GetAbductable.HasRegisteredAbduction) 
+            if (!abductable.HasRegisteredAbduction)
             {
                 Instantiate(m_OnAbductedEffectPrefab, m_Transform.position, m_Transform.rotation, m_Transform);
-                OnAbductableAbducted(abductable.GetAbductable);
+                OnAbductableAbducted(abductable);
             }
         }
     }

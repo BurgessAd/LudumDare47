@@ -2,44 +2,48 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[ExecuteInEditMode]
 public class ObjectColorChanger : MonoBehaviour
 {
-    [SerializeField] private Gradient m_Choices;
-    [SerializeField] private MeshRenderer m_MeshRenderer;
-    [SerializeField] private string m_ShaderID;
-
-    private MaterialPropertyBlock m_MatPropertyBlock;
-    private Color m_SavedColor;
-
-    private List<ObjectColorChangeMaterialSetting> m_ColourSettings = new List<ObjectColorChangeMaterialSetting>();
-    [SerializeField]
-    [HideInInspector]
-    public int m_MaterialColourSettingReference;
-
+    [SerializeField] private string m_DefaultShaderId = "_Color";
+    [SerializeField] [HideInInspector] public int m_MaterialColourSettingReference = 0;
+    [SerializeField] [HideInInspector] private List<ObjectColorChangeMaterialSetting> m_ColourSettings = new List<ObjectColorChangeMaterialSetting>();
+    [SerializeField] [HideInInspector] private bool m_bRandomizeOnStart = false;
+    private MeshRenderer m_MeshRenderer = default;
     public ref List<ObjectColorChangeMaterialSetting> GetMaterialColourSettings() 
     {
         return ref m_ColourSettings;
     }
 
-    public bool RandomizeOnStart { get; set; }
+    public bool RandomizeOnStart { get => m_bRandomizeOnStart; set { m_bRandomizeOnStart = value;} }
 
-	private void Awake()
+
+    public string GetDefaultShaderId { get => m_DefaultShaderId; }
+
+    private void Awake()
 	{
-        float rand = Random.Range(0f, 1f);
-        m_MatPropertyBlock = new MaterialPropertyBlock();
-        m_SavedColor = m_Choices.Evaluate(rand);
-	}
+        m_MeshRenderer = GetComponent<MeshRenderer>();
 
-    public void ChangeColour() 
-    {
-
+        if (m_bRandomizeOnStart)
+        {
+            foreach(ObjectColorChangeMaterialSetting setting in m_ColourSettings) 
+            {
+                setting.RollColour();
+            }
+        }
+        SetColours();
     }
 
-    void Update()
+    public void SetColours() 
     {
-        m_MeshRenderer.GetPropertyBlock(m_MatPropertyBlock);
-        m_MatPropertyBlock.SetColor(m_ShaderID, m_SavedColor);
-        m_MeshRenderer.SetPropertyBlock(m_MatPropertyBlock);
+        MaterialPropertyBlock matPropertyBlock = new MaterialPropertyBlock();
+        foreach(ObjectColorChangeMaterialSetting setting in m_ColourSettings) 
+        {
+            m_MeshRenderer.GetPropertyBlock(matPropertyBlock, setting.m_MaterialIndex);
+            matPropertyBlock.SetColor(setting.m_MaterialColourId, setting.m_RolledColor);
+            m_MeshRenderer.SetPropertyBlock(matPropertyBlock, setting.m_MaterialIndex);
+        }
+
     }
 }
 
@@ -47,5 +51,12 @@ public class ObjectColorChanger : MonoBehaviour
 public class ObjectColorChangeMaterialSetting 
 {
     public Gradient m_ColourGradient;
-    public int m_RendererMaterialNum;
+    public Color m_RolledColor;
+    public int m_MaterialIndex;
+    public string m_MaterialColourId;
+    public void RollColour() 
+    {
+        float rand = Random.Range(0.0f, 1.0f);
+        m_RolledColor = m_ColourGradient.Evaluate(rand);
+    }
 }

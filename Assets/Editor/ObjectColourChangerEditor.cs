@@ -11,15 +11,17 @@ public class ObjectColourChangerEditor : Editor
     {
         DrawDefaultInspector();
         colorChanger.RandomizeOnStart = GUILayout.Toggle(colorChanger.RandomizeOnStart, "Randomize On Start");
+        EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         EditorGUILayout.LabelField("Animation References", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         ref List<ObjectColorChangeMaterialSetting> materialColourSettings = ref colorChanger.GetMaterialColourSettings();
         string[] choices = new string[materialColourSettings.Count];
         for (int i = 0; i < materialColourSettings.Count; i++)
         {
-            choices[i] = "Material " +  materialColourSettings[i].m_RendererMaterialNum.ToString();
+            choices[i] = "Material " + i.ToString();
         }
         int chosenIndex = colorChanger.m_MaterialColourSettingReference;
-        chosenIndex = Mathf.Clamp(chosenIndex, 0, materialColourSettings.Count);
+        chosenIndex = Mathf.Clamp(chosenIndex, 0, Mathf.Max(0, materialColourSettings.Count-1));
         chosenIndex = EditorGUILayout.Popup(chosenIndex, choices);
         using (new EditorGUILayout.HorizontalScope())
         {
@@ -42,18 +44,25 @@ public class ObjectColourChangerEditor : Editor
                 if (GUILayout.Button("Delete Setting"))
                 {
                     materialColourSettings.RemoveAt(chosenIndex);
+                    chosenIndex--;
                 }
             }
 
             if (GUILayout.Button("Add Setting"))
             {
-                if (materialColourSettings.Count == 0 || chosenIndex == materialColourSettings.Count)
+                ObjectColorChangeMaterialSetting setting = new ObjectColorChangeMaterialSetting
                 {
-                    materialColourSettings.Add(new ObjectColorChangeMaterialSetting());
+                    m_MaterialColourId = colorChanger.GetDefaultShaderId,
+                    m_ColourGradient = new Gradient()
+				};
+  
+				if (materialColourSettings.Count == 0 || chosenIndex == materialColourSettings.Count)
+                {
+                    materialColourSettings.Add(setting);
                 }
                 else
                 {
-                    materialColourSettings.Insert(chosenIndex + 1, new ObjectColorChangeMaterialSetting());
+                    materialColourSettings.Insert(chosenIndex + 1, setting);
                 }
             }
         }
@@ -64,23 +73,27 @@ public class ObjectColourChangerEditor : Editor
 
         if (materialColourSettings.Count > 0)
         {
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+            EditorGUILayout.LabelField("Material Setting Information", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
             ObjectColorChangeMaterialSetting clip = materialColourSettings[chosenIndex];
 
-            clip.m_RendererMaterialNum = EditorGUILayout.IntField("Material Num", clip.m_RendererMaterialNum);
 
-            SerializedObject serializedGradient = new SerializedObject(colorChanger);
-            SerializedProperty colorGradient = serializedGradient.FindProperty("gradient");
-            EditorGUILayout.PropertyField(colorGradient);
-            serializedGradient.ApplyModifiedProperties();
-        }
+            clip.m_ColourGradient = EditorGUILayout.GradientField(clip.m_ColourGradient);
+            clip.m_MaterialIndex = EditorGUILayout.IntField("Material Num", clip.m_MaterialIndex);
+            clip.m_MaterialColourId = EditorGUILayout.TextField(clip.m_MaterialColourId);
 
-        if (!colorChanger.RandomizeOnStart) 
-        {
-            if (GUILayout.Button("Reroll Colour"))
+            if (!colorChanger.RandomizeOnStart)
             {
-                colorChanger.ChangeColour();
+                if (GUILayout.Button("Reroll Colour"))
+                {
+                    clip.RollColour();
+                    colorChanger.SetColours();
+                }
             }
         }
+
+
     }
 
     void OnEnable()

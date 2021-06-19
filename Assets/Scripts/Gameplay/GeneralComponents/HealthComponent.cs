@@ -9,40 +9,31 @@ public class HealthComponent : MonoBehaviour
 
     public event Action<GameObject, GameObject, DamageType, float> OnTakenDamageInstance;
 
-    [SerializeField]
-    private float m_MaxHealth = 3;
+    [SerializeField] private float m_MaxHealth = 3;
 
-    [SerializeField]
-    private CowGameManager m_Manager;
+    [SerializeField] private CowGameManager m_Manager;
 
-    private Transform m_Transform;
+    [SerializeField] private float m_InvulnerabilityTime = 1.0f;
 
-    [SerializeField]
-    private float m_InvulnerabilityTime = 1.0f;
+    [SerializeField] private bool m_bCanDie = true;
 
-    [SerializeField]
-    private bool m_bCanDie = true;
-
-    private bool m_IsInvulnerable = false;
-
-    [SerializeField]
-    private float m_CurrentHealth = 0;
+    [SerializeField] private float m_CurrentHealth = 0;
 
     private bool m_bIsKilled = false;
+
+    private bool m_IsInvulnerable = false;
 
 
 
     private void Awake()
     {
-        m_Transform = GetComponent<Transform>();
-        m_Manager.OnEntitySpawned(gameObject, GetComponent<EntityTypeComponent>().GetEntityInformation);
         m_CurrentHealth = m_MaxHealth;
     }
 
     public void Revive(in float health) 
     {
         m_CurrentHealth = health;
-        m_Manager.OnEntitySpawned(gameObject, GetComponent<EntityTypeComponent>().GetEntityInformation);
+
         m_bIsKilled = false;
     }
 
@@ -60,9 +51,7 @@ public class HealthComponent : MonoBehaviour
 
     public void Revive() 
     {
-        m_CurrentHealth = m_MaxHealth;
-        m_Manager.OnEntitySpawned(gameObject, GetComponent<EntityTypeComponent>().GetEntityInformation);
-        m_bIsKilled = true;
+        Revive(m_MaxHealth);
     }
 
     private IEnumerator SetInvulnerability() 
@@ -78,7 +67,6 @@ public class HealthComponent : MonoBehaviour
         {
             m_CurrentHealth = 0;
             m_bIsKilled = true;
-            m_Manager.OnEntityKilled(gameObject, GetComponent<EntityTypeComponent>().GetEntityInformation);
             OnEntityDied?.Invoke(gameObject, damagedBy, damageType);
         }
     }

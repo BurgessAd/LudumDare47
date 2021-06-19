@@ -89,7 +89,7 @@ public class LevelManager : MonoBehaviour
 			m_CameraTransform.SetParent(m_Manager.GetPlayerCameraContainerTransform);
 			m_CameraTransform.localPosition = Vector3.zero;
 			m_CameraTransform.localRotation = Quaternion.identity;
-			OnLevelStarted();
+			OnLevelStarted?.Invoke();
 			m_LevelState.RequestTransition(typeof(PlayingState));
 			break;
 		case (CowGameManager.RestartState.Quick):
@@ -150,7 +150,7 @@ public class LevelManager : MonoBehaviour
 		m_CameraTransform.SetParent(m_Manager.GetPlayerCameraContainerTransform);
 		m_CameraTransform.localPosition = Vector3.zero;
 		m_CameraTransform.localRotation = Quaternion.identity;
-		OnLevelStarted();
+		OnLevelStarted?.Invoke();
 		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
@@ -206,7 +206,7 @@ public class LevelManager : MonoBehaviour
 		m_CountdownText.text = "Go!";
 		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
 		yield return new WaitForSeconds(0.2f);
-		OnLevelStarted();
+		OnLevelStarted?.Invoke();
 		m_LevelState.RequestTransition(typeof(PlayingState));
 
 	}
@@ -214,7 +214,7 @@ public class LevelManager : MonoBehaviour
 	private IEnumerator StartLevelWithoutCountdown() 
 	{
 		yield return new WaitForSeconds(3.0f);
-		OnLevelStarted();
+		OnLevelStarted?.Invoke();
 		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 

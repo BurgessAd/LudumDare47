@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7117174354109768754}
   - component: {fileID: -1230961941302555671}
   - component: {fileID: 352225171326747336}
+  - component: {fileID: 5314671004435403217}
   m_Layer: 0
   m_Name: rock4
   m_TagString: Untagged
@@ -111,3 +112,18 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: -0.006, y: -0.008, z: 0.002}
   m_TimeToStationary: 0.5
+--- !u!114 &5314671004435403217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8861287814313644270}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9899c017b37e547489dd736154e1a4b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_DefaultShaderId: _Color
+  m_MaterialColourSettingReference: 0
+  m_bRandomizeOnStart: 0

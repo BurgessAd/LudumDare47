@@ -146,6 +146,7 @@ public class StateMachine
     {
         m_SpecificTransitions = m_EmptyTransitionsList;
         m_States.Add(initialState);
+        initialState.SetParent(this);
         m_CurrentState = initialState;
     }
 
@@ -249,6 +250,11 @@ public class StateMachine
 
         m_CurrentState.Tick();
     }
+
+    public void LateTick() 
+    {
+        m_CurrentState.LateTick();
+    }
 }
 
 public abstract class IStateTransition 
@@ -320,6 +326,8 @@ public abstract class AStateBase
     }
 
     public virtual void Tick() { }
+
+    public virtual void LateTick() { }
     public virtual void OnEnter() { }
     public virtual void OnExit() { }
 }

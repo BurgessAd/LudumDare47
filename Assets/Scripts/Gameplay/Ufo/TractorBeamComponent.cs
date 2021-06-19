@@ -166,17 +166,19 @@ public class TractorBeamComponent : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.TryGetComponent(out AbductableColliderComponent abductable)) 
+        AbductableComponent abductable = other.GetComponentInParent<AbductableComponent>();
+        if (abductable) 
         {
-            StartAbductingObject(abductable.GetAbductable);
+            StartAbductingObject(abductable);
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.TryGetComponent(out AbductableColliderComponent abductable))
+        AbductableComponent abductable = other.GetComponentInParent<AbductableComponent>();
+        if (abductable)
         {
-            StopAbductingObject(abductable.GetAbductable);
+            StopAbductingObject(abductable);
         }
     }
 

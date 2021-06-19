@@ -160,15 +160,26 @@ public class AnimalMovementComponent : MonoBehaviour
         }
         return false;
     }
+
+    public bool CheckStoppingDistanceForChase(Transform tRunTowardTransform, float distanceFrom = 0f) 
+    {
+        Vector3 displacement = m_tObjectTransform.position - tRunTowardTransform.position;
+        if ((Vector3.ProjectOnPlane(displacement, Vector3.up)).sqrMagnitude < distanceFrom * distanceFrom)
+        {
+            m_NavMeshAgent.isStopped = true;
+            return true;
+        }
+        return false;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////
     // function chooses a destination within range m_fMaximumRunDistance directly away from objectTransform on the navmesh
     public bool RunTowardsObject(Transform tRunTowardTransform, float runDistance, float distanceFrom = 0f) 
     {
         enabled = true;
         m_fCurrentTimeStuck = 0.0f;
-        if ((Vector3.ProjectOnPlane(m_tObjectTransform.position - tRunTowardTransform.position, Vector3.up)).sqrMagnitude < distanceFrom * distanceFrom)
+        if (CheckStoppingDistanceForChase(tRunTowardTransform, distanceFrom))
 		{
-            m_NavMeshAgent.isStopped = true;
             return true;
 		}
         m_NavMeshAgent.isStopped = false;
