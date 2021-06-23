@@ -96,14 +96,60 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f4ab6ae79d50634486e72f669b0a985, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_MaxGrassDensity: 200
+  m_MaxGrassDensity: 65
   m_GrassMapGenerationHeight: 50
   m_GrassLength: 1
-  m_GrassGenerationLayer:
+  m_GrassGenerationLayerMask:
     serializedVersion: 2
     m_Bits: 256
+  m_BlockingGrassGenerationLayerMask:
+    serializedVersion: 2
+    m_Bits: 2048
   m_GrassMap: {fileID: 0}
+  m_HeightThresholdForBlade: 0.15
   m_bHasBoundsDefined: 0
+  m_AngularFailureProbability:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.0021413276
+      value: 0.004716981
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 12.4647045
+      value: 0.0033773407
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 43.745342
+      value: 1.0036436
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 100.339836
+      value: 1.0036409
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   m_MapResizerTex: {fileID: 2800000, guid: 5bb92e256168a454aa369217d922e1b3, type: 3}
   m_MapVisualizerPrefab: {fileID: 8994647397414215100, guid: 0fa3bc9f11cd31b4ea9967f9bb1533ea,
     type: 3}
@@ -148,7 +194,6 @@ MonoBehaviour:
   m_fHealthThresholdForReadyForEating: 3
   m_fFoodSizeChangeTime: 0.3
   m_FoodAnimatorParamName: GrowthAmount
-  m_EatingParticlesPrefab: {fileID: 0}
   m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
   m_EntityInformation: {fileID: 7550517520297860234}
 --- !u!95 &7550517520297860235
@@ -185,6 +230,7 @@ MonoBehaviour:
   m_EntityInformation: {fileID: 11400000, guid: a9892376905e0c846b2a98219a844745,
     type: 2}
   m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
+  m_TrackingTransform: {fileID: 0}
 --- !u!114 &1354458672552193757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -202,3 +248,5 @@ MonoBehaviour:
   m_InvulnerabilityTime: 0
   m_bCanDie: 0
   m_CurrentHealth: 10
+  m_DamagedParticleType: {fileID: 5297521350535027660, guid: 8d57a9dc035004a469ba2d9eddd4026f,
+    type: 3}

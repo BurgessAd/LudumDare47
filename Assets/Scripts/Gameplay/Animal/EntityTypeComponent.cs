@@ -9,6 +9,8 @@ public class EntityTypeComponent : MonoBehaviour
 
     [SerializeField] private CowGameManager m_Manager;
 
+    [SerializeField] private Transform m_TrackingTransform;
+
     public EntityInformation GetEntityInformation => m_EntityInformation;
 
     private event Action OnCancelTracking;
@@ -19,6 +21,8 @@ public class EntityTypeComponent : MonoBehaviour
 	{
         AddToTrackable();	
 	}
+
+    public Transform GetTrackingTransform => m_TrackingTransform;
 
 	public void BeginTrackingObject(in Action OnUnableToTrackFurther) 
     {
@@ -34,7 +38,7 @@ public class EntityTypeComponent : MonoBehaviour
     {
         if (m_bIsKnownToGameSystem) 
         {
-            m_Manager.OnEntityKilled(gameObject, GetEntityInformation);
+            m_Manager.OnEntityKilled(this, GetEntityInformation);
             OnCancelTracking?.Invoke();
             OnCancelTracking = null;
             m_bIsKnownToGameSystem = false;
@@ -45,7 +49,7 @@ public class EntityTypeComponent : MonoBehaviour
     {
         if (!m_bIsKnownToGameSystem) 
         {
-            m_Manager.OnEntitySpawned(gameObject, GetEntityInformation);
+            m_Manager.OnEntitySpawned(this, GetEntityInformation);
             m_bIsKnownToGameSystem = true;
         }
     }

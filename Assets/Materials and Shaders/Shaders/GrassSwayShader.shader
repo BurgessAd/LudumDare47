@@ -12,15 +12,17 @@
 		_BladeHeightMultiplier("Blade Height Multiplier", Float) = 1
 		_BladeHeight("Blade Height", Float) = 5
 		_BladeHeightRandom("Blade Height Randomize", Float) = 3
+		_BladeHeightMinimum("Blade Height Minimum", Float) = 0.2
 		_WindDistortionMap("Wind Distortion Map", 2D) = "white" {}
 		_BladeForward("Blade Forward", Float) = 0.38
 		_BladeCurve("Blade Curvature Amount", Range(1, 4)) = 2
-		_WindFrequency("Wind Frequency", Vector) = (0.05, 0.05, 0, 0)
+		_WindSpeed("Wind Speed", Vector) = (0.05, 0.05, 0, 0)
 		_WindStrength("Wind Strength", Float) = 1
+		_WindGustSize("Wind Gust Size", Float) = 1
 	}
 
 	CGINCLUDE
-	#define BLADE_SEGMENTS 4
+	#define BLADE_SEGMENTS 3
 	#include "UnityCG.cginc"
 	#include "Autolight.cginc"
 
@@ -30,11 +32,13 @@
 	float _BladeHeightMultiplier;
 	float _BladeHeight;
 	float _BladeHeightRandom;
+	float _BladeHeightMinimum;
 	float _BladeForward;
 	float _BladeCurve;
 	sampler2D _WindDistortionMap;
 	float4 _WindDistortionMap_ST;
-	float2 _WindFrequency;
+	float2 _WindSpeed;
+	float _WindGustSize;
 	float _WindStrength;
 
 	struct geometryOutput
@@ -128,11 +132,6 @@
 		return o;
 	}
 
-	float calculateBladeForward(float heightUV, float windStrength, float bladeCurve)
-	{
-
-	}
-
 	[maxvertexcount(2 * BLADE_SEGMENTS + 1)]
 	void geo(point vertexOutput IN[1] : SV_POSITION, inout TriangleStream<geometryOutput> triStream)
 	{
@@ -143,16 +142,13 @@
 
 		float3x3 bendRotationMatrix = AngleAxis3x3(rand(pos.zzx) * _BendRotationRandom * UNITY_PI * 0.5, float3(-1, 0, 0));
 
-		float2 uv = pos.xz * _WindDistortionMap_ST.xy + _WindDistortionMap_ST.zw + _WindFrequency * _Time.y;
+		float2 uv = (pos.xz * _WindDistortionMap_ST.xy + _WindDistortionMap_ST.zw + _WindSpeed * _Time.y) / _WindGustSize;
 		float2 windSample = (tex2Dlod(_WindDistortionMap, float4(uv, 0, 0)).xy * 2 - 1) * _WindStrength;
 		float3 wind = normalize(float3(windSample.x, windSample.y, 0));
 		float3x3 windRotation = AngleAxis3x3(UNITY_PI * windSample, wind);
 
-		//float3 vNormal = IN[0].normal;
-		//float4 vTangent = IN[0].tangent;
-
-		float3 vNormal = float3(0, 1, 0);
-		float4 vTangent = float4(1, 0, 0, 1);
+		float3 vNormal = IN[0].normal;
+		float4 vTangent = IN[0].tangent;
 		float3 vBinormal = cross(vNormal, vTangent) * vTangent.w;
 
 		float3x3 tangentToLocal = float3x3(
@@ -168,9 +164,9 @@
 
 		float3x3 transformationMatrixFacing = mul(tangentToLocal, randomFacingRotationMatrix);
 
-		float height = ((rand(pos.zyx) * 2 - 1) * _BladeHeightRandom + _BladeHeight) * _BladeHeightMultiplier * pixelHeightMult;
-		float width = (rand(pos.xzy) * 2 - 1) * _BladeWidthRandom + _BladeWidth;
-		float forward = - rand(pos.yyz) * _BladeForward;
+		float height = max(((rand(pos.zyx) * 2 - 1) * _BladeHeightRandom + _BladeHeight) * _BladeHeightMultiplier * pixelHeightMult, _BladeHeightMinimum);
+		float width = ((rand(pos.xzy) * 2 - 1) * _BladeWidthRandom + _BladeWidth) * sqrt(pixelHeightMult);
+		float forward = rand(pos.yyz) * _BladeForward;
 		
 		for (int i = 0; i < BLADE_SEGMENTS; i++)
 		{
@@ -222,7 +218,7 @@
 				float NdotL = saturate(saturate(dot(normal, _WorldSpaceLightPos0)) + _TranslucentGain) * shadow;
 
 				float3 ambient = ShadeSH9(float4(normal, 1));
-				float4 lightIntensity = NdotL * _LightColor0;// +float4(ambient, 1);
+				float4 lightIntensity = NdotL * _LightColor0 +float4(ambient, 1);
 				float4 col = lerp(_BottomColor * lightIntensity, _TopColor * lightIntensity, i.uv.y);
 
 				return col;

@@ -75,27 +75,10 @@ public class GrassPatchEditor : EditorWindow
 
 	public void CreateNewGrassObject() 
 	{
-		GameObject go = Instantiate(grassObjectPrefab);
+		GameObject go = Instantiate(grassObjectPrefab, Vector3.zero, Quaternion.identity, null);
 		m_CurrentGrassPatch = go.GetComponent<GrassPatchComponent>();
 		Selection.activeGameObject = go;
 	}
-
-
-	public Rect GenerateScreenSpaceRect()
-	{
-		Vector3 edgeA = GetCurrentGrassPatch.GrassGenerationBounds.Item1;
-		Vector3 edgeB = GetCurrentGrassPatch.GrassGenerationBounds.Item2;
-
-		Vector3 bottomLeft = new Vector3(Mathf.Min(edgeA.x, edgeB.x), (edgeA.y + edgeB.y) / 2, Mathf.Min(edgeA.z, edgeB.z));
-		Vector3 topRight = new Vector3(Mathf.Max(edgeA.x, edgeB.x), (edgeA.y + edgeB.y) / 2, Mathf.Max(edgeA.z, edgeB.z));
-
-		Vector3 bottomLeftScreenSpace = GetCurrentSceneView.camera.WorldToScreenPoint(bottomLeft);
-		Vector3 topRightScreenSpace = GetCurrentSceneView.camera.WorldToScreenPoint(topRight);
-		Vector3 size = topRightScreenSpace - bottomLeftScreenSpace;
-
-		return new Rect(bottomLeftScreenSpace.x, bottomLeftScreenSpace.y, size.x, size.y);
-	}
-
 }
 
 public class StateIdle : AStateBase 
@@ -148,6 +131,7 @@ public class StateDefiningSize : AStateBase
 	private Vector3 m_GrassPatchSizeDefinitionEndAnchor;
 	private SpriteRenderer m_SpriteRenderer;
 	private int m_CurrentDefinition;
+	private Vector3 m_MousePos;
 	
 	public StateDefiningSize(GrassPatchEditor editor)
 	{
@@ -173,10 +157,13 @@ public class StateDefiningSize : AStateBase
 			return;
 		}
 
-		Vector3 mousePos = Event.current.mousePosition;
-		mousePos.y = host.GetCurrentSceneView.camera.pixelHeight - mousePos.y;
+		if (type == EventType.MouseMove || type == EventType.MouseDrag || type == EventType.MouseDown) 
+		{
+			m_MousePos = Event.current.mousePosition;
+			m_MousePos.y = host.GetCurrentSceneView.camera.pixelHeight - m_MousePos.y;
+		}
 
-		Ray ray = host.GetCurrentSceneView.camera.ScreenPointToRay(mousePos);
+		Ray ray = host.GetCurrentSceneView.camera.ScreenPointToRay(m_MousePos);
 
 		if (type == EventType.MouseDown && Event.current.button == 0)
 		{
@@ -193,26 +180,34 @@ public class StateDefiningSize : AStateBase
 		{
 			Vector3 planeOrigin = m_GrassPatchSizeDefinitionStartAnchor;
 			Vector3 planeNormal = Vector3.up;
-			m_GrassPatchSizeDefinitionEndAnchor = ray.origin + ray.direction * (Mathf.Abs( Vector3.Dot(ray.direction, ray.origin - planeOrigin) 
-																						/ (Vector3.Dot(ray.direction, planeNormal)) ));
+			m_GrassPatchSizeDefinitionEndAnchor = ray.origin + ray.direction * ( Vector3.Dot(planeNormal, planeOrigin - ray.origin) 
+																						/ (Vector3.Dot(ray.direction, planeNormal)));
 
 			host.GetCurrentGrassPatch.UpdateGrassSizeVisualizer(m_SpriteRenderer, m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
 			if (type == EventType.MouseUp && Event.current.button == 0) 
 			{
 				host.GetCurrentGrassPatch.GrassGenerationBounds = new Tuple<Vector3, Vector3>(m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
-				Rect imageRect = host.GenerateScreenSpaceRect();
 
+				Vector3 edgeA = host.GetCurrentGrassPatch.GrassGenerationBounds.Item1;
+				Vector3 edgeB = host.GetCurrentGrassPatch.GrassGenerationBounds.Item2;
+
+				Vector3 bottomLeft = new Vector3(Mathf.Min(edgeA.x, edgeB.x), (edgeA.y + edgeB.y) / 2, Mathf.Min(edgeA.z, edgeB.z));
+				Vector3 topRight = new Vector3(Mathf.Max(edgeA.x, edgeB.x), (edgeA.y + edgeB.y) / 2, Mathf.Max(edgeA.z, edgeB.z));
+
+				Vector3 size = topRight - bottomLeft;
 				// hard-code 256 x 256 maximum size texture for longest axis
 
-				float longestAxialLength = Mathf.Max(imageRect.width, imageRect.height);
-				Vector2Int texSize = new Vector2Int((int)(256 * imageRect.width / longestAxialLength), (int)(256 * imageRect.height / longestAxialLength));
+				float longestAxialLength = Mathf.Max(size.x, size.z);
+				float rescale = 256 / longestAxialLength;
+				Vector2Int texSize = new Vector2Int((int)(rescale * size.x), (int)(rescale * size.z));
+
 				host.GetCurrentGrassPatch.GrassMap = new Texture2D(Mathf.Abs(texSize.x), Mathf.Abs(texSize.y));
-				Color[] pixels = host.GetCurrentGrassPatch.GrassMap.GetPixels();
+				Color32[] pixels = host.GetCurrentGrassPatch.GrassMap.GetPixels32();
 				for (int i = 0; i < pixels.Length; i++)
 				{
-					pixels[i] = Color.white;
+					pixels[i] = Color.black;
 				}
-				host.GetCurrentGrassPatch.GrassMap.SetPixels(pixels);
+				host.GetCurrentGrassPatch.GrassMap.SetPixels32(pixels);
 				host.GetCurrentGrassPatch.GrassMap.Apply();
 				RequestTransition<StateIdle>();
 			}
@@ -222,7 +217,8 @@ public class StateDefiningSize : AStateBase
 
 	public override void OnExit()
 	{
-		host.GetCurrentGrassPatch.DeleteGrassPaintVisualizer(m_SpriteRenderer.gameObject);
+		if (host.GetCurrentGrassPatch && m_SpriteRenderer)
+			host.GetCurrentGrassPatch.DeleteGrassPaintVisualizer(m_SpriteRenderer.gameObject);
 	}
 }
 
@@ -268,7 +264,8 @@ public class StateDrawingTexture : AStateBase
 
 	public override void OnExit()
 	{
-		grassPatchComponent.DeleteGrassPaintVisualizer(m_SpriteRenderer.gameObject);
+		if (grassPatchComponent && m_SpriteRenderer)
+			grassPatchComponent.DeleteGrassPaintVisualizer(m_SpriteRenderer.gameObject);
 		base.OnExit();
 	}
 
@@ -298,13 +295,13 @@ public class StateDrawingTexture : AStateBase
 		{
 			GUILayout.Label("Brush Size", GUILayout.Width(100.0f));
 			GUILayout.Label(brushSize.ToString(), GUILayout.Width(40.0f));
-			brushSize = GUILayout.HorizontalSlider(brushSize, 0.0f, 100.0f);
+			brushSize = GUILayout.HorizontalSlider(brushSize, 20.0f, 400.0f);
 		}
 		using (new GUILayout.HorizontalScope())
 		{
 			GUILayout.Label("Brush Strength", GUILayout.Width(100.0f));
 			GUILayout.Label(brushStrength.ToString(), GUILayout.Width(40.0f));
-			brushStrength = GUILayout.HorizontalSlider(brushStrength, 0.0f, 2.0f); ;
+			brushStrength = GUILayout.HorizontalSlider(brushStrength, 0.0f, 0.5f); ;
 		}
 
 		using (new GUILayout.HorizontalScope())
@@ -319,13 +316,18 @@ public class StateDrawingTexture : AStateBase
 		float width = host.GetCurrentGrassPatch.GrassMap.width;
 		float height = host.GetCurrentGrassPatch.GrassMap.height;
 
+
 		float maxSize = 600;
-		float scalar = Mathf.Min(maxSize / width, maxSize / height);
-		Vector2 texSize = scalar * new Vector2(width, height);
+		float RectPixelsPerTexPixel = Mathf.Min(maxSize / width, maxSize / height);
+		Vector2 texSize = RectPixelsPerTexPixel * new Vector2(width, height);
 
 
-		Rect rect = new Rect((Screen.width/2 - texSize.x / 2), (Screen.height/2 - texSize.y / 2), texSize.x, texSize.y);
+		Rect rect = new Rect((Screen.width / 2 - texSize.x / 2), (Screen.height / 2 - texSize.y / 2), texSize.x, texSize.y);
 		GUI.DrawTexture(rect, host.GetCurrentGrassPatch.GrassMap);
+
+		float brushSize_PixelSpace = brushSize / RectPixelsPerTexPixel;
+		float halfBrushSize_PixelSpace = brushSize_PixelSpace / 2;
+
 
 		Vector2 screenMousePoint = GUIUtility.GUIToScreenPoint(Event.current.mousePosition) - host.position.position;
 
@@ -343,20 +345,19 @@ public class StateDrawingTexture : AStateBase
 
 		if (rect.Contains(screenMousePoint, true))
 		{
-			Vector2 pixelPositionClickPoint = (screenMousePoint - rect.position) / scalar;
+			Vector2 pixelPositionClickPoint = (screenMousePoint - rect.position) / RectPixelsPerTexPixel;
 			pixelPositionClickPoint.y = height - pixelPositionClickPoint.y;
-			Debug.Log(pixelPositionClickPoint);
 
 			if (m_bIsMouseDown)
 			{
-				Vector2 lowerBrushBound = pixelPositionClickPoint - new Vector2(brushSize / 2, brushSize / 2);
-				Vector2 upperBrushBound = pixelPositionClickPoint + new Vector2(brushSize / 2, brushSize / 2);
+				Vector2 lowerBrushBound = pixelPositionClickPoint - new Vector2(halfBrushSize_PixelSpace, halfBrushSize_PixelSpace);
+				Vector2 upperBrushBound = pixelPositionClickPoint + new Vector2(halfBrushSize_PixelSpace, halfBrushSize_PixelSpace);
 
-				lowerBrushBound.x = Mathf.Clamp(lowerBrushBound.x, 0, texSize.x-1);
-				upperBrushBound.x = Mathf.Clamp(upperBrushBound.x, 0, texSize.x-1);
+				lowerBrushBound.x = Mathf.Clamp(lowerBrushBound.x, 0, width);
+				upperBrushBound.x = Mathf.Clamp(upperBrushBound.x, 0, width);
 
-				lowerBrushBound.y = Mathf.Clamp(lowerBrushBound.y, 0, texSize.y - 1);
-				upperBrushBound.y = Mathf.Clamp(upperBrushBound.y, 0, texSize.y - 1);
+				lowerBrushBound.y = Mathf.Clamp(lowerBrushBound.y, 0, height);
+				upperBrushBound.y = Mathf.Clamp(upperBrushBound.y, 0, height);
 
 
 				float multiplier = brushType == BrushType.Add ? 1 : -1;
@@ -372,10 +373,11 @@ public class StateDrawingTexture : AStateBase
 
 						float sqDistFromCentre = centreOffset.sqrMagnitude;
 
-						if (sqDistFromCentre <= brushSize * brushSize)
+						if (sqDistFromCentre <= halfBrushSize_PixelSpace * halfBrushSize_PixelSpace)
 						{
-							float brushInfluence = multiplier * Mathf.Clamp01(brushStrength * (1 - Mathf.Sqrt(sqDistFromCentre) / brushSize));
+							float brushInfluence = multiplier * Mathf.Clamp01(brushStrength * (1 - Mathf.Sqrt(sqDistFromCentre) / halfBrushSize_PixelSpace));
 							int colorId = i + j * (int)width;
+
 							switch (brushChannel)
 							{
 								case (Channel.Density):

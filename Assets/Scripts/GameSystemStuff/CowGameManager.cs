@@ -98,7 +98,7 @@ public class CowGameManager : ScriptableObject
 	}
 
 	public float GetMapRadius => m_CurrentLevel.GetMapRadius;
-	public GameObject GetPlayer => m_EntityCache[m_PlayerEntityInformation][0].GetEntity;
+	public EntityTypeComponent GetPlayer => m_EntityCache[m_PlayerEntityInformation][0].GetEntityType;
 
 	public LevelManager GetCurrentLevel => m_CurrentLevel;
 
@@ -117,13 +117,13 @@ public class CowGameManager : ScriptableObject
 		point.y = yPoint;
 	}
 
-	public EntityToken GetTokenForEntity(in GameObject gameObject, in EntityInformation entityType) 
+	public EntityToken GetTokenForEntity(in EntityTypeComponent gameObject, in EntityInformation entityType) 
 	{
 		if (m_EntityCache.TryGetValue(entityType, out List<EntityToken> value)) 
 		{
 			for(int i = 0; i < value.Count; i++) 
 			{
-				if (value[i].GetEntity == gameObject) 
+				if (value[i].GetEntityType == gameObject) 
 				{
 					return value[i];
 				}
@@ -163,7 +163,7 @@ public class CowGameManager : ScriptableObject
 						{
 							if (token.GetEntityState == data)
 							{
-								float sqDist = Vector3.SqrMagnitude(token.GetEntity.transform.position - currentPos);
+								float sqDist = Vector3.SqrMagnitude(token.GetEntityType.GetTrackingTransform.position - currentPos);
 								if (sqDist < cachedSqDist)
 								{
 									cachedSqDist = sqDist;
@@ -174,7 +174,7 @@ public class CowGameManager : ScriptableObject
 					}
 					else 
 					{
-						float sqDist = Vector3.SqrMagnitude(token.GetEntity.transform.position - currentPos);
+						float sqDist = Vector3.SqrMagnitude(token.GetEntityType.GetTrackingTransform.position - currentPos);
 						if (sqDist < cachedSqDist)
 						{
 							cachedSqDist = sqDist;
@@ -203,7 +203,7 @@ public class CowGameManager : ScriptableObject
 	}
 
 
-	public void OnEntitySpawned(GameObject entity, EntityInformation entityType)
+	public void OnEntitySpawned(EntityTypeComponent entity, EntityInformation entityType)
 	{
 		if (!m_EntityCache.TryGetValue(entityType, out List<EntityToken> entities))
 		{
@@ -219,12 +219,12 @@ public class CowGameManager : ScriptableObject
 		return UnityUtils.IsLayerInMask(m_TerrainLayerMask, layer);
 	}
 
-	public void OnEntityKilled(GameObject entity, EntityInformation entityType)
+	public void OnEntityKilled(EntityTypeComponent entity, EntityInformation entityType)
 	{
 
 		for (int i = 0; i < m_EntityCache[entityType].Count; i++)
 		{
-			if (m_EntityCache[entityType][i].GetEntity == entity)
+			if (m_EntityCache[entityType][i].GetEntityType == entity)
 			{
 				m_EntityCache[entityType].RemoveAt(i);
 				break;
@@ -344,10 +344,10 @@ public enum EntityAbductionState
 
 public class EntityToken 
 {
-	public EntityToken(in GameObject go) 
+	public EntityToken(in EntityTypeComponent go) 
 	{
-		GetEntity = go;
 		GetEntityTransform = go.transform;
+		GetEntityType = go;
 		GetEntityState = EntityAbductionState.Free;
 	}
 	public void SetAbductionState(in EntityAbductionState reservationType) 
@@ -357,7 +357,7 @@ public class EntityToken
 
 	public EntityAbductionState GetEntityState { get; private set; }
 
-	public Transform GetEntityTransform { get; }
+	public Transform GetEntityTransform { get; private set; }
 
-	public GameObject GetEntity { get; }
+	public EntityTypeComponent GetEntityType { get; private set; }
 }

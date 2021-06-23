@@ -19,6 +19,8 @@ public class HealthComponent : MonoBehaviour
 
     [SerializeField] private float m_CurrentHealth = 0;
 
+    [SerializeField] private GameObject m_DamagedParticleType = default;
+
     private bool m_bIsKilled = false;
 
     private bool m_IsInvulnerable = false;
@@ -29,6 +31,8 @@ public class HealthComponent : MonoBehaviour
     {
         m_CurrentHealth = m_MaxHealth;
     }
+
+    public GameObject GetDamagedParticleType(DamageType type) => m_DamagedParticleType;
 
     public void Revive(in float health) 
     {

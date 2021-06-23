@@ -17,8 +17,6 @@ public class FoodSourceComponent : MonoBehaviour
 
     [SerializeField] private string m_FoodAnimatorParamName = default;
 
-    [SerializeField] private GameObject m_EatingParticlesPrefab = default;
-
     [SerializeField] private CowGameManager m_Manager = default;
 
     [SerializeField] private EntityTypeComponent m_EntityInformation = default;
@@ -39,11 +37,6 @@ public class FoodSourceComponent : MonoBehaviour
 	{
         m_HealthComponent = GetComponent<HealthComponent>();
         m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
-    }
-
-    private void OnTakeDamage(GameObject source, GameObject target, DamageType damageType, float currentHealthPercentage)
-    {
-        m_HealthComponent.OnTakenDamageInstance += OnTakeDamage;
     }
 
     void Update()

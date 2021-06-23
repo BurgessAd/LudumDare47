@@ -176,7 +176,7 @@ public class UfoMain : MonoBehaviour
 	{
 		if (m_TargetCow) 
 		{
-			EntityToken cowToken = m_Manager.GetTokenForEntity(m_TargetCow, m_TargetCow.GetComponent<EntityTypeComponent>().GetEntityInformation);
+			EntityToken cowToken = m_Manager.GetTokenForEntity(m_TargetCow.GetComponent<EntityTypeComponent>(), m_TargetCow.GetComponent<EntityTypeComponent>().GetEntityInformation);
 			cowToken.SetAbductionState(EntityAbductionState.Free);
 		}
 
@@ -201,9 +201,9 @@ public class UfoMain : MonoBehaviour
 		if (m_Manager.GetClosestTransformMatchingList(m_UfoTransform.position, m_EntityInformation.GetHunts, out EntityToken outEntityToken, validEntitiesToFind)) 
 		{
 			// in case it dies before we get to it
-			outEntityToken.GetEntity.GetComponent<HealthComponent>().OnEntityDied += OnCowDied;
-			outEntityToken.GetEntity.GetComponent<AbductableComponent>().OnStartedAbducting += OnTargetedCowStartedAbducted;
-			m_TargetCow = outEntityToken.GetEntity;
+			outEntityToken.GetEntityType.GetComponent<HealthComponent>().OnEntityDied += OnCowDied;
+			outEntityToken.GetEntityType.GetComponent<AbductableComponent>().OnStartedAbducting += OnTargetedCowStartedAbducted;
+			m_TargetCow = outEntityToken.GetEntityType.gameObject;
 			outEntityToken.SetAbductionState(EntityAbductionState.Hunted);
 			return true;
 		}

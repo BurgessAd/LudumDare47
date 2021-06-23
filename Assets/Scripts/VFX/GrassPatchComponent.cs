@@ -16,10 +16,15 @@ public class GrassPatchComponent : MonoBehaviour
     [SerializeField] private float m_MaxGrassDensity;
     [SerializeField] private float m_GrassMapGenerationHeight;
     [SerializeField] private float m_GrassLength;
-    [SerializeField] private LayerMask m_GrassGenerationLayer;
+    [SerializeField] private LayerMask m_GrassGenerationLayerMask;
+    [SerializeField] private LayerMask m_BlockingGrassGenerationLayerMask;
+     
     [SerializeField] private Tuple<Vector3, Vector3> m_GrassGenerationBounds;
     [SerializeField] private Texture2D m_GrassMap;
+    [SerializeField] private float m_HeightThresholdForBlade;
     [SerializeField] private bool m_bHasBoundsDefined;
+
+    [SerializeField] private AnimationCurve m_AngularFailureProbability;
 
     [SerializeField] private Texture2D m_MapResizerTex;
     [SerializeField] private GameObject m_MapVisualizerPrefab;
@@ -28,20 +33,21 @@ public class GrassPatchComponent : MonoBehaviour
     float m_lastGrassLength = -1;
     private readonly List<Vector3> vertices = new List<Vector3>();
     private readonly List<Vector3> normals = new List<Vector3>();
+    private readonly List<Vector3> tangents = new List<Vector3>();
     private readonly List<Color32> colors = new List<Color32>();
     private MaterialPropertyBlock m_PropertyBlock;
     private MeshRenderer m_MeshRenderer;
 
     void Start()
     {
-        Mesh mesh = new Mesh();
-        GetComponent<MeshFilter>().mesh = mesh;
-        m_PropertyBlock = new MaterialPropertyBlock();
+        //Mesh mesh = new Mesh();
+        //GetComponent<MeshFilter>().mesh = mesh;
+        //m_PropertyBlock = new MaterialPropertyBlock();
     }
 	#region getters and setters
     public Texture2D GrassMap { get => m_GrassMap; set { m_GrassMap = value; m_bHasBoundsDefined = true; } }
     public float GrassMapGenerationAttemptHeight { get => m_GrassMapGenerationHeight; set { m_GrassMapGenerationHeight = value; } }
-    public LayerMask GrassGenerationLayer { get => m_GrassGenerationLayer; set { m_GrassGenerationLayer = value; } }
+    public LayerMask GrassGenerationLayer { get => m_GrassGenerationLayerMask; set { m_GrassGenerationLayerMask = value; } }
     public float MaxGrassDensity { get => m_MaxGrassDensity; set { m_MaxGrassDensity = value; } }
     public Tuple<Vector3, Vector3> GrassGenerationBounds { get => m_GrassGenerationBounds; set { m_GrassGenerationBounds = value; } }
     public bool HasBoundsDefined { get => m_bHasBoundsDefined; }
@@ -49,14 +55,14 @@ public class GrassPatchComponent : MonoBehaviour
 
 	public void Update()
 	{
-        if (m_lastGrassLength != m_GrassLength) 
-        {
+        //if (m_lastGrassLength != m_GrassLength) 
+        //{
 
-            m_MeshRenderer.GetPropertyBlock(m_PropertyBlock);
-            m_PropertyBlock.SetFloat("", m_GrassLength);
-            m_MeshRenderer.SetPropertyBlock(m_PropertyBlock);
-            m_lastGrassLength = m_GrassLength;
-        }
+        //    m_MeshRenderer.GetPropertyBlock(m_PropertyBlock);
+        //    m_PropertyBlock.SetFloat("", m_GrassLength);
+        //    m_MeshRenderer.SetPropertyBlock(m_PropertyBlock);
+        //    m_lastGrassLength = m_GrassLength;
+        //}
 
 	}
 
@@ -77,15 +83,26 @@ public class GrassPatchComponent : MonoBehaviour
     {
         Vector3 worldOffset = GrassGenerationBounds.Item2 - GrassGenerationBounds.Item1;
         float maxSize = Mathf.Max(Mathf.Abs(worldOffset.x), Mathf.Abs(worldOffset.z));
-        float pixelToWorldScale = maxSize / maxPixelLength;
+        float pixelsPerUnitWorld = maxPixelLength /maxSize;
 
-        spriteRenderer.sprite = Sprite.Create(m_MapResizerTex, new Rect(0, 0, (int)m_GrassMap.width, (int)m_GrassMap.height), new Vector2(0, 1), pixelToWorldScale);
+        spriteRenderer.sprite = Sprite.Create(m_GrassMap, new Rect(0, 0, (int)m_GrassMap.width, (int)m_GrassMap.height), new Vector2(0, 1), pixelsPerUnitWorld);
     }
 
     int i = 0;
-    public void UpdateGrassSizeVisualizer(in SpriteRenderer spriteRenderer, in Vector3 anchorA, in Vector3 anchorB) 
+
+	private void OnDrawGizmosSelected()
+	{
+		if (m_GrassGenerationBounds != null) 
+        {
+            Gizmos.DrawWireSphere(m_GrassGenerationBounds.Item1, 1.0f);
+            Gizmos.DrawWireSphere(m_GrassGenerationBounds.Item2, 1.0f);
+        }
+	}
+	public void UpdateGrassSizeVisualizer(in SpriteRenderer spriteRenderer, in Vector3 anchorA, in Vector3 anchorB) 
     {
         Vector3 worldOffset = anchorB - anchorA;
+
+        m_GrassGenerationBounds = new Tuple<Vector3, Vector3>(anchorA, anchorB);
 
         float xPixelsPerUnitWorld = m_MapResizerTex.width / Mathf.Abs(worldOffset.x);
         float zPixelsPerUnitWorld = m_MapResizerTex.height / Mathf.Abs(worldOffset.z);
@@ -98,17 +115,9 @@ public class GrassPatchComponent : MonoBehaviour
         bool flipX = worldOffset.x < 0;
         bool flipZ = worldOffset.z < 0;
 
-        Vector2Int pivotPoints = new Vector2Int(flipX ? 1 : 0, flipZ ? 1 : 0);
+        Vector2Int pivotPoints = new Vector2Int(0, 1);
 
-        if (i == 10) 
-        {
-            i = 0;
-            Debug.Log(maxResizerPixelLen);
-            Debug.Log(texSize);
-            Debug.Log(pixelsPerUnitWorld);
-        }
-
-        spriteRenderer.sprite = Sprite.Create(m_MapResizerTex, new Rect(0, 0, (int)Mathf.Abs(texSize.x), (int)Mathf.Abs(texSize.z)), pivotPoints, pixelsPerUnitWorld);
+        spriteRenderer.sprite = Sprite.Create(m_MapResizerTex, new Rect(0, 0, (int)Mathf.Abs(texSize.x), (int)Mathf.Abs(texSize.z)), pivotPoints, 2.65f * pixelsPerUnitWorld);
         spriteRenderer.flipX = flipX;
         spriteRenderer.flipY = flipZ;
     }
@@ -127,6 +136,9 @@ public class GrassPatchComponent : MonoBehaviour
         float generationBoundsXSize_ws = m_GrassGenerationBounds.Item2.x - m_GrassGenerationBounds.Item1.x;
         float generationBoundsZSize_ws = m_GrassGenerationBounds.Item2.z - m_GrassGenerationBounds.Item1.z;
 
+        Vector3 objectPos = (m_GrassGenerationBounds.Item2 + m_GrassGenerationBounds.Item1) / 2;
+        transform.position = objectPos;
+
         float pixelSize_ws = (m_GrassGenerationBounds.Item2.x - m_GrassGenerationBounds.Item1.x ) / m_GrassMap.width;
         // density is grass / unit area: figure out number of blades of grass in each pixel in world space.
         float bladesPerFullPixel = m_MaxGrassDensity * Mathf.Pow(pixelSize_ws, 2);
@@ -137,9 +149,12 @@ public class GrassPatchComponent : MonoBehaviour
 
         Color[] pixels = m_GrassMap.GetPixels();
         vertices.Clear();
+        colors.Clear();
+        normals.Clear();
+        tangents.Clear();
         for (int z = 0; z < m_GrassMap.height; z++)
         {
-            float zPos = ((float)z / m_GrassMap.height) * generationBoundsZSize_ws + m_GrassGenerationBounds.Item1.z;
+            float zPos = (1 - (float)z / m_GrassMap.height) * generationBoundsZSize_ws + m_GrassGenerationBounds.Item1.z;
             for (int x = 0; x < m_GrassMap.width; x++)
             {
                 float xPos = ((float)x / m_GrassMap.width) * generationBoundsXSize_ws + m_GrassGenerationBounds.Item1.x;
@@ -151,17 +166,18 @@ public class GrassPatchComponent : MonoBehaviour
                 Color pixelColor = pixels[pixelIndex];
 
                 float bladesForPixel = pixelColor.r * bladesPerFullPixel;
-                float heightForPixel = pixelColor.g * m_GrassMapGenerationHeight;
+                float heightForPixel = pixelColor.g;
+
+                if (heightForPixel < m_HeightThresholdForBlade)
+                    continue;
 
                 bladesPseudoRand += bladesForPixel;
                 while(bladesPseudoRand > 0) 
                 {
                     float xBladePos = xPos + UnityEngine.Random.Range(0, pixelSize_ws);
                     float zBladePos = zPos + UnityEngine.Random.Range(0, pixelSize_ws);
-                    if (!PlaceGrassBladeAtPos(xBladePos, zBladePos, heightForPixel)) 
-                    {
-                        Debug.LogWarning("Attempt to place grass blade failed - no raycast hit");
-                    }
+                    PlaceGrassBladeAtPos(xBladePos, zBladePos, heightForPixel, objectPos);
+
                     bladesPseudoRand--;
                 }
             }
@@ -169,6 +185,7 @@ public class GrassPatchComponent : MonoBehaviour
         Mesh mesh = new Mesh();
         mesh.SetVertices(vertices);
         mesh.SetColors(colors);
+        mesh.SetNormals(normals);
         int[] indices = new int[vertices.Count];
         for (int i = 0; i < vertices.Count; i++) 
         {
@@ -178,12 +195,33 @@ public class GrassPatchComponent : MonoBehaviour
         GetComponent<MeshFilter>().mesh = mesh;
     }
 
-	private bool PlaceGrassBladeAtPos(in float x, in float y, in float height) 
+	private bool PlaceGrassBladeAtPos(in float x, in float y, in float height, in Vector3 objectPos) 
     {
-        if (Physics.Raycast(new Vector3(x, m_GrassMapGenerationHeight, y), -Vector3.up, out RaycastHit hit, Mathf.Infinity, m_GrassGenerationLayer)) 
+        if (Physics.Raycast(new Vector3(x, m_GrassMapGenerationHeight, y), -Vector3.up, out RaycastHit hit, Mathf.Infinity, m_GrassGenerationLayerMask | m_BlockingGrassGenerationLayerMask)) 
         {
-            vertices.Add(hit.point);
-            colors.Add(new Color(height, 0, 0, 0));
+            // if we hit a boulder instead of grass, ignore this vertex
+            if (m_BlockingGrassGenerationLayerMask == (m_BlockingGrassGenerationLayerMask | (1 << hit.collider.gameObject.layer)))
+                return true;
+
+            // if we hit a 
+            if (UnityEngine.Random.Range(0f, 1f) < m_AngularFailureProbability.Evaluate(Vector3.Angle(Vector3.up, hit.normal)))
+                return true;
+
+
+
+            vertices.Add(hit.point - objectPos);
+            colors.Add(new Color(0, height, 0, 0));
+            normals.Add(hit.normal);
+
+            if (Vector3.up != hit.normal) 
+            {
+                tangents.Add(Vector3.Cross(hit.normal, Vector3.up));
+            }
+			else 
+            {
+                tangents.Add(Vector3.right);
+            }
+            
             return true;
         }
         return false;

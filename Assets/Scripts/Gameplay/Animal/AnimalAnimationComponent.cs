@@ -163,7 +163,7 @@ public class AnimalAnimationComponent : MonoBehaviour
 
     public void SetCurrentAttackAnimation(in AttackBase m_NewAttack) 
     {
-        m_AnimatorStateMachine.SetParam("attackAnimationDuration", m_NewAttack.GetDuration());
+        m_AnimatorStateMachine.SetParam("attackAnimationDuration", m_NewAttack.GetAttackDuration);
         m_AnimatorStateMachine.SetParam("attackForwardCurve", m_NewAttack.GetForwardCurve());
         m_AnimatorStateMachine.SetParam("attackHopCurve", m_NewAttack.GetHopCurve());
         m_AnimatorStateMachine.SetParam("attackPitchCurve", m_NewAttack.GetPitchCurve());
