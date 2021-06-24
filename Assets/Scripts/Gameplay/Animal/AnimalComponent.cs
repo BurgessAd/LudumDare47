@@ -83,6 +83,11 @@ public class AnimalComponent : MonoBehaviour
         m_AnimalAnimator.WasPulled();
     }
 
+    public void OnBorn() 
+    {
+        m_StateMachine.RequestState(typeof(AnimalGrowingState));
+    }
+
     private void OnBeginAbducted()
     {
         IsInTractorBeam = true;
@@ -467,6 +472,17 @@ public class AnimalComponent : MonoBehaviour
 
     public void OnSuccessfullyBred() 
     {
+        Transform otherTrans = m_TargetEntity.GetTrackingTransform;
+        Vector3 inBetween = (m_Type.GetTrackingTransform.t + otherTrans.t)/2f;
+        Collider[] hitColliders = new Collider[1];
+        Vector3 spawnPosition = inBetween;
+        int numColliders = Physics.OverlapSphereNonAlloc(inBetween.t, 1f, hitColliders, m_groundLayers);
+        if (numColliders > 0) 
+        {
+            spawnPosition = hitColliders[0].point;
+        }
+        GameObject child = Instantiate(gameObject, spawnPosition, Quaternion.Identity, null);
+        child.GetComponent<AnimalComponent>().OnBorn();
         m_fFullness -= m_fBreedingHungerUsage;
         m_fLastBreedingTime = Time.time;
     }
@@ -1102,6 +1118,12 @@ public class AnimalAttackState : AStateBase
         TriggerCallback("sendTargetPosition");
         animalAnimator.TriggerAttackAnimation(() => TriggerCallback("attackAnimationComplete"), () => TriggerCallback("triggerDamage"));
     }
+}
+
+public class AnimalGrowingState : AStateBase 
+{
+
+
 }
 
 public class AnimalPredatorChaseState : AStateBase

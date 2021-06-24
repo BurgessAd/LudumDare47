@@ -482,6 +482,11 @@ public class AnimalWalkingAnimationState : AStateBase
     }
 }
 
+public class AnimalBreedingAnimationState : AStateBase 
+{
+
+}
+
 public class AnimalDamagedAnimationState : AStateBase 
 {
     private float m_CurrentAnimTime = 0.0f;
