@@ -54,6 +54,8 @@ public class AnimalComponent : MonoBehaviour
     [SerializeField] private AttackBase m_DamageAttackType;
     [SerializeField] private AttackTypeDamage m_EatAttackType;
 
+    [SerializeField] private LayerMask m_GroundLayerMask;
+
     private AttackBase m_CurrentAttackComponent;
 
     private bool m_bShouldStagger = false;
@@ -85,7 +87,7 @@ public class AnimalComponent : MonoBehaviour
 
     public void OnBorn() 
     {
-        m_StateMachine.RequestState(typeof(AnimalGrowingState));
+        m_StateMachine.RequestTransition(typeof(AnimalGrowingState));
     }
 
     private void OnBeginAbducted()
@@ -102,7 +104,7 @@ public class AnimalComponent : MonoBehaviour
 
     private void OnWrangledByLasso() 
     {
-        m_StateMachine.SetParam("evadingTransform", m_Manager.GetPlayer.transform);
+        m_StateMachine.SetParam("evadingEntity", m_Manager.GetPlayer);
         IsWrangled = true;
     }
 
@@ -303,7 +305,7 @@ public class AnimalComponent : MonoBehaviour
             if (distSq < distToEscSq)
             {
                 SetEvadingAnimal(objToken.GetEntityType);
-                m_StateMachine.SetParam("evadingTransform", objToken.GetEntityTransform);
+                m_StateMachine.SetParam("evadingEntity", objToken.GetEntityType);
                 return true;
             }
         }
@@ -356,7 +358,7 @@ public class AnimalComponent : MonoBehaviour
         {
             m_TargetEntity = objToken.GetEntityTransform.GetComponent<EntityTypeComponent>();
             objToken.GetEntityType.BeginTrackingObject(OnTargetInvalidated);
-            m_StateMachine.SetParam("evadingTransform", objToken.GetEntityTransform);
+            m_StateMachine.SetParam("evadingEntity", m_TargetEntity);
             return true;
         }
         return false;
@@ -364,7 +366,7 @@ public class AnimalComponent : MonoBehaviour
     private bool CanAttackEnemy()
     {
         float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
-        float distToEscSq = m_CurrentAttackComponent.GetAttackRange * m_CurrentAttackComponent.GetAttackRange;
+        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange * m_TargetEntity.GetTrackableRadius, 2);
         if (distSq < distToEscSq )
         {
             m_AnimalAgent.isStopped = true;
@@ -379,6 +381,7 @@ public class AnimalComponent : MonoBehaviour
 
     private void AttackAnimationComplete()
     {
+        m_StateMachine.RequestTransition(typeof(AnimalIdleState));
         m_StateMachine.RequestTransition(typeof(AnimalIdleState));
     }
 
@@ -473,15 +476,9 @@ public class AnimalComponent : MonoBehaviour
     public void OnSuccessfullyBred() 
     {
         Transform otherTrans = m_TargetEntity.GetTrackingTransform;
-        Vector3 inBetween = (m_Type.GetTrackingTransform.t + otherTrans.t)/2f;
-        Collider[] hitColliders = new Collider[1];
+        Vector3 inBetween = (m_EntityInformation.GetTrackingTransform.position + otherTrans.position)/2f;
         Vector3 spawnPosition = inBetween;
-        int numColliders = Physics.OverlapSphereNonAlloc(inBetween.t, 1f, hitColliders, m_groundLayers);
-        if (numColliders > 0) 
-        {
-            spawnPosition = hitColliders[0].point;
-        }
-        GameObject child = Instantiate(gameObject, spawnPosition, Quaternion.Identity, null);
+        GameObject child = Instantiate(gameObject, spawnPosition, Quaternion.identity, null);
         child.GetComponent<AnimalComponent>().OnBorn();
         m_fFullness -= m_fBreedingHungerUsage;
         m_fLastBreedingTime = Time.time;
@@ -828,7 +825,7 @@ public class AnimalEvadingState : AStateBase
 {
     private readonly AnimalAnimationComponent animalAnimator;
     private readonly AnimalMovementComponent animalMovement;
-    private Transform m_RunningTransform;
+    private EntityTypeComponent m_RunningTransform;
     private float m_fFleeCheckInterval;
     private float m_fEvadeDistance;
     float currentRunTime = 0.0f;
@@ -841,11 +838,11 @@ public class AnimalEvadingState : AStateBase
     public override void OnEnter()
     {
         currentRunTime = 0.0f;
-        m_RunningTransform = GetParam<Transform>("evadingTransform");
+        m_RunningTransform = GetParam<EntityTypeComponent>("evadingEntity");
         m_fFleeCheckInterval = GetParam<float>("fleeCheckInterval");
         m_fEvadeDistance = GetParam<float>("evadedDistance");
         animalMovement.enabled = true;
-        animalMovement.RunAwayFromObject(m_RunningTransform, m_fEvadeDistance);
+        animalMovement.RunAwayFromObject(m_RunningTransform.GetTrackingTransform, m_fEvadeDistance);
         animalAnimator.SetRunAnimation();
         animalMovement.SetRunning();
 
@@ -857,12 +854,12 @@ public class AnimalEvadingState : AStateBase
         currentRunTime += Time.deltaTime;
         if (currentRunTime > m_fFleeCheckInterval) 
         {
-            animalMovement.RunAwayFromObject(m_RunningTransform, m_fEvadeDistance);
+            animalMovement.RunAwayFromObject(m_RunningTransform.GetTrackingTransform, m_fEvadeDistance);
             currentRunTime = 0.0f;
         }
         if (animalMovement.IsStuck()) 
         {
-            animalMovement.RunAwayFromObject(m_RunningTransform, m_fEvadeDistance);
+            animalMovement.RunAwayFromObject(m_RunningTransform.GetTrackingTransform, m_fEvadeDistance);
             currentRunTime = m_fFleeCheckInterval / 2f; 
         }
     }
@@ -886,7 +883,7 @@ public class AnimalWrangledState : AStateBase
 
     public override void Tick()
     {
-        Vector3 dir = (m_BodyTransform.position - GetParam<Transform>("evadingTransform").position).normalized;
+        Vector3 dir = (m_BodyTransform.position - GetParam<EntityTypeComponent>("evadingEntity").GetTrackingTransform.position).normalized;
         animalMovement.RunInDirection(dir);
         animalMovementAnimator.SetDesiredLookDirection(dir);
     }
@@ -1002,7 +999,7 @@ public class AnimalBreedingChaseState : AStateBase
 {
     private readonly AnimalAnimationComponent animalAnimator;
     private readonly AnimalMovementComponent animalMovement;
-    private Transform m_RunningTransform;
+    private EntityTypeComponent m_RunningTransform;
     private float m_fHuntCheckInterval;
     private float m_fBreedingDistance;
     private float m_fHuntDistance;
@@ -1016,12 +1013,12 @@ public class AnimalBreedingChaseState : AStateBase
     public override void OnEnter()
     {
         currentRunTime = 0.0f;
-        m_RunningTransform = GetParam<Transform>("evadingTransform");
+        m_RunningTransform = GetParam<EntityTypeComponent>("evadingEntity");
         m_fHuntCheckInterval = GetParam<float>("huntCheckInterval");
         m_fHuntDistance = GetParam<float>("breedingHuntBeginDistance");
         m_fBreedingDistance = GetParam<float>("breedingDistance");
         animalMovement.enabled = true;
-        animalMovement.RunTowardsObject(m_RunningTransform, m_fHuntDistance);
+        animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance);
         animalAnimator.SetRunAnimation();
         animalMovement.SetRunning();
         currentRunTime = m_fHuntCheckInterval;
@@ -1034,12 +1031,12 @@ public class AnimalBreedingChaseState : AStateBase
         currentRunTime += Time.deltaTime;
         if (currentRunTime > m_fHuntCheckInterval)
         {
-            animalMovement.RunTowardsObject(m_RunningTransform, m_fHuntDistance, m_fBreedingDistance);
+            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fBreedingDistance);
             currentRunTime = 0.0f;
         }
         if (animalMovement.IsStuck())
         {
-            animalMovement.RunTowardsObject(m_RunningTransform, m_fHuntDistance, m_fBreedingDistance);
+            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fBreedingDistance);
             currentRunTime = m_fHuntCheckInterval / 2f;
         }
     }
@@ -1130,7 +1127,7 @@ public class AnimalPredatorChaseState : AStateBase
 {
     private readonly AnimalAnimationComponent animalAnimator;
     private readonly AnimalMovementComponent animalMovement;
-    private Transform m_RunningTransform;
+    private EntityTypeComponent m_RunningTransform;
     private float m_fHuntCheckInterval;
     private float m_fAttackDistance;
     private float m_fHuntDistance;
@@ -1144,12 +1141,12 @@ public class AnimalPredatorChaseState : AStateBase
     public override void OnEnter()
     {
         currentRunTime = 0.0f;
-        m_RunningTransform = GetParam<Transform>("evadingTransform");
+        m_RunningTransform = GetParam<EntityTypeComponent>("evadingEntity");
         m_fHuntCheckInterval = GetParam<float>("huntCheckInterval");
         m_fHuntDistance = GetParam<float>("huntBeginDistance");
         m_fAttackDistance = GetParam<float>("attackDistance");
         animalMovement.enabled = true;
-        animalMovement.RunTowardsObject(m_RunningTransform, m_fAttackDistance);
+        animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
         animalAnimator.SetRunAnimation();
         animalMovement.SetRunning();
         currentRunTime = m_fHuntCheckInterval;
@@ -1162,17 +1159,17 @@ public class AnimalPredatorChaseState : AStateBase
         currentRunTime += Time.deltaTime;
         if (currentRunTime > m_fHuntCheckInterval)
         {
-            animalMovement.RunTowardsObject(m_RunningTransform, m_fHuntDistance, m_fAttackDistance);
+            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
             currentRunTime = 0.0f;
         }
         else if (animalMovement.IsStuck())
         {
-            animalMovement.RunTowardsObject(m_RunningTransform, m_fHuntDistance, m_fAttackDistance);
+            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
             currentRunTime = m_fHuntCheckInterval / 2f;
         }
 		else 
         {
-            animalMovement.CheckStoppingDistanceForChase(m_RunningTransform, m_fAttackDistance);
+            animalMovement.CheckStoppingDistanceForChase(m_RunningTransform.GetTrackingTransform, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
         }
     }
 }

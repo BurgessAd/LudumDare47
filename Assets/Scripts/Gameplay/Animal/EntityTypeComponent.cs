@@ -11,6 +11,8 @@ public class EntityTypeComponent : MonoBehaviour
 
     [SerializeField] private Transform m_TrackingTransform;
 
+    [SerializeField] private float m_TrackableRadius = 0f;
+
     public EntityInformation GetEntityInformation => m_EntityInformation;
 
     private event Action OnCancelTracking;
@@ -23,6 +25,8 @@ public class EntityTypeComponent : MonoBehaviour
 	}
 
     public Transform GetTrackingTransform => m_TrackingTransform;
+
+    public float GetTrackableRadius => m_TrackableRadius;
 
 	public void BeginTrackingObject(in Action OnUnableToTrackFurther) 
     {

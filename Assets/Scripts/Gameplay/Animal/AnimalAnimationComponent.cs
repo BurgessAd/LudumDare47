@@ -65,6 +65,8 @@ public class AnimalAnimationComponent : MonoBehaviour
     [SerializeField] private string m_AnimalCallSoundIdentifier;
     [SerializeField] private string m_AnimalStepSoundIdentifier;
     [SerializeField] private string m_AnimalImpactSoundIdentifier;
+    [Header("Breeding References")]
+
 
     [HideInInspector] public float m_TimeBeingPulled;
     [HideInInspector] public Vector3 m_vTargetForward;
@@ -167,6 +169,7 @@ public class AnimalAnimationComponent : MonoBehaviour
         m_AnimatorStateMachine.SetParam("attackForwardCurve", m_NewAttack.GetForwardCurve());
         m_AnimatorStateMachine.SetParam("attackHopCurve", m_NewAttack.GetHopCurve());
         m_AnimatorStateMachine.SetParam("attackPitchCurve", m_NewAttack.GetPitchCurve());
+        m_AnimatorStateMachine.SetParam("attackTiltCurve", m_NewAttack.GetTiltCurve());
     }
 
     private void Awake()
@@ -325,24 +328,25 @@ public class AnimalIdleAnimationState : AStateBase { }
 
 public class AnimalBreedingAnimationState : AStateBase 
 {
-    private readonly AnimalAnimationComponent animator;
-    private readonly ParticleEffectsController heartParticleController;
+    private readonly AnimalAnimationComponent m_animator;
+    private readonly ParticleEffectsController m_heartParticleController;
     public AnimalBreedingAnimationState(AnimalAnimationComponent animator, ParticleEffectsController heartController) 
     {
-        this.heartParticleController = heartController;
-        this.animator = animator;
+        this.m_heartParticleController = heartController;
+        this.m_animator = animator;
     }
 
 	public override void OnEnter()
 	{
-        heartParticleController.TurnOnAllSystems();
+        m_heartParticleController.TurnOnAllSystems();
 	}
 
 	public override void OnExit()
 	{
-        heartParticleController.TurnOffAllSystems();
+        m_heartParticleController.TurnOffAllSystems();
 	}
 }
+
 public class AnimalFreeFallAnimationState : AStateBase 
 {
     private readonly AnimalAnimationComponent animator;
@@ -482,11 +486,6 @@ public class AnimalWalkingAnimationState : AStateBase
     }
 }
 
-public class AnimalBreedingAnimationState : AStateBase 
-{
-
-}
-
 public class AnimalDamagedAnimationState : AStateBase 
 {
     private float m_CurrentAnimTime = 0.0f;
@@ -579,6 +578,7 @@ public class AnimalAttackAnimationState : AStateBase
 
     private AnimationCurve m_AttackHopCurve;
     private AnimationCurve m_AttackPitchCurve;
+    private AnimationCurve m_AttackTiltCurve;
     private AnimationCurve m_AttackForwardCurve;
     private Quaternion m_startQuat;
     public override void OnEnter()
@@ -589,6 +589,7 @@ public class AnimalAttackAnimationState : AStateBase
         m_AnimTransform = GetParam<Transform>("animationTransform");
         m_AttackHopCurve = GetParam<AnimationCurve>("attackHopCurve");
         m_AttackPitchCurve = GetParam<AnimationCurve>("attackPitchCurve");
+        m_AttackTiltCurve = GetParam<AnimationCurve>("attackTiltCurve");
         m_AttackForwardCurve = GetParam<AnimationCurve>("attackForwardCurve");
         m_AnimLinearSpeed = GetParam<float>("animationLinearSpeed");
         m_AnimRotationSpeed = GetParam<float>("animationRotationSpeed");
@@ -604,10 +605,11 @@ public class AnimalAttackAnimationState : AStateBase
             float animTime = m_CurrentAnimTime / m_TotalAnimationDuration;
 
             float pitchAng = m_AttackPitchCurve.Evaluate(animTime);
+            float tiltAng = m_AttackTiltCurve.Evaluate(animTime);
             float forwardAmount = m_AttackForwardCurve.Evaluate(animTime);
             float hopAmount = m_AttackHopCurve.Evaluate(animTime);
 
-            Quaternion targetQuat = lookQuat * Quaternion.Euler(pitchAng, 0, 0);
+            Quaternion targetQuat = lookQuat * Quaternion.Euler(pitchAng, 0, tiltAng);
             m_AnimTransform.localRotation = Quaternion.RotateTowards(m_AnimTransform.localRotation, targetQuat, m_AnimRotationSpeed);
             
             Vector3 targetPos = m_startQuat * (new Vector3(0, hopAmount, forwardAmount));

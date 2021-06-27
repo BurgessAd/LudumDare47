@@ -238,7 +238,11 @@ public class CowGameManager : ScriptableObject
 				counter.IncrementCounter();
 			}
 		}
-		if (m_EntityCache[entityType].Count == 0) { m_EntityCache.Remove(entityType); }
+		List<EntityToken> cache = m_EntityCache[entityType];
+		if (cache.Count == 0) 
+		{ 
+			m_EntityCache.Remove(entityType); 
+		}
 	}
 
 	public void OnCowEnterGoal(GameObject entity)

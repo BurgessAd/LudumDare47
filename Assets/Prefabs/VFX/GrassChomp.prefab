@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2075845814955891255}
   - component: {fileID: 6167713671559905772}
   - component: {fileID: 7968296383255662672}
-  - component: {fileID: 2954913830563298260}
+  - component: {fileID: 1018268874790084431}
   m_Layer: 0
   m_Name: GrassChomp
   m_TagString: Untagged
@@ -47,7 +47,7 @@ ParticleSystem:
   cullingMode: 0
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
-  looping: 1
+  looping: 0
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -4813,7 +4813,7 @@ ParticleSystemRenderer:
   m_Mesh2: {fileID: 0}
   m_Mesh3: {fileID: 0}
   m_MaskInteraction: 0
---- !u!114 &2954913830563298260
+--- !u!114 &1018268874790084431
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
