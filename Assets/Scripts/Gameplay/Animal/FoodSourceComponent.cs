@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+[RequireComponent(typeof(LocalDebugData))]
 public class FoodSourceComponent : MonoBehaviour
 {
     [SerializeField] private AnimationCurve m_RegenerationRateByCurrentHealth = default;
@@ -37,11 +38,20 @@ public class FoodSourceComponent : MonoBehaviour
 	{
         m_HealthComponent = GetComponent<HealthComponent>();
         m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
-    }
+
+#if UNITY_EDITOR
+        m_GrassDebug = GetComponent<LocalDebugData>();
+#endif
+        }
+
+#if UNITY_EDITOR
+private LocalDebugData m_GrassDebug;
+#endif
 
     void Update()
     {
-        m_HealthComponent.ReplenishHealth(m_RegenerationRateByCurrentHealth.Evaluate(m_HealthComponent.GetCurrentHealthPercentage) * Time.deltaTime);
+        float regenerationRatePerSecond = m_RegenerationRateByCurrentHealth.Evaluate(m_HealthComponent.GetCurrentHealthPercentage);
+        m_HealthComponent.ReplenishHealth(regenerationRatePerSecond * Time.deltaTime);
         m_fCurrentFoodSize = Mathf.SmoothDamp(m_fCurrentFoodSize, m_HealthComponent.GetCurrentHealthPercentage, ref m_fFoodSizeChangeVelocity, m_fFoodSizeChangeTime);
         m_FoodHealthAnimator.Play(m_FoodAnimatorParamName, 0, m_fCurrentFoodSize);
 
@@ -55,5 +65,11 @@ public class FoodSourceComponent : MonoBehaviour
             m_CurrentFoodStatus = FoodStatus.ReadyToEat;
             m_EntityInformation.AddToTrackable();
         }
+#if UNITY_EDITOR
+        //m_GrassDebug.AddDebugLine(string.Format("Food Name: %s", gameObject.name));
+        //m_GrassDebug.AddDebugLine(string.Format("Current Food Health: %f'%'", m_HealthComponent.GetCurrentHealthPercentage));
+        //m_GrassDebug.AddDebugLine(string.Format("Food Status: %s", m_CurrentFoodStatus.Equals(FoodStatus.Growing) ? "Growing" : "Ready To Eat"));
+        //m_GrassDebug.AddDebugLine(string.Format("Current Food Growth Rate per Second: %f", regenerationRatePerSecond));
+#endif
     }
 }

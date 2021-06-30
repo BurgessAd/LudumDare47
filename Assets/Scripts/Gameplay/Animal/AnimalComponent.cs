@@ -50,6 +50,7 @@ public class AnimalComponent : MonoBehaviour
     [SerializeField] private float m_HuntBeginDistance = default;
     [SerializeField] private float m_HuntEndDistance = default;
     [SerializeField] private float m_fHuntCheckInterval = default;
+    [SerializeField] private float m_fViewFrustrumAngle = default;
 
     [SerializeField] private AttackBase m_DamageAttackType;
     [SerializeField] private AttackTypeDamage m_EatAttackType;
@@ -106,6 +107,22 @@ public class AnimalComponent : MonoBehaviour
     {
         m_StateMachine.SetParam("evadingEntity", m_Manager.GetPlayer);
         IsWrangled = true;
+    }
+
+    private bool CanSeeObject(float range, Vector3 objectPosition) 
+    {
+        Vector3 fromThisToThat = objectPosition - m_AnimalMainTransform.position;
+        if (fromThisToThat.sqrMagnitude - range * range < 0)
+            return false;
+
+        Vector3 animalForward = m_AnimalMainTransform.forward;
+        if (Vector3.Angle(animalForward, fromThisToThat) > m_fViewFrustrumAngle)
+            return false;
+
+        if (!Physics.Raycast(m_AnimalMainTransform.position, fromThisToThat, out RaycastHit hit, fromThisToThat.magnitude, m_GroundLayerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        return true;
     }
 
     private bool CanImpactHard() 
@@ -300,9 +317,7 @@ public class AnimalComponent : MonoBehaviour
     {
         if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetScaredOf, out EntityToken objToken, null))
         {
-            float distSq = Vector3.SqrMagnitude(objToken.GetEntityType.GetTrackingTransform.position - m_AnimalMainTransform.position);
-            float distToEscSq = m_ScaredDistance * m_ScaredDistance * 1.0f;
-            if (distSq < distToEscSq)
+            if (CanSeeObject(m_ScaredDistance, objToken.GetEntityType.GetTrackingTransform.position))
             {
                 SetEvadingAnimal(objToken.GetEntityType);
                 m_StateMachine.SetParam("evadingEntity", objToken.GetEntityType);
@@ -327,17 +342,6 @@ public class AnimalComponent : MonoBehaviour
 
     private bool CanHuntEnemy()
     {
-        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetHunts, out EntityToken objToken, null))
-        {
-            if (TryHuntObject(objToken)) 
-            {
-                m_CurrentAttackComponent = m_EatAttackType;
-                m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackType);
-                m_StateMachine.SetParam("attackDistance", m_CurrentAttackComponent.GetAttackRange);
-                return true;
-            }
-        }
-
         if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetAttacks, out EntityToken objAtkToken, null))
         {
             if (TryHuntObject(objAtkToken))
@@ -348,13 +352,25 @@ public class AnimalComponent : MonoBehaviour
                 return true;
             }
         }
+
+        if (!IsFull) 
+        {
+            if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetHunts, out EntityToken objToken, null))
+            {
+                if (TryHuntObject(objToken))
+                {
+                    m_CurrentAttackComponent = m_EatAttackType;
+                    m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackType);
+                    m_StateMachine.SetParam("attackDistance", m_CurrentAttackComponent.GetAttackRange);
+                    return true;
+                }
+            }
+        }    
         return false;
     }
     bool TryHuntObject(in EntityToken objToken)
     {
-        float distSq = Vector3.SqrMagnitude(objToken.GetEntityType.GetTrackingTransform.position - m_AnimalMainTransform.position);
-        float distToEscSq = m_HuntBeginDistance * m_HuntBeginDistance;
-        if (distSq < distToEscSq)
+        if (CanSeeObject(m_HuntBeginDistance, objToken.GetEntityType.GetTrackingTransform.position))
         {
             m_TargetEntity = objToken.GetEntityTransform.GetComponent<EntityTypeComponent>();
             objToken.GetEntityType.BeginTrackingObject(OnTargetInvalidated);
@@ -366,7 +382,7 @@ public class AnimalComponent : MonoBehaviour
     private bool CanAttackEnemy()
     {
         float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
-        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange * m_TargetEntity.GetTrackableRadius, 2);
+        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange + m_TargetEntity.GetTrackableRadius, 2);
         if (distSq < distToEscSq )
         {
             m_AnimalAgent.isStopped = true;
@@ -549,6 +565,9 @@ public class AnimalComponent : MonoBehaviour
     {
         return Time.time >= m_TimeGrounded;
     }
+
+    public bool IsFull => m_fFullness > m_fMaximumFullness;
+
     public ref Vector3 GetLastContactPoint()
     {
         return ref m_LastGroundedPosition;
@@ -590,7 +609,7 @@ public class AnimalComponent : MonoBehaviour
 
     private void OnDamageObject(float damageAmount, GameObject target) 
     {
-        m_fFullness = Mathf.Min(damageAmount + m_fFullness, m_fMaximumFullness);
+        m_fFullness += damageAmount;
     }
 
     protected virtual void Awake()
