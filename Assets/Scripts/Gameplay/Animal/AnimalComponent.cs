@@ -112,14 +112,14 @@ public class AnimalComponent : MonoBehaviour
     private bool CanSeeObject(float range, Vector3 objectPosition) 
     {
         Vector3 fromThisToThat = objectPosition - m_AnimalMainTransform.position;
-        if (fromThisToThat.sqrMagnitude - range * range < 0)
+        if (fromThisToThat.sqrMagnitude - range * range > 0)
             return false;
 
-        Vector3 animalForward = m_AnimalMainTransform.forward;
+        Vector3 animalForward = m_AnimalBodyTransform.forward;
         if (Vector3.Angle(animalForward, fromThisToThat) > m_fViewFrustrumAngle)
             return false;
 
-        if (!Physics.Raycast(m_AnimalMainTransform.position, fromThisToThat, out RaycastHit hit, fromThisToThat.magnitude, m_GroundLayerMask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(m_AnimalMainTransform.position, fromThisToThat, out RaycastHit hit, fromThisToThat.magnitude, m_GroundLayerMask, QueryTriggerInteraction.Ignore))
             return false;
 
         return true;
@@ -319,6 +319,7 @@ public class AnimalComponent : MonoBehaviour
         {
             if (CanSeeObject(m_ScaredDistance, objToken.GetEntityType.GetTrackingTransform.position))
             {
+                m_AnimalAnimator.IsScared();
                 SetEvadingAnimal(objToken.GetEntityType);
                 m_StateMachine.SetParam("evadingEntity", objToken.GetEntityType);
                 return true;
@@ -348,6 +349,7 @@ public class AnimalComponent : MonoBehaviour
             {
                 m_CurrentAttackComponent = m_DamageAttackType;
                 m_AnimalAnimator.SetCurrentAttackAnimation(m_DamageAttackType);
+                m_AnimalAnimator.HasSeenEnemy();
                 m_StateMachine.SetParam("attackDistance", m_CurrentAttackComponent.GetAttackRange);
                 return true;
             }
@@ -359,6 +361,7 @@ public class AnimalComponent : MonoBehaviour
             {
                 if (TryHuntObject(objToken))
                 {
+                    m_AnimalAnimator.HasSeenFood();
                     m_CurrentAttackComponent = m_EatAttackType;
                     m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackType);
                     m_StateMachine.SetParam("attackDistance", m_CurrentAttackComponent.GetAttackRange);
@@ -379,6 +382,7 @@ public class AnimalComponent : MonoBehaviour
         }
         return false;
     }
+
     private bool CanAttackEnemy()
     {
         float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
