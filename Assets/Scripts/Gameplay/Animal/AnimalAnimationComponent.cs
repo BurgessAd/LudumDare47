@@ -45,6 +45,7 @@ public class AnimalAnimationComponent : MonoBehaviour
     [SerializeField] private float m_ConfusionAnimWindupTime;
     [SerializeField] private float m_ConfusionRotationSpeed;
     [ColorUsage(true, true)] [SerializeField] private Color m_DamagedColor;
+
     [Header("Object references")]
     [SerializeField] private Transform m_tAnimationTransform;
     [SerializeField] private Transform m_tParentObjectTransform;
@@ -54,10 +55,13 @@ public class AnimalAnimationComponent : MonoBehaviour
     [SerializeField] private Transform m_ConfusionEffectRotationTransform;
     [SerializeField] private Transform m_DraggingParticlesTransform;
     [SerializeField] private GameObject m_GroundImpactEffectsPrefab;
+
+    [SerializeField] private ParticleEffectsController m_AlertEffectsController;
     [SerializeField] private ParticleEffectsController m_DraggingParticleController;
     [SerializeField] private ParticleEffectsController m_FreeFallingParticleController;
     [SerializeField] private ParticleEffectsController m_DamagedParticleController;
     [SerializeField] private ParticleEffectsController m_BashedParticleController;
+
     [SerializeField] private AudioManager m_AudioManager;
     [SerializeField] private List<MeshRenderer> m_DamagedMeshRenderers;
     [SerializeField] private CowGameManager m_Manager;
@@ -209,6 +213,21 @@ public class AnimalAnimationComponent : MonoBehaviour
     public void SetIdleAnimation() 
     {
         m_AnimatorStateMachine.RequestTransition(typeof(AnimalIdleAnimationState));
+    }
+
+    public void IsScared() 
+    {
+        m_AlertEffectsController.PlayOneShot();
+    }
+
+    public void HasSeenEnemy() 
+    {
+        m_AlertEffectsController.PlayOneShot();
+    }
+
+    public void HasSeenFood() 
+    {
+        m_AlertEffectsController.PlayOneShot();
     }
 
     public void SetWalkAnimation() 

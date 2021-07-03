@@ -38,6 +38,15 @@ public class ParticleEffectsController : MonoBehaviour
 		IterateParticleSystems((ParticleSystem particleSystem) => { particleSystem.Stop(); });
 	}
 
+	public void PlayOneShot() 
+	{
+		IterateParticleSystems((ParticleSystem particleSystem) => 
+		{ 
+			particleSystem.Stop();
+			particleSystem.Play();
+		});
+	}
+
 	public void TurnOnAllSystems() 
 	{
 		IterateParticleSystems((ParticleSystem particleSystem) => { particleSystem.Play(); });
