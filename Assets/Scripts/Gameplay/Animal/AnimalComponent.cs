@@ -9,7 +9,7 @@ using System.Collections;
 [RequireComponent(typeof(HealthComponent))]
 [RequireComponent(typeof(ThrowableObjectComponent))]
 [RequireComponent(typeof(FreeFallTrajectoryComponent))]
-public class AnimalComponent : MonoBehaviour
+public class AnimalComponent : MonoBehaviour, IPauseListener
 {
     [Header("Object references")]
     [SerializeField] protected CowGameManager m_Manager = default;
@@ -399,6 +399,28 @@ public class AnimalComponent : MonoBehaviour
         return false;
     }
 
+    private bool CanAttackPlayerFromWrangle() 
+    {
+        EntityTypeComponent targetEntity = m_Manager.GetPlayer;
+        float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(targetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
+        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange + m_TargetEntity.GetTrackableRadius, 2);
+        if (distSq < distToEscSq)
+        {
+            if (Time.time - m_fLastAttackTime > m_CurrentAttackComponent.GetAttackCooldownTime)
+            {
+                m_CurrentAttackComponent = m_DamageAttackType;
+                m_AnimalAnimator.SetCurrentAttackAnimation(m_DamageAttackType);
+
+                m_TargetEntity = targetEntity;
+                targetEntity.BeginTrackingObject(OnTargetInvalidated);
+                m_StateMachine.SetParam("evadingEntity", m_TargetEntity);
+                m_fLastAttackTime = Time.time;
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void AttackAnimationComplete()
     {
         m_StateMachine.RequestTransition(typeof(AnimalIdleState));
@@ -620,6 +642,60 @@ public class AnimalComponent : MonoBehaviour
     {
         m_AnimalMainTransform.localScale = Vector3.one * (1 + UnityEngine.Random.Range(-m_SizeVariation, m_SizeVariation));
 
+ 
+    }
+
+    private Vector3 m_BodyVelocity = Vector3.zero;
+    private Vector3 m_BodyAngularVelocity = Vector3.zero;
+    private bool m_bWasUsingNavmeshAgent = false;
+    private bool m_bWasUsingRigidBody = false;
+
+    public void Pause()
+    {
+        if (m_AnimalAgent.enabled)
+        {
+            m_bWasUsingNavmeshAgent = true;
+            m_BodyVelocity = m_AnimalAgent.velocity;
+        }
+        if (!m_AnimalRigidBody.isKinematic)
+        {
+            m_BodyVelocity = Vector3.zero;
+            m_BodyAngularVelocity = Vector3.zero;
+            m_AnimalRigidBody.velocity = Vector3.zero;
+            m_AnimalRigidBody.angularVelocity = Vector3.zero;
+            m_bWasUsingRigidBody = true;
+            m_AnimalRigidBody.isKinematic = true;
+
+        }
+
+        m_AnimalAgent.enabled = false;
+        m_AnimalAnimator.enabled = false;
+        m_AnimalMovement.enabled = false;
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        if (m_bWasUsingNavmeshAgent)
+        {
+            m_AnimalAgent.velocity = m_BodyVelocity;
+            m_AnimalAgent.enabled = true;
+            m_bWasUsingNavmeshAgent = false;
+        }
+        if (m_bWasUsingRigidBody)
+        {
+            m_bWasUsingRigidBody = false;
+            m_AnimalRigidBody.velocity = m_BodyVelocity;
+            m_AnimalRigidBody.angularVelocity = m_BodyAngularVelocity;
+        }
+
+        m_AnimalAnimator.enabled = true;
+        m_AnimalMovement.enabled = true;
+        enabled = true;
+    }
+
+    protected void Start()
+    {
         m_AbductableComponent = GetComponent<AbductableComponent>();
         m_AnimalMovement = GetComponent<AnimalMovementComponent>();
         m_FreeFallComponent = GetComponent<FreeFallTrajectoryComponent>();
@@ -649,7 +725,14 @@ public class AnimalComponent : MonoBehaviour
         m_StateMachine = new StateMachine(new AnimalIdleState(m_AnimalMovement, m_AnimalAnimator));
 
         m_StateMachine.AddState(new AnimalEvadingState(m_AnimalMovement, m_AnimalAnimator));
-        m_StateMachine.AddState(new AnimalWrangledState(m_AnimalMovement, m_AnimalAnimator));
+        if (m_EntityInformation.GetEntityInformation.GetHunts.Contains(m_Manager.GetPlayer.GetEntityInformation))
+        {
+            m_StateMachine.AddState(new AnimalWrangledAttackState(m_AnimalMovement, m_AnimalAnimator));
+        }
+        else
+        {
+            m_StateMachine.AddState(new AnimalWrangledRunState(m_AnimalMovement, m_AnimalAnimator));
+        }
         m_StateMachine.AddState(new AnimalAbductedState(m_AnimalMovement));
         m_StateMachine.AddState(new AnimalThrowingState(m_AnimalAnimator));
         m_StateMachine.AddState(new AnimalFreeFallState(m_AnimalAnimator));
@@ -733,60 +816,10 @@ public class AnimalComponent : MonoBehaviour
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalIdleState), () => HasLostTarget(m_HuntEndDistance));
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalAttackState), CanAttackEnemy);
 
-        m_Manager.AddToPauseUnpause(Pause, Unpause);
-    }
+        // only aggressive creatures can attack players from wrangled state
+        m_StateMachine.AddTransition(typeof(AnimalWrangledAttackState), typeof(AnimalAttackState), CanAttackPlayerFromWrangle);
 
-    private Vector3 m_BodyVelocity = Vector3.zero;
-    private Vector3 m_BodyAngularVelocity = Vector3.zero;
-    private bool m_bWasUsingNavmeshAgent = false;
-    private bool m_bWasUsingRigidBody = false;
-
-    public void Pause()
-    {
-        if (m_AnimalAgent.enabled)
-        {
-            m_bWasUsingNavmeshAgent = true;
-            m_BodyVelocity = m_AnimalAgent.velocity;
-        }
-        if (!m_AnimalRigidBody.isKinematic)
-        {
-            m_BodyVelocity = Vector3.zero;
-            m_BodyAngularVelocity = Vector3.zero;
-            m_AnimalRigidBody.velocity = Vector3.zero;
-            m_AnimalRigidBody.angularVelocity = Vector3.zero;
-            m_bWasUsingRigidBody = true;
-            m_AnimalRigidBody.isKinematic = true;
-
-        }
-
-        m_AnimalAgent.enabled = false;
-        m_AnimalAnimator.enabled = false;
-        m_AnimalMovement.enabled = false;
-        enabled = false;
-    }
-
-    public void Unpause()
-    {
-        if (m_bWasUsingNavmeshAgent)
-        {
-            m_AnimalAgent.velocity = m_BodyVelocity;
-            m_AnimalAgent.enabled = true;
-            m_bWasUsingNavmeshAgent = false;
-        }
-        if (m_bWasUsingRigidBody)
-        {
-            m_bWasUsingRigidBody = false;
-            m_AnimalRigidBody.velocity = m_BodyVelocity;
-            m_AnimalRigidBody.angularVelocity = m_BodyAngularVelocity;
-        }
-
-        m_AnimalAnimator.enabled = true;
-        m_AnimalMovement.enabled = true;
-        enabled = true;
-    }
-
-    protected void Start()
-    {
+        m_Manager.AddToPauseUnpause(this);
         m_StateMachine.InitializeStateMachine();
     }
     public void FixedUpdate()
@@ -893,12 +926,13 @@ public class AnimalEvadingState : AStateBase
 
     }
 }
-public class AnimalWrangledState : AStateBase
+
+public class AnimalWrangledRunState : AnimalWrangledState
 {
     private readonly AnimalMovementComponent animalMovement;
     private readonly AnimalAnimationComponent animalMovementAnimator;
     private Transform m_BodyTransform;
-    public AnimalWrangledState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
+    public AnimalWrangledRunState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
         this.animalMovement = animalMovement;
         this.animalMovementAnimator = animalAnimator;
@@ -919,6 +953,34 @@ public class AnimalWrangledState : AStateBase
         animalMovementAnimator.SetEscapingAnimation();
     }
 }
+
+public class AnimalWrangledAttackState : AnimalWrangledState
+{
+    private readonly AnimalMovementComponent animalMovement;
+    private readonly AnimalAnimationComponent animalAnimator;
+    private Transform m_BodyTransform;
+    public AnimalWrangledAttackState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
+    {
+        this.animalMovement = animalMovement;
+        this.animalAnimator = animalAnimator;
+    }
+
+    public override void Tick()
+    {
+        Vector3 dir = -(m_BodyTransform.position - GetParam<EntityTypeComponent>("evadingEntity").GetTrackingTransform.position).normalized;
+        animalMovement.RunInDirection(dir);
+        animalAnimator.SetDesiredLookDirection(dir);
+    }
+    public override void OnEnter()
+    {
+        TriggerCallback("unmanagedByAgent");
+        TriggerCallback("setGeneralPhysics");
+        m_BodyTransform = GetParam<Transform>("bodyTransform");
+        animalMovement.enabled = false;
+        animalAnimator.SetRunAnimation();
+    }
+}
+public abstract class AnimalWrangledState : AStateBase {  }
 
 public class AnimalThrowingState : AStateBase
 {

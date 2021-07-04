@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UfoAnimationComponent : MonoBehaviour
+public class UfoAnimationComponent : MonoBehaviour, IPauseListener 
 {
     [SerializeField]
     private float m_RotationalVelocity;
@@ -30,7 +30,6 @@ public class UfoAnimationComponent : MonoBehaviour
     public float GetAccelerationRequiredToTilt => m_AccelerationRequiredToTilt;
     public float EvaluateTiltCurve(in float time) => m_TiltAnimationCurve.Evaluate(time);
     public float EvaluatePitchCurve(in float time) => m_PitchAnimationCurve.Evaluate(time);
-
     public float GetStaggerAnimationTime => m_StaggerAnimationTime;
     public float GetAccelerationDampingVal(in float angle) { return m_AngularAccelerationDampening.Evaluate(angle / m_MaxRotationalAngle); }
     public Rigidbody GetBody => m_Body;
@@ -42,7 +41,16 @@ public class UfoAnimationComponent : MonoBehaviour
         m_AnimationStateMachine.AddState(new UFOStaggeredAnimationState(this));
         m_AnimationStateMachine.AddState(new UFOAbductAnimationState(this));
         m_AnimationStateMachine.AddState(new UFODeathAnimationState(this));
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+        m_Manager.AddToPauseUnpause(this);
+    }
+    public void Pause()
+    {
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        enabled = true;
     }
 
     private void Update()

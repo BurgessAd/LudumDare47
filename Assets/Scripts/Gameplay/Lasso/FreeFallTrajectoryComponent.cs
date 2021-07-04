@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System;
-public class FreeFallTrajectoryComponent : MonoBehaviour
+public class FreeFallTrajectoryComponent : MonoBehaviour, IPauseListener
 {
     ProjectileParams projectile;
     private float m_fCurrentTime = 0.0f;
@@ -14,7 +14,16 @@ public class FreeFallTrajectoryComponent : MonoBehaviour
 	private void Awake()
 	{
         enabled = false;
-        m_Manager.AddToPauseUnpause(OnPaused, OnUnpaused);
+        m_Manager.AddToPauseUnpause(this);
+    }
+    public void Pause()
+    {
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        enabled = true;
     }
 
     bool wasPausedWhilstFalling = false;

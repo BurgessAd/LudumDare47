@@ -60,10 +60,10 @@ public class CowGameManager : ScriptableObject
 		m_UICache.Add(reference, element.gameObject);
 	}
 
-	public void AddToPauseUnpause(in Action pauseFunc, in Action unpauseFunc) 
+	public void AddToPauseUnpause(IPauseListener pausable) 
 	{
-		OnPaused += pauseFunc;
-		OnUnpaused += unpauseFunc;
+		OnPaused += pausable.Pause;
+		OnUnpaused += pausable.Unpause;
 		if (m_bIsPaused) OnPaused.Invoke();
 		else OnUnpaused.Invoke();
 	}
@@ -337,6 +337,18 @@ public class CowGameManager : ScriptableObject
 		m_NumSuccesses = 0u;
 		m_SuccessesRequired = 0u;
 	}
+}
+
+public interface IPauseListener 
+{
+	void Pause();
+	void Unpause();
+}
+
+public interface ILevelListener 
+{
+	void LevelStarted();
+	void LevelFinished();
 }
 
 public enum EntityAbductionState 

@@ -56,7 +56,11 @@ public class AnimalAnimationComponent : MonoBehaviour
     [SerializeField] private Transform m_DraggingParticlesTransform;
     [SerializeField] private GameObject m_GroundImpactEffectsPrefab;
 
-    [SerializeField] private ParticleEffectsController m_AlertEffectsController;
+    [SerializeField] private ParticleEffectsController m_AlertAttackEffectsController;
+    [SerializeField] private ParticleEffectsController m_AlertFoodEffectsController;
+    [SerializeField] private ParticleEffectsController m_AlertFleeEffectsController;
+    [SerializeField] private ParticleEffectsController m_AlertBreedEffectsController;
+
     [SerializeField] private ParticleEffectsController m_DraggingParticleController;
     [SerializeField] private ParticleEffectsController m_FreeFallingParticleController;
     [SerializeField] private ParticleEffectsController m_DamagedParticleController;
@@ -215,19 +219,57 @@ public class AnimalAnimationComponent : MonoBehaviour
         m_AnimatorStateMachine.RequestTransition(typeof(AnimalIdleAnimationState));
     }
 
+    private enum AnimalMood 
+    {
+        Fleeing,
+        Attacking,
+        Hunting,
+        Horny,
+        Idling
+    }
+
+    private AnimalMood m_LastMood = AnimalMood.Idling;
+
+    bool TrySetAnimalMood(AnimalMood mood) 
+    {
+        if (!m_LastMood.Equals(mood)) 
+        {
+            m_LastMood = mood;
+            return true;
+        }
+        return false;
+    }
+
     public void IsScared() 
     {
-        m_AlertEffectsController.PlayOneShot();
+        if (TrySetAnimalMood(AnimalMood.Fleeing)) 
+        {
+            m_AlertFleeEffectsController.PlayOneShot();
+        }
     }
 
     public void HasSeenEnemy() 
     {
-        m_AlertEffectsController.PlayOneShot();
+        if (TrySetAnimalMood(AnimalMood.Attacking))
+        {
+            m_AlertAttackEffectsController.PlayOneShot();
+		}
     }
 
     public void HasSeenFood() 
     {
-        m_AlertEffectsController.PlayOneShot();
+        if (TrySetAnimalMood(AnimalMood.Idling))
+        {
+            m_AlertFoodEffectsController.PlayOneShot();
+        }
+    }
+
+    public void HasSeenMate() 
+    {
+        if (TrySetAnimalMood(AnimalMood.Horny)) 
+        {
+            m_AlertBreedEffectsController.PlayOneShot();
+        }
     }
 
     public void SetWalkAnimation() 

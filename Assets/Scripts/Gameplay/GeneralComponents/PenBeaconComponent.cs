@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PenBeaconComponent : MonoBehaviour
+public class PenBeaconComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField] private CowGameManager m_GameManager;
     [SerializeField] private float m_FlashTime;
@@ -28,7 +28,7 @@ public class PenBeaconComponent : MonoBehaviour
 
 		m_GameManager.GetCurrentLevel.OnLevelStarted += OnLevelStarted;
 		m_GameManager.GetCurrentLevel.OnLevelFinished += OnLevelFinished;
-        m_GameManager.AddToPauseUnpause(OnLevelPaused, OnLevelUnpaused);
+        m_GameManager.AddToPauseUnpause(this);
 	}
     private void OnLevelStarted() 
     {
@@ -42,12 +42,12 @@ public class PenBeaconComponent : MonoBehaviour
         m_BeaconStateMachine.RequestTransition(typeof(PenBeaconPostDeathState));
     }
 
-    void OnLevelPaused()
+    public void Pause()
     {
         m_BeaconStateMachine.RequestTransition(typeof(PenBeaconPauseState));
     }
 
-    void OnLevelUnpaused()
+    public void Unpause()
     {
         m_BeaconStateMachine.RequestTransition(typeof(PenBeaconPlayState));
     }
@@ -127,7 +127,7 @@ public class PenBeaconComponent : MonoBehaviour
         }
     }
 
-    public void Unpause() 
+    public void OnUnpause() 
     {
         for (int i = 0; i < m_BeaconColourChangers.Count; i++)
         {
@@ -137,7 +137,7 @@ public class PenBeaconComponent : MonoBehaviour
         }
     }
 
-    public void Pause() 
+    public void OnPause() 
     {
         for (int i = 0; i < m_BeaconColourChangers.Count; i++)
         {
@@ -174,12 +174,12 @@ class PenBeaconPauseState : AStateBase
 
 	public override void OnEnter()
 	{
-        m_BeaconComponent.Pause();
+        m_BeaconComponent.OnPause();
 	}
 
 	public override void OnExit()
 	{
-        m_BeaconComponent.Unpause();
+        m_BeaconComponent.OnUnpause();
 	}
 }
 

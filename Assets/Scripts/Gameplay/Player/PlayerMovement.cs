@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Security.Principal;
 using UnityEngine;
 using System;
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : MonoBehaviour, IPauseListener
 {
     [SerializeField] private float m_fGravity;
     [SerializeField] private Transform m_tGroundTransform = null;
@@ -53,7 +53,16 @@ public class PlayerMovement : MonoBehaviour
         m_throwableObjectComponent.OnThrown += OnThrown;
 
         OnHitGround += OnPlayerHitGround;
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+        m_Manager.AddToPauseUnpause(this);
+    }
+    public void Pause()
+    {
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        enabled = true;
     }
 
     void OnIsSpinningObject(ThrowableObjectComponent throwableObject) 
@@ -68,12 +77,13 @@ public class PlayerMovement : MonoBehaviour
 
     void OnPlayerHitGround(float speed) 
     {
-        if (speed > m_ImpactStrengthByImpactSpeed.keys[0].time) 
+        float firstKey = m_ImpactStrengthByImpactSpeed.keys[0].time;
+        if (Mathf.Abs(speed) > firstKey) 
         {
+            float impactVal = m_ImpactStrengthByImpactSpeed.Evaluate(speed);
             GameObject resultObject = Instantiate(m_GroundImpactEffectsPrefab, m_tGroundTransform.position, m_tGroundTransform.rotation);
-            resultObject.GetComponent<ImpactEffectStrengthManager>().SetParamsOfObject(m_ImpactStrengthByImpactSpeed.Evaluate(speed));
+            resultObject.GetComponent<ImpactEffectStrengthManager>().SetParamsOfObject(impactVal);
         }
-
     }
 
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerComponent : MonoBehaviour
+public class PlayerComponent : MonoBehaviour, IPauseListener
 {
 	[SerializeField] private CowGameManager m_GameManager;
 
@@ -21,12 +21,22 @@ public class PlayerComponent : MonoBehaviour
 		m_LassoComponent.OnStoppedPullingObject += OnStopGrappling;
 		m_HealthComponent.OnEntityDied += (GameObject _, GameObject __, DamageType ___) => OnDied();
 		m_GrapplingBufferCollider.enabled = false;
-		m_GameManager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+		m_GameManager.AddToPauseUnpause(this);
 		m_GameManager.RegisterInitialCameraContainerTransform(m_CamContainer);
 	}
 	private void OnDied()
 	{
 		m_GameManager.OnPlayerKilled();
+	}
+
+	public void Pause() 
+	{
+		enabled = false;
+	}
+
+	public void Unpause() 
+	{
+		enabled = true;
 	}
 
 	private void OnStartGrappling() 

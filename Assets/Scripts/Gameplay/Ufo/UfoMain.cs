@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UfoMain : MonoBehaviour
+public class UfoMain : MonoBehaviour, IPauseListener
 {
 	[Header("Object references")]
 	[SerializeField] private CowGameManager m_Manager;
@@ -88,7 +88,16 @@ public class UfoMain : MonoBehaviour
 		m_UfoStateMachine.AddState(new UFOSwoopUpState(this));
 		m_TractorBeamComponent.SetParent(this);
 		m_TractorBeamComponent.OnTractorBeamFinished += () => OnCowDied(null, null, DamageType.Undefined);
-		m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+		m_Manager.AddToPauseUnpause(this);
+	}
+	public void Pause()
+	{
+		enabled = false;
+	}
+
+	public void Unpause()
+	{
+		enabled = true;
 	}
 
 	private void Start()

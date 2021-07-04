@@ -19831,7 +19831,10 @@ MonoBehaviour:
   m_DraggingParticlesTransform: {fileID: 2166936209954653869}
   m_GroundImpactEffectsPrefab: {fileID: 4068980853593095550, guid: 689f5a59205d25a458c991c686c60fa2,
     type: 3}
-  m_AlertEffectsController: {fileID: 2973502529295201285}
+  m_AlertAttackEffectsController: {fileID: 2973502529295201285}
+  m_AlertFoodEffectsController: {fileID: 2973502529295201285}
+  m_AlertFleeEffectsController: {fileID: 2973502529295201285}
+  m_AlertBreedEffectsController: {fileID: 2973502529295201285}
   m_DraggingParticleController: {fileID: 8775891180349096568}
   m_FreeFallingParticleController: {fileID: 6747988760286121710}
   m_DamagedParticleController: {fileID: 5447729320100373559}

@@ -4,7 +4,7 @@ using UnityEngine;
 using System;
 
 [RequireComponent(typeof(LocalDebugData))]
-public class FoodSourceComponent : MonoBehaviour
+public class FoodSourceComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField] private AnimationCurve m_RegenerationRateByCurrentHealth = default;
 
@@ -37,7 +37,7 @@ public class FoodSourceComponent : MonoBehaviour
 	private void Awake()
 	{
         m_HealthComponent = GetComponent<HealthComponent>();
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+        m_Manager.AddToPauseUnpause(this);
 
 #if UNITY_EDITOR
         m_GrassDebug = GetComponent<LocalDebugData>();
@@ -47,6 +47,15 @@ public class FoodSourceComponent : MonoBehaviour
 #if UNITY_EDITOR
 private LocalDebugData m_GrassDebug;
 #endif
+    public void Pause()
+    {
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        enabled = true;
+    }
 
     void Update()
     {

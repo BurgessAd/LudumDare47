@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-public class PlayerCameraComponent : MonoBehaviour
+public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField] private float m_fMouseSensitivity = 100.0f;
     [SerializeField] private Transform m_tBodyTransform;
@@ -107,14 +107,21 @@ public class PlayerCameraComponent : MonoBehaviour
         m_LassoStart.OnSetPullingObject += OnSetPullingObject;
         m_LassoStart.OnStoppedPullingObject += OnStoppedPullingObject;
 
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+        m_Manager.AddToPauseUnpause(this);
         m_PlayerMovement.OnHitGround += OnHitGround;
         m_PlayerMovement.OnSuccessfulJump += OnJumped;
         m_PlayerMovement.OnSetMovementSpeed += OnSetMovementSpeed;
-        m_PlayerMovement.OnNotHitGround += OnLeftGround;
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
     }
-     
+    public void Pause()
+    {
+        enabled = false;
+    }
+
+    public void Unpause()
+    {
+        enabled = true;
+    }
+
     public void ProcessTargetFOV() 
     {
         m_fCurrentFOV += Mathf.Clamp(m_fTargetFOV - m_fCurrentFOV, -Time.deltaTime * m_fMaxFOVChangePerSecond, Time.deltaTime * m_fMaxFOVChangePerSecond);

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-public class FlightComponent : MonoBehaviour
+public class FlightComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField]
     private float m_MaximumAcceleration;
@@ -24,22 +24,28 @@ public class FlightComponent : MonoBehaviour
     private Rigidbody m_Body;
     private Vector3 m_Destination;
     public IEnumerator m_FlightCoroutine;
-    bool m_bHasDestination = false;
 
     private void Awake()
     {
         m_Body = GetComponent<Rigidbody>();
         m_Transform = transform;
         UpdateAction = HasReachedDestination;
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+        m_Manager.AddToPauseUnpause(this);
     }
 
+    public void Pause() 
+    {
+        enabled = false;
+    }
 
+    public void Unpause() 
+    {
+        enabled = true;
+    }
 
     public void UpdateLinearDestination(in Vector3 destination) 
     {
         m_Destination = destination;
-        m_bHasDestination = true;
     }
 
     public void SetLinearDestination(in Vector3 destination) 
@@ -57,7 +63,6 @@ public class FlightComponent : MonoBehaviour
     {
         yield return null;
         OnAutopilotCancelled?.Invoke();
-        m_bHasDestination = true;
         m_Destination = destination;
         UpdateAction = MovingToDestination;
     }
@@ -75,7 +80,6 @@ public class FlightComponent : MonoBehaviour
     public void StopFlight() 
     {
         UpdateAction = HasReachedDestination;
-        m_bHasDestination = false;
         accelDirection = Vector3.zero;
     }
 
@@ -145,7 +149,6 @@ public class FlightComponent : MonoBehaviour
             accelDirection = Vector3.zero;
             OnAutopilotPositionCompleted?.Invoke();
             UpdateAction = HasReachedDestination;
-            m_bHasDestination = false;
         }
     }
 

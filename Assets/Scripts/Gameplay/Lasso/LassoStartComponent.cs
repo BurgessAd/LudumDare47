@@ -5,7 +5,7 @@ using System;
 using UnityEngine.UI;
 using EZCameraShake;
 
-public class LassoStartComponent : MonoBehaviour
+public class LassoStartComponent : MonoBehaviour, IPauseListener
 {
     private StateMachine m_StateMachine;
     private ThrowableObjectComponent m_Throwable;
@@ -110,10 +110,19 @@ public class LassoStartComponent : MonoBehaviour
         // instant transition back to idle state
         m_StateMachine.InitializeStateMachine();
 
-        m_Manager.AddToPauseUnpause(() => enabled = false, () => enabled = true);
+        m_Manager.AddToPauseUnpause(this);
+    }
+    public void Pause()
+    {
+        enabled = false;
     }
 
-	private void Start()
+    public void Unpause()
+    {
+        enabled = true;
+    }
+
+    private void Start()
 	{
         m_PowerBarAnimator = m_Manager.GetUIElementFromReference(m_PowerBarObjectReference).GetComponent<Animator>();
 	}
