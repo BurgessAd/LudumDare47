@@ -41,47 +41,6 @@
 	float _WindGustSize;
 	float _WindStrength;
 
-	struct geometryOutput
-	{
-		float4 pos : SV_POSITION;
-#if UNITY_PASS_FORWARDBASE
-		float2 uv : TEXCOORD0;
-		float3 normal : NORMAL;
-		unityShadowCoord4 _ShadowCoord : TEXCOORD1;
-#endif
-	};
-
-	struct vertexInput
-	{
-		float4 vertex : POSITION;
-		float3 normal : NORMAL;
-		float4 tangent : TANGENT;
-		float4 color : COLOR;
-	};
-
-	struct vertexOutput
-	{
-		float4 vertex : SV_POSITION;
-		float3 normal : NORMAL;
-		float4 tangent : TANGENT;
-		float4 color : COLOR;
-	};
-
-	geometryOutput VertexOutput(float3 pos, float2 uv, float3 normal)
-	{
-		geometryOutput o;
-		o.pos = UnityObjectToClipPos(pos);
-
-#if UNITY_PASS_FORWARDBASE
-		o.uv = uv;
-		o.normal = UnityObjectToWorldNormal(normal);
-		o._ShadowCoord = ComputeScreenPos(o.pos);
-#elif UNITY_PASS_SHADOWCASTER
-		o.pos = UnityApplyLinearShadowBias(o.pos);
-#endif
-		return o;
-	}
-
 	// Simple noise function, sourced from http://answers.unity.com/answers/624136/view.html
 	// Extended discussion on this function can be found at the following link:
 	// https://forum.unity.com/threads/am-i-over-complicating-this-random-function.454887/#post-2949326
@@ -110,79 +69,7 @@
 			);
 	}
 
-	geometryOutput GenerateGrassVertex(float3 vertexPosition, float width, float height, float forwardBend, float2 uv, float3x3 transformMatrix)
-	{
-		float3 tangentPoint = float3(width, forwardBend, height);
-
-		float3 tangentNormal = normalize(float3(0, -1, forwardBend));
-		float3 localNormal = mul(transformMatrix, tangentNormal);
-
-		float3 localPosition = vertexPosition + mul(transformMatrix, tangentPoint);
-
-		return VertexOutput(localPosition, uv, localNormal);
-	}
-
-	vertexOutput vert(vertexInput v)
-	{
-		vertexOutput o;
-		o.vertex = v.vertex;
-		o.normal = v.normal;
-		o.tangent = v.tangent;
-		o.color = v.color;
-		return o;
-	}
-
-	[maxvertexcount(2 * BLADE_SEGMENTS + 1)]
-	void geo(point vertexOutput IN[1] : SV_POSITION, inout TriangleStream<geometryOutput> triStream)
-	{
-		float3 pos = IN[0].vertex.xyz;
-
-		// seed rand using position to maitain consistency
-		float3x3 randomFacingRotationMatrix = AngleAxis3x3(rand(pos) * UNITY_TWO_PI, float3(0, 0, 1));
-
-		float3x3 bendRotationMatrix = AngleAxis3x3(rand(pos.zzx) * _BendRotationRandom * UNITY_PI * 0.5, float3(-1, 0, 0));
-
-		float2 uv = (pos.xz * _WindDistortionMap_ST.xy + _WindDistortionMap_ST.zw + _WindSpeed * _Time.y) / _WindGustSize;
-		float2 windSample = (tex2Dlod(_WindDistortionMap, float4(uv, 0, 0)).xy * 2 - 1) * _WindStrength;
-		float3 wind = normalize(float3(windSample.x, windSample.y, 0));
-		float3x3 windRotation = AngleAxis3x3(UNITY_PI * windSample, wind);
-
-		float3 vNormal = IN[0].normal;
-		float4 vTangent = IN[0].tangent;
-		float3 vBinormal = cross(vNormal, vTangent) * vTangent.w;
-
-		float3x3 tangentToLocal = float3x3(
-		vTangent.x, vBinormal.x, vNormal.x,
-		vTangent.y, vBinormal.y, vNormal.y,
-		vTangent.z, vBinormal.z, vNormal.z
-		);
-
-		float pixelHeightMult = IN[0].color.g;
-
-
-		float3x3 transformationMatrix = mul(mul(mul(tangentToLocal, windRotation ), randomFacingRotationMatrix), bendRotationMatrix);
-
-		float3x3 transformationMatrixFacing = mul(tangentToLocal, randomFacingRotationMatrix);
-
-		float height = max(((rand(pos.zyx) * 2 - 1) * _BladeHeightRandom + _BladeHeight) * _BladeHeightMultiplier * pixelHeightMult, _BladeHeightMinimum);
-		float width = ((rand(pos.xzy) * 2 - 1) * _BladeWidthRandom + _BladeWidth) * sqrt(pixelHeightMult);
-		float forward = rand(pos.yyz) * _BladeForward;
-		
-		for (int i = 0; i < BLADE_SEGMENTS; i++)
-		{
-			float t = (float)i / (float)BLADE_SEGMENTS;
-			float segmentHeight = height * t;
-			float segmentWidth = width * (1 - t) * (1 + t);
-			float segmentForward = pow(t, _BladeCurve) * forward;
-
-			float3x3 transformMatrix = i == 0 ? transformationMatrixFacing : transformationMatrix;
-
-			triStream.Append(GenerateGrassVertex(pos, segmentWidth, segmentHeight, segmentForward, float2(0, t), transformMatrix));
-			triStream.Append(GenerateGrassVertex(pos, -segmentWidth, segmentHeight, segmentForward, float2(1, t), transformMatrix));
-		}
-		triStream.Append(GenerateGrassVertex(pos, 0, height, forward, float2(0.5, 1), transformationMatrix));
-	}
-
+	
 	ENDCG
 
 	SubShader
@@ -211,8 +98,148 @@
 			float4 _BottomColor;
 			float _TranslucentGain;
 
-			float4 frag(geometryOutput i, fixed facing : VFACE) : SV_Target
+			struct appdata
 			{
+				float4 vertex : POSITION;
+				float3 normal : NORMAL;
+				float4 tangent : TANGENT;
+				float4 color : COLOR;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			};
+
+			struct v2g
+			{
+				float4 vertex : SV_POSITION;
+				float3 normal : NORMAL;
+				float4 tangent : TANGENT;
+				float4 color : COLOR;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			};
+
+			struct g2f
+			{
+				float4 pos : SV_POSITION;
+#if UNITY_PASS_FORWARDBASE
+				float2 uv : TEXCOORD0;
+				float3 normal : NORMAL;
+				unityShadowCoord4 _ShadowCoord : TEXCOORD1;
+#endif
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			};
+
+
+			v2g vert(appdata v)
+			{
+				v2g o;
+
+				// set all values in the v2g o to 0.0
+				UNITY_INITIALIZE_OUTPUT(v2g, o);
+
+				// setup the instanced id to be accessed
+				UNITY_SETUP_INSTANCE_ID(v);
+
+				// copy instance id in the appdata v to the v2g o
+				UNITY_TRANSFER_INSTANCE_ID(v, o);
+
+				o.vertex = v.vertex;
+				o.normal = v.normal;
+				o.tangent = v.tangent;
+				o.color = v.color;
+				return o;
+			}
+
+			UNITY_INSTANCING_BUFFER_START(Props)
+				UNITY_DEFINE_INSTANCED_PROP(float, _BladeHeightMultiplier)
+			UNITY_INSTANCING_BUFFER_END(Props)
+
+
+			void GenerateGrassVertex(g2f o, inout TriangleStream<g2f> triStream, float3 vertexPosition, float width, float height, float forwardBend, float2 uv, float3x3 transformMatrix)
+			{
+				float3 tangentPoint = float3(width, forwardBend, height);
+
+				float3 tangentNormal = normalize(float3(0, -1, forwardBend));
+				float3 localNormal = mul(transformMatrix, tangentNormal);
+
+				float3 localPosition = vertexPosition + mul(transformMatrix, tangentPoint);
+
+				o.pos = UnityObjectToClipPos(localPosition);
+
+#if UNITY_PASS_FORWARDBASE
+				o.uv = uv;
+				o.normal = UnityObjectToWorldNormal(localNormal);
+				o._ShadowCoord = ComputeScreenPos(o.pos);
+#elif UNITY_PASS_SHADOWCASTER
+				o.pos = UnityApplyLinearShadowBias(o.pos);
+#endif
+				triStream.Append(o);
+			}
+
+			[maxvertexcount(2 * BLADE_SEGMENTS + 1)]
+			void geo(point v2g IN[1] : SV_POSITION, inout TriangleStream<g2f> triStream)
+			{
+				g2f o;
+
+				// set all values in the g2f o to 0.0
+				UNITY_INITIALIZE_OUTPUT(g2f, o);
+
+				// setup the instanced id to be accessed
+				UNITY_SETUP_INSTANCE_ID(IN[0]);
+
+				// copy instance id in the v2f IN[0] to the g2f o
+				UNITY_TRANSFER_INSTANCE_ID(IN[0], o);
+
+				float3 pos = IN[0].vertex.xyz;
+
+				// seed rand using position to maitain consistency
+				float3x3 randomFacingRotationMatrix = AngleAxis3x3(rand(pos) * UNITY_TWO_PI, float3(0, 0, 1));
+
+				float3x3 bendRotationMatrix = AngleAxis3x3(rand(pos.zzx) * _BendRotationRandom * UNITY_PI * 0.5, float3(-1, 0, 0));
+
+				float2 uv = (pos.xz * _WindDistortionMap_ST.xy + _WindDistortionMap_ST.zw + _WindSpeed * _Time.y) / _WindGustSize;
+				float2 windSample = (tex2Dlod(_WindDistortionMap, float4(uv, 0, 0)).xy * 2 - 1) * _WindStrength;
+				float3 wind = normalize(float3(windSample.x, windSample.y, 0));
+				float3x3 windRotation = AngleAxis3x3(UNITY_PI * windSample, wind);
+
+				float3 vNormal = IN[0].normal;
+				float4 vTangent = IN[0].tangent;
+				float3 vBinormal = cross(vNormal, vTangent) * vTangent.w;
+
+				float3x3 tangentToLocal = float3x3(
+					vTangent.x, vBinormal.x, vNormal.x,
+					vTangent.y, vBinormal.y, vNormal.y,
+					vTangent.z, vBinormal.z, vNormal.z
+					);
+
+				float pixelHeightMult = IN[0].color.g;
+
+
+				float3x3 transformationMatrix = mul(mul(mul(tangentToLocal, windRotation), randomFacingRotationMatrix), bendRotationMatrix);
+
+				float3x3 transformationMatrixFacing = mul(tangentToLocal, randomFacingRotationMatrix);
+
+				float height = max(((rand(pos.zyx) * 2 - 1) * _BladeHeightRandom + _BladeHeight) * UNITY_ACCESS_INSTANCED_PROP(Props, _BladeHeightMultiplier) * pixelHeightMult, _BladeHeightMinimum);
+				float width = ((rand(pos.xzy) * 2 - 1) * _BladeWidthRandom + _BladeWidth) * sqrt(pixelHeightMult);
+				float forward = rand(pos.yyz) * _BladeForward;
+
+				for (int i = 0; i < BLADE_SEGMENTS; i++)
+				{
+					float t = (float)i / (float)BLADE_SEGMENTS;
+					float segmentHeight = height * t;
+					float segmentWidth = width * (1 - t) * (1 + t);
+					float segmentForward = pow(t, _BladeCurve) * forward;
+
+					float3x3 transformMatrix = i == 0 ? transformationMatrixFacing : transformationMatrix;
+
+					GenerateGrassVertex(o, triStream, pos, segmentWidth, segmentHeight, segmentForward, float2(0, t), transformMatrix);
+					GenerateGrassVertex(o, triStream, pos, -segmentWidth, segmentHeight, segmentForward, float2(1, t), transformMatrix);
+				}
+				GenerateGrassVertex(o, triStream, pos, 0, height, forward, float2(0.5, 1), transformationMatrix);
+			}
+
+			float4 frag(g2f i, fixed facing : VFACE) : SV_Target
+			{
+				UNITY_SETUP_INSTANCE_ID(i);
+
 				float3 normal = facing > 0 ? i.normal : -i.normal;
 				float shadow = SHADOW_ATTENUATION(i);
 				float NdotL = saturate(saturate(dot(normal, _WorldSpaceLightPos0)) + _TranslucentGain) * shadow;
@@ -225,7 +252,7 @@
 			}
 			ENDCG
 		}
-		Pass
+	/*	Pass
 		{
 			Tags
 			{
@@ -236,18 +263,17 @@
 			#pragma vertex vert
 			#pragma geometry geo
 			#pragma fragment frag
-			//#pragma hull hull
-			//#pragma domain domain
+
 			#pragma target 4.6
 			#pragma multi_compile_shadowcaster
 
-			float4 frag(geometryOutput i) : SV_Target
+			float4 frag(g2f i) : SV_Target
 			{
 				SHADOW_CASTER_FRAGMENT(i)
 			}
 
 			ENDCG
-		}
+		}*/
 
 	}
 }

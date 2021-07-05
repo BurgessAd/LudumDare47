@@ -4,6 +4,7 @@ using UnityEngine;
 using System;
 
 [RequireComponent(typeof(LocalDebugData))]
+[ExecuteInEditMode]
 public class FoodSourceComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField] private AnimationCurve m_RegenerationRateByCurrentHealth = default;
@@ -59,6 +60,8 @@ private LocalDebugData m_GrassDebug;
 
     void Update()
     {
+        if (!m_HealthComponent)
+            m_HealthComponent = GetComponent<HealthComponent>();
         float regenerationRatePerSecond = m_RegenerationRateByCurrentHealth.Evaluate(m_HealthComponent.GetCurrentHealthPercentage);
         m_HealthComponent.ReplenishHealth(regenerationRatePerSecond * Time.deltaTime);
         m_fCurrentFoodSize = Mathf.SmoothDamp(m_fCurrentFoodSize, m_HealthComponent.GetCurrentHealthPercentage, ref m_fFoodSizeChangeVelocity, m_fFoodSizeChangeTime);

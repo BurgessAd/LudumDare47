@@ -11,6 +11,7 @@ using System;
 // vertex color alpha is grass length proportional to total length
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
+[ExecuteInEditMode]
 public class GrassPatchComponent : MonoBehaviour
 {
     [SerializeField] private float m_MaxGrassDensity;
@@ -29,8 +30,7 @@ public class GrassPatchComponent : MonoBehaviour
     [SerializeField] private Texture2D m_MapResizerTex;
     [SerializeField] private GameObject m_MapVisualizerPrefab;
 
-
-    float m_lastGrassLength = -1;
+	private float m_lastGrassLength = -1;
     private readonly List<Vector3> vertices = new List<Vector3>();
     private readonly List<Vector3> normals = new List<Vector3>();
     private readonly List<Vector3> tangents = new List<Vector3>();
@@ -38,12 +38,6 @@ public class GrassPatchComponent : MonoBehaviour
     private MaterialPropertyBlock m_PropertyBlock;
     private MeshRenderer m_MeshRenderer;
 
-    void Start()
-    {
-        //Mesh mesh = new Mesh();
-        //GetComponent<MeshFilter>().mesh = mesh;
-        //m_PropertyBlock = new MaterialPropertyBlock();
-    }
 	#region getters and setters
     public Texture2D GrassMap { get => m_GrassMap; set { m_GrassMap = value; m_bHasBoundsDefined = true; } }
     public float GrassMapGenerationAttemptHeight { get => m_GrassMapGenerationHeight; set { m_GrassMapGenerationHeight = value; } }
@@ -55,15 +49,17 @@ public class GrassPatchComponent : MonoBehaviour
 
 	public void Update()
 	{
-        //if (m_lastGrassLength != m_GrassLength) 
-        //{
-
-        //    m_MeshRenderer.GetPropertyBlock(m_PropertyBlock);
-        //    m_PropertyBlock.SetFloat("", m_GrassLength);
-        //    m_MeshRenderer.SetPropertyBlock(m_PropertyBlock);
-        //    m_lastGrassLength = m_GrassLength;
-        //}
-
+        if (!m_MeshRenderer)
+            m_MeshRenderer = GetComponent<MeshRenderer>();
+        if (m_PropertyBlock == null)
+            m_PropertyBlock = new MaterialPropertyBlock();
+        if (m_lastGrassLength != m_GrassLength)
+		{
+			m_MeshRenderer.GetPropertyBlock(m_PropertyBlock);
+			m_PropertyBlock.SetFloat("_BladeHeightMultiplier", m_GrassLength);
+			m_MeshRenderer.SetPropertyBlock(m_PropertyBlock);
+			m_lastGrassLength = m_GrassLength;
+		}
 	}
 
 	public GameObject CreateGrassPaintVisualizer(in Vector3 pos)

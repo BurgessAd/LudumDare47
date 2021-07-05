@@ -10,10 +10,10 @@ public class SolidRenderReplacementEffect : MonoBehaviour
 	private static RenderTexture Prepass;
 	private void OnEnable()
 	{
-		Prepass = new RenderTexture(Screen.width, Screen.height, 24);
-		Prepass.antiAliasing = QualitySettings.antiAliasing;
-		if (replacementShader != null && cam != null)
-			cam.SetReplacementShader(replacementShader, "Glowable");
+		//Prepass = new RenderTexture(Screen.width, Screen.height, 24);
+		//Prepass.antiAliasing = QualitySettings.antiAliasing;
+		//if (replacementShader != null && cam != null)
+		//	cam.SetReplacementShader(replacementShader, "Glowable");
 	}
 
 
@@ -22,19 +22,19 @@ public class SolidRenderReplacementEffect : MonoBehaviour
 	[ImageEffectOpaque]
 	private void OnRenderImage(RenderTexture src, RenderTexture dest)
 	{
-		Graphics.Blit(src, dest);
+		//Graphics.Blit(src, dest);
 
-		Graphics.SetRenderTarget(Prepass);
-		GL.Clear(false, true, Color.clear);
+		//Graphics.SetRenderTarget(Prepass);
+		//GL.Clear(false, true, Color.clear);
 
-		Graphics.Blit()
+		//Graphics.Blit()
 
-		cam.depthTextureMode = DepthTextureMode.Depth;
+		//cam.depthTextureMode = DepthTextureMode.Depth;
 
-		if (material == null || material.shader != replacementShader)
-		{
-			material = new Material(replacementShader);
-		}
+		//if (material == null || material.shader != replacementShader)
+		//{
+		//	material = new Material(replacementShader);
+		//}
 
 	}
 	private void OnDisable()
