@@ -22,7 +22,7 @@ AnimationClip:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0
+        value: 0.1
         inSlope: 0
         outSlope: 0
         tangentMode: 136
@@ -41,7 +41,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: m_GrassLengthComponent
+    attribute: m_GrassLength
     path: 
     classID: 114
     script: {fileID: 11500000, guid: 3f4ab6ae79d50634486e72f669b0a985, type: 3}
@@ -55,7 +55,7 @@ AnimationClip:
     genericBindings:
     - serializedVersion: 2
       path: 0
-      attribute: 1956609763
+      attribute: 115315475
       script: {fileID: 11500000, guid: 3f4ab6ae79d50634486e72f669b0a985, type: 3}
       typeID: 114
       customType: 0
@@ -87,7 +87,7 @@ AnimationClip:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0
+        value: 0.1
         inSlope: 0
         outSlope: 0
         tangentMode: 136
@@ -106,7 +106,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: m_GrassLengthComponent
+    attribute: m_GrassLength
     path: 
     classID: 114
     script: {fileID: 11500000, guid: 3f4ab6ae79d50634486e72f669b0a985, type: 3}

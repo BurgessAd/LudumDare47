@@ -64,8 +64,8 @@ public class CowGameManager : ScriptableObject
 	{
 		OnPaused += pausable.Pause;
 		OnUnpaused += pausable.Unpause;
-		if (m_bIsPaused) OnPaused.Invoke();
-		else OnUnpaused.Invoke();
+		if (m_bIsPaused) pausable.Pause();
+		else pausable.Unpause();
 	}
 
 	public GameObject GetUIElementFromReference(in UIObjectReference reference) 
