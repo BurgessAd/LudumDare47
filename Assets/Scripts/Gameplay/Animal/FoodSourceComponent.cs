@@ -65,7 +65,7 @@ private LocalDebugData m_GrassDebug;
         float regenerationRatePerSecond = m_RegenerationRateByCurrentHealth.Evaluate(m_HealthComponent.GetCurrentHealthPercentage);
         m_HealthComponent.ReplenishHealth(regenerationRatePerSecond * Time.deltaTime);
         m_fCurrentFoodSize = Mathf.SmoothDamp(m_fCurrentFoodSize, m_HealthComponent.GetCurrentHealthPercentage, ref m_fFoodSizeChangeVelocity, m_fFoodSizeChangeTime);
-        m_FoodHealthAnimator.Play(m_FoodAnimatorParamName, 0, m_fCurrentFoodSize);
+        m_FoodHealthAnimator.Play("GrassGrowth", -1, m_fCurrentFoodSize);
 
         if (m_HealthComponent.GetCurrentHealthPercentage < m_fHealthThresholdForEaten && m_CurrentFoodStatus == FoodStatus.ReadyToEat)
         {
