@@ -31,13 +31,8 @@ public class LevelObjective : ScriptableObject
 
 	private IObjectiveListener m_ObjectiveListener;
 
-
-
-
 	private bool m_bIsCurrentlyFailing = false;
 	private bool m_bIsCurrentlyWithinGoal = false;
-	private IEnumerator m_FailureTimerCoroutine = default;
-	private int m_CurrentTimer = 0;
 	private int m_InternalCounterVal = 0;
 
 	public float GetStartGoalPos => (float)(m_MinimumGoal - m_MinimumValue) / (m_MaximumValue - m_MinimumValue);
@@ -80,28 +75,14 @@ public class LevelObjective : ScriptableObject
 		CheckChanged();
 	}
 
-
-	private IEnumerator FailureTimer()
-	{
-
-		while (m_CurrentTimer > 0)
-		{
-			m_CurrentTimer++;
-			m_ObjectiveListener.OnTimerValueShown(m_CurrentTimer, (float)m_CurrentTimer / m_TimerMaximum);
-			yield return new WaitForSecondsRealtime(1.0f);
-		}
-		m_Manager.OnObjectiveFailure();
-	}
-
 	private void StartFailureTimer()
-	{
-		m_FailureTimerCoroutine = FailureTimer();
-		m_ObjectiveListener.OnTimerTriggered(m_FailureTimerCoroutine);
+	{	
+		m_ObjectiveListener.OnTimerTriggered(() => m_Manager.OnObjectiveFailure(), m_TimerMaximum);
 	}
 
 	private void HaltFailureTimer()
 	{
-		m_ObjectiveListener.OnTimerRemoved(m_FailureTimerCoroutine);
+		m_ObjectiveListener.OnTimerRemoved();
 	}
 
 	private void EnteredGoal()
@@ -158,11 +139,9 @@ public interface IObjectiveListener
 {
 	void OnCounterChanged(in int val);
 
-	void OnTimerTriggered(IEnumerator timerFunc);
+	void OnTimerTriggered( in Action totalTime, in int time);
 
-	void OnTimerValueShown(in int val, in float through);
-
-	void OnTimerRemoved(IEnumerator timerFunc);
+	void OnTimerRemoved();
 
 	void OnEnteredGoal();
 

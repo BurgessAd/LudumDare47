@@ -8,16 +8,23 @@ public class LevelData : ScriptableObject
 {
     [SerializeField] private string m_sLevelName = "";
     [SerializeField] private float m_nTargetTime = 0.0f;
+	[SerializeField] private int m_LevelCompleteTime = 0;
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
     private bool m_bIsUnlocked = false;
     private float m_nAchievedTime = 0.0f;
     private bool m_bHasCompleted = false;
 
-    public bool IsUnlocked() => m_bIsUnlocked;
+    public bool IsUnlocked => m_bIsUnlocked;
 
-    public bool IsCompleted() => m_bHasCompleted;
+    public bool IsCompleted => m_bHasCompleted;
 
 	public int GetObjectiveCount => m_LevelObjectives.Count;
+
+	public int GetSuccessTimerTime => m_LevelCompleteTime;
+
+	public string GetLevelName => m_sLevelName;
+
+	public float GetTargetTime => m_nTargetTime;
 
 	public void ForEachObjective(Action<LevelObjective> objectiveFunc)
 	{
@@ -26,10 +33,6 @@ public class LevelData : ScriptableObject
 			objectiveFunc.Invoke(objective);
 		}
 	}
-
-	public string GetLevelName() => m_sLevelName;
-
-    public float GetTargetTime() => m_nTargetTime;
 
     public void HasCompletedLevel()
     {

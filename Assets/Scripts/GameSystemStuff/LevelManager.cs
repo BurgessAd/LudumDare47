@@ -20,8 +20,6 @@ public class LevelManager : MonoBehaviour
 	[SerializeField] private CustomAnimation m_LevelEnterAnimation;
 	[SerializeField] private Animator m_LevelTransitionAnimator;
 	[SerializeField] private Animator m_LevelEnterAnimator;
-	[SerializeField] private Animator m_LevelCountdownAnimator;
-	[SerializeField] private Text m_CountdownText;
 	[SerializeField] private TextMeshProUGUI m_LevelIntroTextLeft;
 	[SerializeField] private TextMeshProUGUI m_LevelIntroTextRight;
 	[SerializeField] private Transform m_Transform;
@@ -31,17 +29,14 @@ public class LevelManager : MonoBehaviour
 	[Header("Canvas references")]
 	[SerializeField] private CanvasGroup m_MainCanvas;
 	[SerializeField] private Transform m_ObjectiveCanvasTransform;
+	[SerializeField] private CountdownTimerUI m_FinalCountdownTimer;
+	[SerializeField] private CountdownTimerUI m_StartCountdownTimer;
 	[SerializeField] private CanvasGroup m_StartCountdownCanvas;
 	[SerializeField] private CanvasGroup m_PauseCanvas;
 	[SerializeField] private CanvasGroup m_EndSuccessCanvas;
 	[SerializeField] private CanvasGroup m_EndFailureCanvas;
 	[SerializeField] private CanvasGroup m_StartButtonCanvas;
 	[SerializeField] private CanvasGroup m_TextCanvas;
-
-	[Header("Level Details")]
-	[SerializeField] private string m_LevelName;
-	[SerializeField] private string m_LevelTip1;
-	[SerializeField] private string m_LevelTip2;
 
 	private LevelData m_LevelData;
 	 
@@ -119,6 +114,19 @@ public class LevelManager : MonoBehaviour
 		}
 	}
 
+	public void StartSucceedCountdown()
+	{
+		int successTime = m_LevelData.GetSuccessTimerTime;
+		m_FinalCountdownTimer.ShowTimer();
+		m_FinalCountdownTimer.StartTimerFromTime(successTime);
+		m_FinalCountdownTimer.OnTimerComplete += OnLevelSucceeded;
+	}
+
+	public void EndSucceedCountdown()
+	{
+		m_FinalCountdownTimer.StopTimer();
+	}
+
 	private void ShowIntroText(CustomAnimation.AnimationClip clip) 
 	{
 		float animInOutTime = 1.0f;
@@ -131,14 +139,14 @@ public class LevelManager : MonoBehaviour
 	private void OnFirstIntroAnimationPortionShown(CustomAnimation.AnimationClip clip) 
 	{
 		m_LevelIntroTextLeft.text = "Level " + (m_Manager.GetCurrentLevelIndex() + 1).ToString();
-		m_LevelIntroTextRight.text = m_LevelData.GetLevelName();
+		m_LevelIntroTextRight.text = m_LevelData.GetLevelName;
 		ShowIntroText(clip);
 	}
 
 	private void OnSecondIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
 	{
 		m_LevelIntroTextLeft.text = "Time to Beat";
-		m_LevelIntroTextRight.text = TurnTimeToString(m_LevelData.GetTargetTime());
+		m_LevelIntroTextRight.text = TurnTimeToString(m_LevelData.GetTargetTime);
 		ShowIntroText(clip);
 	}
 
@@ -199,26 +207,6 @@ public class LevelManager : MonoBehaviour
 		yield return new WaitForSeconds(m_fTransitionTime);
 		m_Manager.ClearLevelData();
 		queuedOnFinish();
-	}
-
-	private IEnumerator BeginCountdown() 
-	{
-
-		m_CountdownText.text = "3";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
-		yield return new WaitForSeconds(1.0f);
-		m_CountdownText.text = "2";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
-		yield return new WaitForSeconds(1.0f);
-		m_CountdownText.text = "1";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
-		yield return new WaitForSeconds(1.0f);
-		m_CountdownText.text = "Go!";
-		m_LevelCountdownAnimator.Play("Base Layer.CountdownAnimation", -1, 0f);
-		yield return new WaitForSeconds(0.2f);
-		OnLevelStarted?.Invoke();
-		m_LevelState.RequestTransition(typeof(PlayingState));
-
 	}
 
 	private IEnumerator StartLevelWithoutCountdown() 
@@ -289,7 +277,9 @@ public class LevelManager : MonoBehaviour
 	{
 		SetCurrentCanvas(m_StartCountdownCanvas, () => { });
 		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(3.2f);
-		StartCoroutine(BeginCountdown());
+		m_FinalCountdownTimer.StartTimerFromTime(3);
+		m_FinalCountdownTimer.ShowTimer();
+		m_FinalCountdownTimer.OnTimerComplete += () => OnLevelStarted?.Invoke(); m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
 }
