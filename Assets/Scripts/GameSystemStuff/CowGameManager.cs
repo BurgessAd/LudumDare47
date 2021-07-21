@@ -13,7 +13,7 @@ public class CowGameManager : ScriptableObject
 	public event Action OnUnpaused;
 
 	private readonly Dictionary<EntityInformation, List<EntityToken>> m_EntityCache = new Dictionary<EntityInformation, List<EntityToken>>();
-	private readonly List<Tuple<EntityInformation, CounterType, CounterBase>> m_CounterDict = new List<Tuple<EntityInformation, CounterType, CounterBase>>();
+	private readonly List<LevelObjective> m_ObjectiveDict = new List<LevelObjective>();
 	private readonly Dictionary<UIObjectReference, GameObject> m_UICache = new Dictionary<UIObjectReference, GameObject>();
 
 	[SerializeField] private List<LevelData> m_LevelData = new List<LevelData>();
@@ -39,7 +39,7 @@ public class CowGameManager : ScriptableObject
 
 	public void MoveToMenu() 
 	{
-
+		SceneManager.LoadScene(0);
 	}
 
 	public int GetCurrentLevelIndex() 
@@ -47,14 +47,10 @@ public class CowGameManager : ScriptableObject
 		return m_CurrentLevelIndex;
 	}
 
-	public Transform GetCameraTransform => m_CameraTransform;
-	public Transform GetPlayerCameraContainerTransform => m_PlayerCameraContainerTransform;
-	private Transform m_CameraTransform;
-	private Transform m_PlayerCameraContainerTransform;
-	private LevelManager m_CurrentLevel = null;
-	private uint m_NumSuccesses = 0u;
-	private uint m_SuccessesRequired = 0u;
+	public Transform GetCameraTransform { get; private set; }
+	public Transform GetPlayerCameraContainerTransform { get; private set; }
 	private bool m_bIsPaused = false;
+
 	public void OnUIElementSpawned(UIObjectElement element, UIObjectReference reference) 
 	{
 		m_UICache.Add(reference, element.gameObject);
@@ -73,23 +69,28 @@ public class CowGameManager : ScriptableObject
 		return m_UICache[reference];
 	}
 
-	public bool TryGetCounter(in CounterType type, in  EntityInformation entityType, out CounterBase counter)
+	private int m_NumObjectivesToComplete = 0;
+	private int m_NumObjectivesCompleted = 0;
+
+
+
+	public void OnObjectiveCompleted()
 	{
-		counter = null;
-		foreach (var element in m_CounterDict) 
+		m_NumObjectivesCompleted++;
+		if (m_NumObjectivesCompleted == m_NumObjectivesToComplete)
 		{
-			if (element.Item1 == entityType && element.Item2 == type) 
-			{
-				counter = element.Item3;
-				return true;
-			}
+			
 		}
-		return false;
 	}
 
-	private void AddCounterToDict(in CounterType type, in EntityInformation entityType, in CounterBase counter) 
+	public void OnObjectiveUncompleted()
 	{
-		m_CounterDict.Add(new Tuple<EntityInformation, CounterType, CounterBase>(entityType, type, counter));
+		m_NumObjectivesCompleted--;
+	}
+
+	public void OnObjectiveFailure()
+	{
+		OnDefeated();
 	}
 
 	public RestartState GetRestartState() 
@@ -97,10 +98,10 @@ public class CowGameManager : ScriptableObject
 		return m_RestartState; 
 	}
 
-	public float GetMapRadius => m_CurrentLevel.GetMapRadius;
+	public float GetMapRadius => GetCurrentLevel.GetMapRadius;
 	public EntityTypeComponent GetPlayer => m_EntityCache[m_PlayerEntityInformation][0].GetEntityType;
 
-	public LevelManager GetCurrentLevel => m_CurrentLevel;
+	public LevelManager GetCurrentLevel { get; private set; } = null;
 
 	public void RegisterQuickRestart()
 	{
@@ -110,10 +111,10 @@ public class CowGameManager : ScriptableObject
 	public void ConstrainPointToPlayArea(ref Vector3 point)
 	{
 		float yPoint = point.y;
-		Vector3 projectedDistance = Vector3.ProjectOnPlane(point - m_CurrentLevel.GetMapCentre, Vector3.up);
+		Vector3 projectedDistance = Vector3.ProjectOnPlane(point - GetCurrentLevel.GetMapCentre, Vector3.up);
 
-		float vectorLength = Mathf.Min(projectedDistance.magnitude, m_CurrentLevel.GetMapRadius);
-		point = vectorLength * projectedDistance.normalized + m_CurrentLevel.GetMapCentre;
+		float vectorLength = Mathf.Min(projectedDistance.magnitude, GetCurrentLevel.GetMapRadius);
+		point = vectorLength * projectedDistance.normalized + GetCurrentLevel.GetMapCentre;
 		point.y = yPoint;
 	}
 
@@ -131,9 +132,6 @@ public class CowGameManager : ScriptableObject
 		}
 		return null;
 	}
-
-	// UFO goes for closest unoccupied
-	// Predator goes for closest unabducted
 
 	public bool GetClosestTransformsMatchingList(in Vector3 currentPos, in List<EntityInformation> entities, out List<EntityToken> outEntityToken, in List<EntityAbductionState> validEntities = null) 
 	{
@@ -189,7 +187,7 @@ public class CowGameManager : ScriptableObject
 
 	public void SetPausedState(bool pauseState)
 	{
-
+		m_bIsPaused = pauseState;
 		if (pauseState)
 		{
 			Cursor.lockState = CursorLockMode.None;
@@ -202,6 +200,29 @@ public class CowGameManager : ScriptableObject
 		}
 	}
 
+	public void OnEntityEnterPen(GameObject go)
+	{
+		EntityInformation inf = go.GetComponent<EntityTypeComponent>().GetEntityInformation;
+		for (int i = 0; i < m_ObjectiveDict.Count; i++)
+		{
+			if (m_ObjectiveDict[i].GetEntityInformation == inf && m_ObjectiveDict[i].GetObjectiveType == ObjectiveType.Capturing)
+			{
+				m_ObjectiveDict[i].IncrementCounter();
+			}
+		}
+	}
+
+	public void OnEntityLeavePen(GameObject go)
+	{
+		EntityInformation inf = go.GetComponent<EntityTypeComponent>().GetEntityInformation;
+		for (int i = 0; i < m_ObjectiveDict.Count; i++)
+		{
+			if (m_ObjectiveDict[i].GetEntityInformation == inf && m_ObjectiveDict[i].GetObjectiveType == ObjectiveType.Capturing)
+			{
+				m_ObjectiveDict[i].IncrementCounter();
+			}
+		}
+	}
 
 	public void OnEntitySpawned(EntityTypeComponent entity, EntityInformation entityType)
 	{
@@ -210,13 +231,15 @@ public class CowGameManager : ScriptableObject
 			entities = new List<EntityToken>();
 			m_EntityCache.Add(entityType, entities);
 		}
+		for (int i = 0; i < m_ObjectiveDict.Count; i++)
+		{
+			if (m_ObjectiveDict[i].GetEntityInformation == entity && m_ObjectiveDict[i].GetObjectiveType == ObjectiveType.Population)
+			{
+				m_ObjectiveDict[i].IncrementCounter();
+			}
+		}
 		EntityToken newToken = new EntityToken(entity);
 		entities.Add(newToken);		
-	}
-
-	public bool IsGroundLayer(in int layer) 
-	{
-		return UnityUtils.IsLayerInMask(m_TerrainLayerMask, layer);
 	}
 
 	public void OnEntityKilled(EntityTypeComponent entity, EntityInformation entityType)
@@ -231,13 +254,14 @@ public class CowGameManager : ScriptableObject
 			}
 		}
 
-		if (entity.TryGetComponent(out EntityTypeComponent tagComponent))
+		for (int i = 0; i < m_ObjectiveDict.Count; i++)
 		{
-			if (TryGetCounter(CounterType.Destroyed, tagComponent.GetEntityInformation, out CounterBase counter))
+			if (m_ObjectiveDict[i].GetEntityInformation == entity && m_ObjectiveDict[i].GetObjectiveType == ObjectiveType.Population)
 			{
-				counter.IncrementCounter();
+				m_ObjectiveDict[i].DecrementCounter();
 			}
 		}
+
 		List<EntityToken> cache = m_EntityCache[entityType];
 		if (cache.Count == 0) 
 		{ 
@@ -245,97 +269,55 @@ public class CowGameManager : ScriptableObject
 		}
 	}
 
-	public void OnCowEnterGoal(GameObject entity)
+	public bool IsGroundLayer(in int layer)
 	{
-		if (entity.TryGetComponent(out EntityTypeComponent tagComponent))
-		{
-			if (TryGetCounter(CounterType.Goal, tagComponent.GetEntityInformation, out CounterBase counter))
-			{
-				counter.IncrementCounter();
-			}
-		}
-	}
-
-	public void OnCowLeaveGoal(GameObject entity)
-	{
-		if (entity.TryGetComponent(out EntityTypeComponent tagComponent))
-		{
-			if (TryGetCounter(CounterType.Goal, tagComponent.GetEntityInformation, out CounterBase counter))
-			{
-				counter.DecrementCounter();
-			}
-		}
+		return UnityUtils.IsLayerInMask(m_TerrainLayerMask, layer);
 	}
 
 	public void OnPlayerKilled()
 	{
-		m_CurrentLevel.RestartLevel();
+		GetCurrentLevel.RestartLevel();
 		RegisterQuickRestart();
 	}
 
 	public void RegisterCamera(Transform camTransform) 
 	{
-		m_CameraTransform = camTransform;
+		GetCameraTransform = camTransform;
 	}
 
 	public void RegisterInitialCameraContainerTransform(Transform containerTransform) 
 	{
-		m_PlayerCameraContainerTransform = containerTransform;
-	}
-
-	public void RegisterSuccessCounter(CounterBase counter)
-	{
-		m_SuccessesRequired++;
-		counter.OnCounterCapped += OnSuccess;
-		counter.OnCounterUncapped += OnRemoveSuccess;
-	}
-
-	public void RegisterDefeatCounter(CounterBase counter)
-	{
-		counter.OnCounterCapped += OnDefeated;
-	}
-
-	public void RegisterCounter(CounterBase counter, CounterType counterType, EntityInformation entityInformation) 
-	{
-		m_CounterDict.Add(new Tuple<EntityInformation, CounterType, CounterBase>(entityInformation, counterType, counter));
+		GetPlayerCameraContainerTransform = containerTransform;
 	}
 
 	private void OnDefeated() 
 	{
-		m_CurrentLevel.OnLevelFailed();
+		GetCurrentLevel.OnLevelFailed();
 		RegisterQuickRestart();	
 	}
 
-	private void OnSuccess() 
-	{
-		m_NumSuccesses++;
-		if (m_NumSuccesses == m_SuccessesRequired) 
-		{
-			m_CurrentLevel.OnLevelSucceeded();
-		}
-	}
-
-	private void OnRemoveSuccess() 
-	{
-		m_NumSuccesses--;
-	}
 
 	public void NewLevelLoaded(LevelManager newLevel) 
 	{
 		m_CurrentLevelIndex = SceneManager.GetActiveScene().buildIndex;
-		m_CurrentLevel = newLevel;
+		GetCurrentLevel = newLevel;
+		m_NumObjectivesToComplete = m_LevelData[m_CurrentLevelIndex].GetObjectiveCount;
+		m_LevelData[m_CurrentLevelIndex].ForEachObjective((LevelObjective objective) =>
+		{
+			m_ObjectiveDict.Add(objective);
+		});
 		newLevel.SetLevelData(m_LevelData[m_CurrentLevelIndex]);
 	}
 
 	public void ClearLevelData()
 	{
+		m_NumObjectivesToComplete = 0;
+		m_NumObjectivesCompleted = 0;
 		m_EntityCache.Clear();
-		m_CounterDict.Clear();
+		m_ObjectiveDict.Clear();
 		m_UICache.Clear();
 		OnPaused = null;
 		OnUnpaused = null;
-		m_NumSuccesses = 0u;
-		m_SuccessesRequired = 0u;
 	}
 }
 

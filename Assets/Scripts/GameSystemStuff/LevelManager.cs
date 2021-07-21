@@ -30,6 +30,7 @@ public class LevelManager : MonoBehaviour
 
 	[Header("Canvas references")]
 	[SerializeField] private CanvasGroup m_MainCanvas;
+	[SerializeField] private Transform m_ObjectiveCanvasTransform;
 	[SerializeField] private CanvasGroup m_StartCountdownCanvas;
 	[SerializeField] private CanvasGroup m_PauseCanvas;
 	[SerializeField] private CanvasGroup m_EndSuccessCanvas;
@@ -47,6 +48,15 @@ public class LevelManager : MonoBehaviour
 	public void SetLevelData(LevelData levelData) 
 	{
 		m_LevelData = levelData;
+	}
+
+	public void InitializeObjectives(GameObject objectiveObjectPrefab)
+	{
+		m_LevelData.ForEachObjective((LevelObjective objective) =>
+		{
+			GameObject go = Instantiate(objectiveObjectPrefab, m_ObjectiveCanvasTransform);
+			go.GetComponent<LevelObjectiveUI>().InitializeData(objective);
+		});
 	}
 
 	public Transform GetCamTransform => m_CameraTransform;

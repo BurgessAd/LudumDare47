@@ -20,7 +20,7 @@ public class PenComponent : MonoBehaviour
         {
             m_ContainedObjects.Add(objCollided.gameObject);
             m_PenBeaconComponent.OnObjectEnterPen();
-            m_Manager.OnCowEnterGoal(objCollided.gameObject);
+            m_Manager.OnEntityEnterPen(objCollided.gameObject);
         }
     }
 
@@ -29,7 +29,7 @@ public class PenComponent : MonoBehaviour
         if (IsObjectPennable(objCollided.gameObject) && ContainsAnimal(objCollided.gameObject)) 
         {
             m_PenBeaconComponent.OnObjectLeavePen();
-            m_Manager.OnCowLeaveGoal(objCollided.gameObject);
+            m_Manager.OnEntityLeavePen(objCollided.gameObject);
         }
     }
 
