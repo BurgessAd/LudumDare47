@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
+using System;
 
 public static class UnityUtils
 {
@@ -6,4 +8,15 @@ public static class UnityUtils
     {
         return (mask == (mask | (1 << layer)));
     }
+
+	public class ListenerSet<T> : HashSet<T>
+	{
+		public void ForEachListener(Action<T> act)
+		{
+			foreach(T t in this)
+			{
+				act.Invoke(t);
+			}
+		}
+	}
 }

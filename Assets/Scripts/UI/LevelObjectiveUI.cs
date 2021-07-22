@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
@@ -27,24 +25,14 @@ public class LevelObjectiveUI : MonoBehaviour, IObjectiveListener
 
 	private float m_fCurrentSliderPosition;
 	private float m_fCurrentSliderVelocity;
-
 	private Color m_InitialBackgroundColor = default;
-
 	private int m_PulseAnimationId = 0;
+
+	#region UnityFunctions
 
 	private void Awake()
 	{
-
 		m_InitialBackgroundColor = m_SliderBackgroundImage.color;
-	}
-
-	public void InitializeData(LevelObjective objective)
-	{
-		float goalAnchorXMin = objective.GetStartGoalPos;
-		float goalAnchorXMax = objective.GetEndGoalPos;
-
-		m_GoalImage.anchorMax = new Vector2(goalAnchorXMax, m_GoalImage.anchorMax.y);
-		m_GoalImage.anchorMin = new Vector2(goalAnchorXMin, m_GoalImage.anchorMin.y);
 	}
 
 	void Update()
@@ -53,12 +41,10 @@ public class LevelObjectiveUI : MonoBehaviour, IObjectiveListener
 		m_Slider.normalizedValue = m_fCurrentSliderPosition;
 	}
 
-	private void PulseBackground(in Color pulseColor)
-	{
-		LeanTween.cancel(m_PulseAnimationId);
-		m_SliderBackgroundImage.color = pulseColor;
-		m_PulseAnimationId = LeanTween.color(m_SliderBackgroundRect, m_InitialBackgroundColor, 0.5f).uniqueId;
-	}
+	#endregion
+
+	// Function implementations of IObjectiveListener
+	#region IObjectiveListener
 
 	public void OnCounterChanged(in int val)
 	{
@@ -92,4 +78,30 @@ public class LevelObjectiveUI : MonoBehaviour, IObjectiveListener
 		m_AudioManager.Play(m_ExitGoalZoneAudioIdentifier);
 		PulseBackground(m_ExitGoalPulseColour);
 	}
+
+	public void InitializeData(LevelObjective objective)
+	{
+		float goalAnchorXMin = objective.GetStartGoalPos;
+		float goalAnchorXMax = objective.GetEndGoalPos;
+
+		m_GoalImage.anchorMax = new Vector2(goalAnchorXMax, m_GoalImage.anchorMax.y);
+		m_GoalImage.anchorMin = new Vector2(goalAnchorXMin, m_GoalImage.anchorMin.y);
+	}
+
+	public void OnObjectiveFailed()
+	{
+
+	}
+	#endregion
+
+	#region MiscellaneousHelperFunctions
+
+	private void PulseBackground(in Color pulseColor)
+	{
+		LeanTween.cancel(m_PulseAnimationId);
+		m_SliderBackgroundImage.color = pulseColor;
+		m_PulseAnimationId = LeanTween.color(m_SliderBackgroundRect, m_InitialBackgroundColor, 0.5f).uniqueId;
+	}
+
+	#endregion
 }

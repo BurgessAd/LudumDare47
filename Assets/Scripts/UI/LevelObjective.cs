@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using System;
 
 public enum ObjectiveType
@@ -26,18 +23,20 @@ public class LevelObjective : ScriptableObject
 	[SerializeField] private CowGameManager m_Manager;
 	[SerializeField] private EntityInformation m_CounterAnimalType;
 
+	private UnityUtils.ListenerSet<IObjectiveListener> m_ObjectiveListeners;
+
+	// Properties for external access of data by the game manager
+	#region AccessibleProperties
+
 	public EntityInformation GetEntityInformation => m_CounterAnimalType;
 	public ObjectiveType GetObjectiveType => m_ObjectiveType;
-
-	private IObjectiveListener m_ObjectiveListener;
-
-	private bool m_bIsCurrentlyFailing = false;
-	private bool m_bIsCurrentlyWithinGoal = false;
-	private int m_InternalCounterVal = 0;
 
 	public float GetStartGoalPos => (float)(m_MinimumGoal - m_MinimumValue) / (m_MaximumValue - m_MinimumValue);
 	public float GetEndGoalPos => (float)(m_MaximumGoal - m_MinimumValue) / (m_MaximumValue - m_MinimumValue);
 
+	#endregion
+
+	#region UnityFunctions
 	private void Awake()
 	{
 		OnValidate();
@@ -59,42 +58,79 @@ public class LevelObjective : ScriptableObject
 		if ((!m_HasMinimumFailure &&  m_MinimumValue == m_MinimumGoal)|| (!m_HasMaximumFailure && m_MaximumValue == m_MaximumGoal))
 			Debug.LogErrorFormat("Gameplay UI %s failure state is the same as the goal minimum - they should be at least slightly different", name);
 	}
+	#endregion
 
+	// pretty much entirely called by the game manager
+	#region PublicFunctions
+
+	public void AddObjectiveListener(IObjectiveListener listener)
+	{
+		m_ObjectiveListeners.Add(listener);
+		listener.InitializeData(this);
+	}
+
+	public void RemoveObjectiveListener(IObjectiveListener listener)
+	{
+		m_ObjectiveListeners.Remove(listener);
+	}
+
+	public void ClearListeners()
+	{
+		m_ObjectiveListeners.Clear();
+	}
 
 	public void IncrementCounter()
 	{
 		m_InternalCounterVal = Mathf.Min(m_InternalCounterVal + 1, m_MaximumValue);
-		m_ObjectiveListener.OnCounterChanged(m_InternalCounterVal);
+		m_ObjectiveListeners.ForEachListener((IObjectiveListener listener) => listener.OnCounterChanged(m_InternalCounterVal));
 		CheckChanged();
 	}
 
 	public void DecrementCounter()
 	{
 		m_InternalCounterVal = Mathf.Max(m_InternalCounterVal - 1, m_MinimumValue);
-		m_ObjectiveListener.OnCounterChanged(m_InternalCounterVal);
+		m_ObjectiveListeners.ForEachListener((IObjectiveListener listener) => listener.OnCounterChanged(m_InternalCounterVal));
 		CheckChanged();
 	}
 
+	#endregion
+
+	// internal functions for setting UI and telling the game manager what state this objective is in
+	#region PrivateFunctions
+
+	private bool m_bIsCurrentlyFailing = false;
+	private bool m_bIsCurrentlyWithinGoal = false;
+	private int m_InternalCounterVal = 0;
+
+	// for each listener, trigger the timer (only one will actually start a timer)
+	// and tell it to trigger ObjectiveFailed at the end of it.
 	private void StartFailureTimer()
-	{	
-		m_ObjectiveListener.OnTimerTriggered(() => m_Manager.OnObjectiveFailure(), m_TimerMaximum);
+	{
+		m_ObjectiveListeners.ForEachListener( (IObjectiveListener listener) => {
+			listener.OnTimerTriggered(OnObjectiveFailed, m_TimerMaximum);
+		});
+	}
+
+	private void OnObjectiveFailed()
+	{
+		m_ObjectiveListeners.ForEachListener((IObjectiveListener listener) => {
+			listener.OnObjectiveFailed();
+		});
 	}
 
 	private void HaltFailureTimer()
 	{
-		m_ObjectiveListener.OnTimerRemoved();
+		m_ObjectiveListeners.ForEachListener((IObjectiveListener listener) => listener.OnTimerRemoved());
 	}
 
 	private void EnteredGoal()
 	{
-		m_ObjectiveListener.OnEnteredGoal();
-		m_Manager.OnObjectiveCompleted();
+		m_ObjectiveListeners.ForEachListener((IObjectiveListener listener) => listener.OnEnteredGoal());
 	}
 
 	private void LeftGoal()
 	{
-		m_ObjectiveListener.OnLeftGoal();
-		m_Manager.OnObjectiveUncompleted();
+		m_ObjectiveListeners.ForEachListener((IObjectiveListener listener) => listener.OnLeftGoal());
 	}
 
 	private void CheckChanged()
@@ -133,6 +169,8 @@ public class LevelObjective : ScriptableObject
 			m_bIsCurrentlyFailing = withininFailure;
 		}
 	}
+
+	#endregion
 }
 
 public interface IObjectiveListener
@@ -146,6 +184,8 @@ public interface IObjectiveListener
 	void OnEnteredGoal();
 
 	void OnLeftGoal();
+
+	void OnObjectiveFailed();
 
 	void InitializeData(LevelObjective objective);
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using System;
 
@@ -10,13 +9,14 @@ public class LevelData : ScriptableObject
     [SerializeField] private float m_nTargetTime = 0.0f;
 	[SerializeField] private int m_LevelCompleteTime = 0;
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
-    private bool m_bIsUnlocked = false;
-    private float m_nAchievedTime = 0.0f;
-    private bool m_bHasCompleted = false;
 
-    public bool IsUnlocked => m_bIsUnlocked;
+	private float m_nAchievedTime = 0.0f;
 
-    public bool IsCompleted => m_bHasCompleted;
+	#region Properties
+
+	public bool IsUnlocked { get; private set; } = false;
+
+	public bool IsCompleted { get; private set; } = false;
 
 	public int GetObjectiveCount => m_LevelObjectives.Count;
 
@@ -25,6 +25,10 @@ public class LevelData : ScriptableObject
 	public string GetLevelName => m_sLevelName;
 
 	public float GetTargetTime => m_nTargetTime;
+
+	#endregion
+
+	#region PublicFunctions
 
 	public void ForEachObjective(Action<LevelObjective> objectiveFunc)
 	{
@@ -36,18 +40,21 @@ public class LevelData : ScriptableObject
 
     public void HasCompletedLevel()
     {
-        m_bHasCompleted = true;
+        IsCompleted = true;
     }
+
     public void UnlockLevel()
     {
-        m_bIsUnlocked = true;
+        IsUnlocked = true;
     }
+
     public void TrySetNewTime(in float time) 
     {
-        if (m_nAchievedTime > time || m_bHasCompleted) 
+        if (m_nAchievedTime > time || IsCompleted) 
         {
             m_nAchievedTime = time;
         }
     }
 
+	#endregion
 }
