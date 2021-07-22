@@ -18,8 +18,6 @@ public class LevelManager : MonoBehaviour
 	[Header("Object references")]
 	[SerializeField] private CowGameManager m_Manager;
 	[SerializeField] private CustomAnimation m_LevelEnterAnimation;
-	[SerializeField] private Animator m_LevelTransitionAnimator;
-	[SerializeField] private Animator m_LevelEnterAnimator;
 	[SerializeField] private TextMeshProUGUI m_LevelIntroTextLeft;
 	[SerializeField] private TextMeshProUGUI m_LevelIntroTextRight;
 	[SerializeField] private Transform m_Transform;
@@ -39,6 +37,8 @@ public class LevelManager : MonoBehaviour
 	[SerializeField] private CanvasGroup m_TextCanvas;
 
 	[Header("Animator References")]
+	[SerializeField] private Animator m_LevelTransitionAnimator;
+	[SerializeField] private Animator m_LevelEnterAnimator;
 	[SerializeField] private Animator m_PauseScreenAnimator;
 	[SerializeField] private Animator m_EndScreenFailureAnimator;
 	[SerializeField] private Animator m_EndScreenSuccesseAnimator;
@@ -46,8 +46,8 @@ public class LevelManager : MonoBehaviour
 
 	#region PrivateParams
 	private LevelData m_LevelData;
-	private StateMachine m_LevelState;
 	private bool m_bIsPaused = false;
+	private StateMachine m_LevelState;
 	private CanvasGroup m_CurrentOpenCanvas;
 	#endregion
 
@@ -200,7 +200,7 @@ public class LevelManager : MonoBehaviour
 
 	private IEnumerator BeginSceneTransition(Action queuedOnFinish)
 	{
-		m_LevelTransitionAnimator.Play("Base Layer.TransitionOut");
+		m_LevelTransitionAnimator.Play("TransitionOut", -1);
 		yield return new WaitForSeconds(m_fTransitionTime);
 		m_Manager.ClearLevelData();
 		queuedOnFinish();
@@ -229,6 +229,7 @@ public class LevelManager : MonoBehaviour
 			LeanTween.alphaCanvas(m_CurrentOpenCanvas, 0.0f, m_fMenuTransitionTime).setEaseInOutCubic();
 		}
 	}
+
 	#endregion
 
 	// Functions called primarily by player UI requests, sent up to manager
