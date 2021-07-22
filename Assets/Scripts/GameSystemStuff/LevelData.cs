@@ -8,9 +8,20 @@ public class LevelData : ScriptableObject
     [SerializeField] private string m_sLevelName = "";
     [SerializeField] private float m_nTargetTime = 0.0f;
 	[SerializeField] private int m_LevelCompleteTime = 0;
+	[SerializeField] private StarRating m_StarRating = StarRating.Uninitialized;
+	[SerializeField] private int m_Score = 0;
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
+	[SerializeField] private float[] m_Checkpoints = new float[] { 0f, 0f };
 
 	private float m_nAchievedTime = 0.0f;
+
+	public enum StarRating
+	{
+		Uninitialized,
+		One = 1,
+		Two = 2,
+		Three = 3
+	}
 
 	#region Properties
 
@@ -22,9 +33,17 @@ public class LevelData : ScriptableObject
 
 	public int GetSuccessTimerTime => m_LevelCompleteTime;
 
+	public StarRating GetCurrentStarRating => m_StarRating;
+
+	public ref float[] GetCheckpoints => ref m_Checkpoints;
+
+	public int GetScore => m_Score;
+
 	public string GetLevelName => m_sLevelName;
 
 	public float GetTargetTime => m_nTargetTime;
+
+	public string GetBestTimeAsString => UnityUtils.TurnTimeToString(m_nTargetTime);
 
 	#endregion
 
@@ -56,5 +75,20 @@ public class LevelData : ScriptableObject
         }
     }
 
+	public void TrySetNewStarRating(StarRating newStarRating)
+	{
+		if (m_StarRating < newStarRating)
+		{
+			m_StarRating = newStarRating;
+		}
+	}
+
+	public void TrySetNewScore(in int score)
+	{
+		if (m_Score < score)
+		{
+			m_Score = score;
+		}
+	}
 	#endregion
 }

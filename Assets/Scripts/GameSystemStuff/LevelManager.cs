@@ -38,6 +38,10 @@ public class LevelManager : MonoBehaviour
 	[SerializeField] private CanvasGroup m_StartButtonCanvas;
 	[SerializeField] private CanvasGroup m_TextCanvas;
 
+	[Header("Animator References")]
+	[SerializeField] private Animator m_PauseScreenAnimator;
+	[SerializeField] private Animator m_EndScreenFailureAnimator;
+	[SerializeField] private Animator m_EndScreenSuccesseAnimator;
 	#endregion
 
 	#region PrivateParams
@@ -133,7 +137,7 @@ public class LevelManager : MonoBehaviour
 	private void OnSecondIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
 	{
 		m_LevelIntroTextLeft.text = "Time to Beat";
-		m_LevelIntroTextRight.text = TurnTimeToString(m_LevelData.GetTargetTime);
+		m_LevelIntroTextRight.text = UnityUtils.TurnTimeToString(m_LevelData.GetTargetTime);
 		ShowIntroText(clip);
 	}
 
@@ -167,9 +171,9 @@ public class LevelManager : MonoBehaviour
 	private void Awake()
 	{
 		m_LevelState = new StateMachine(new StartState(this, m_StartButtonCanvas));
-		m_LevelState.AddState(new PausedState(this, m_PauseCanvas));
-		m_LevelState.AddState(new EndFailureState(this, m_EndFailureCanvas));
-		m_LevelState.AddState(new EndSuccessState(this, m_EndSuccessCanvas));
+		m_LevelState.AddState(new PausedState(this, m_PauseCanvas, m_PauseScreenAnimator));
+		m_LevelState.AddState(new EndFailureState(this, m_EndFailureCanvas, m_EndScreenFailureAnimator));
+		m_LevelState.AddState(new EndSuccessState(this, m_EndSuccessCanvas, m_EndScreenSuccesseAnimator));
 		m_LevelState.AddState(new PlayingState(this, m_MainCanvas));
 		m_LevelTransitionAnimator.Play("Base Layer.TransitionIn");
 
@@ -301,17 +305,27 @@ public class LevelManager : MonoBehaviour
 
 	#endregion
 
-	// unrelated helper functions
-	#region MiscellaneousHelperFunctions
+	// Functions called by the state machine
+	#region StateMachineEvents
 
-	private string TurnTimeToString(in float time)
+	public void PopulateFailureScreen()
 	{
-		int seconds = Mathf.FloorToInt(time % 60);
-		int minutes = Mathf.FloorToInt(time / 60);
-		return minutes.ToString() + ":" + seconds.ToString();
+		// Time 
+		// objective statistics
+
+		// need to populate objectives using UIObjectiveElements
+	}
+
+	public void PopulateSuccessScreen()
+	{
+		// Time completed
+		// objective statistics 
+		// Points (?) - speed, efficiency (how close to optimum the scores were)
+		// star rating (?)
 	}
 
 	#endregion
+
 }
 
 #region StateMachineStates
@@ -327,7 +341,11 @@ public class PlayingState : AStateBase
 	public override void OnEnter()
 	{
 		m_LevelLoader.PauseLevel(false);
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; });
+		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		{
+			m_CanvasGroup.blocksRaycasts = true;
+			m_CanvasGroup.interactable = true;
+		});
 	}
 
 	public override void Tick()
@@ -348,14 +366,22 @@ public class PausedState : AStateBase
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
-	public PausedState(LevelManager loader, CanvasGroup pauseGroup)
+	private readonly Animator m_AnimationController;
+	public PausedState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
 	{
+		m_AnimationController = animator;
 		m_LevelLoader = loader;
 		m_CanvasGroup = pauseGroup;
 	}
+
 	public override void OnEnter()
 	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; });
+		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		{
+			m_CanvasGroup.blocksRaycasts = true;
+			m_CanvasGroup.interactable = true;
+		});
+		m_AnimationController.Play("AnimIn", -1);
 	}
 
 	public override void Tick()
@@ -365,20 +391,38 @@ public class PausedState : AStateBase
 			m_LevelLoader.ResumeLevel();
 		}
 	}
+
+	public override void OnExit()
+	{
+		m_AnimationController.Play("AnimOut", -1);
+	}
 }
 
 public class EndFailureState : AStateBase 
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
-	public EndFailureState(LevelManager loader, CanvasGroup pauseGroup)
+	private readonly Animator m_AnimationController;
+	public EndFailureState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
 	{
+		m_AnimationController = animator;
 		m_LevelLoader = loader;
 		m_CanvasGroup = pauseGroup;
 	}
 	public override void OnEnter()
 	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; }, delay: 1.0f);
+		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		{
+			m_CanvasGroup.blocksRaycasts = true;
+			m_CanvasGroup.interactable = true;
+		}, delay: 1.0f);
+		m_LevelLoader.PopulateFailureScreen();
+		m_AnimationController.Play("AnimIn", -1);
+	}
+
+	public override void OnExit()
+	{
+		m_AnimationController.Play("AnimOut", -1);
 	}
 }
 
@@ -386,15 +430,29 @@ public class EndSuccessState : AStateBase
 {
 	private readonly LevelManager m_LevelLoader;
 	private readonly CanvasGroup m_CanvasGroup;
-	public EndSuccessState(LevelManager loader, CanvasGroup pauseGroup)
+	private readonly Animator m_AnimationController;
+
+	public EndSuccessState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
 	{
+		m_AnimationController = animator;
 		m_LevelLoader = loader;
 		m_CanvasGroup = pauseGroup;
 	}
+
 	public override void OnEnter()
 	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => { m_CanvasGroup.blocksRaycasts = true; m_CanvasGroup.interactable = true; }, delay: 1.0f);
-		
+		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		{
+			m_CanvasGroup.blocksRaycasts = true;
+			m_CanvasGroup.interactable = true;
+		}, delay: 1.0f);
+		m_LevelLoader.PopulateSuccessScreen();
+		m_AnimationController.Play("AnimIn", -1);
+	}
+
+	public override void OnExit()
+	{
+		m_AnimationController.Play("AnimOut", -1);
 	}
 }
 
