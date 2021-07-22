@@ -2,6 +2,7 @@
 using UnityEngine;
 using System;
 using TMPro;
+using LevelManagerStates;
 
 [RequireComponent(typeof(CustomAnimation))]
 public class LevelManager : MonoBehaviour
@@ -329,142 +330,144 @@ public class LevelManager : MonoBehaviour
 
 }
 
-#region StateMachineStates
-public class PlayingState : AStateBase 
+namespace LevelManagerStates
 {
-	private readonly LevelManager m_LevelLoader;
-	private readonly CanvasGroup m_CanvasGroup;
-	public PlayingState(LevelManager loader, CanvasGroup pauseGroup) 
+	public class PlayingState : AStateBase
 	{
-		m_LevelLoader = loader;
-		m_CanvasGroup = pauseGroup;
-	}
-	public override void OnEnter()
-	{
-		m_LevelLoader.PauseLevel(false);
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		private readonly LevelManager m_LevelLoader;
+		private readonly CanvasGroup m_CanvasGroup;
+		public PlayingState(LevelManager loader, CanvasGroup pauseGroup)
 		{
-			m_CanvasGroup.blocksRaycasts = true;
-			m_CanvasGroup.interactable = true;
-		});
-	}
+			m_LevelLoader = loader;
+			m_CanvasGroup = pauseGroup;
+		}
+		public override void OnEnter()
+		{
+			m_LevelLoader.PauseLevel(false);
+			m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () =>
+			{
+				m_CanvasGroup.blocksRaycasts = true;
+				m_CanvasGroup.interactable = true;
+			});
+		}
 
-	public override void Tick()
-	{
-		if (Input.GetKeyDown(KeyCode.Escape)) 
+		public override void Tick()
 		{
-			RequestTransition<PausedState>();
+			if (Input.GetKeyDown(KeyCode.Escape))
+			{
+				RequestTransition<PausedState>();
+			}
+		}
+
+		public override void OnExit()
+		{
+			m_LevelLoader.PauseLevel(true);
 		}
 	}
 
-	public override void OnExit()
+	public class PausedState : AStateBase
 	{
-		m_LevelLoader.PauseLevel(true);
-	}
-}
-
-public class PausedState : AStateBase 
-{
-	private readonly LevelManager m_LevelLoader;
-	private readonly CanvasGroup m_CanvasGroup;
-	private readonly Animator m_AnimationController;
-	public PausedState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
-	{
-		m_AnimationController = animator;
-		m_LevelLoader = loader;
-		m_CanvasGroup = pauseGroup;
-	}
-
-	public override void OnEnter()
-	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		private readonly LevelManager m_LevelLoader;
+		private readonly CanvasGroup m_CanvasGroup;
+		private readonly Animator m_AnimationController;
+		public PausedState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
 		{
-			m_CanvasGroup.blocksRaycasts = true;
-			m_CanvasGroup.interactable = true;
-		});
-		m_AnimationController.Play("AnimIn", -1);
-	}
+			m_AnimationController = animator;
+			m_LevelLoader = loader;
+			m_CanvasGroup = pauseGroup;
+		}
 
-	public override void Tick()
-	{
-		if (Input.GetKeyDown(KeyCode.Escape))
+		public override void OnEnter()
 		{
-			m_LevelLoader.ResumeLevel();
+			m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () =>
+			{
+				m_CanvasGroup.blocksRaycasts = true;
+				m_CanvasGroup.interactable = true;
+			});
+			m_AnimationController.Play("AnimIn", -1);
+		}
+
+		public override void Tick()
+		{
+			if (Input.GetKeyDown(KeyCode.Escape))
+			{
+				m_LevelLoader.ResumeLevel();
+			}
+		}
+
+		public override void OnExit()
+		{
+			m_AnimationController.Play("AnimOut", -1);
 		}
 	}
 
-	public override void OnExit()
+	public class EndFailureState : AStateBase
 	{
-		m_AnimationController.Play("AnimOut", -1);
-	}
-}
-
-public class EndFailureState : AStateBase 
-{
-	private readonly LevelManager m_LevelLoader;
-	private readonly CanvasGroup m_CanvasGroup;
-	private readonly Animator m_AnimationController;
-	public EndFailureState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
-	{
-		m_AnimationController = animator;
-		m_LevelLoader = loader;
-		m_CanvasGroup = pauseGroup;
-	}
-	public override void OnEnter()
-	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+		private readonly LevelManager m_LevelLoader;
+		private readonly CanvasGroup m_CanvasGroup;
+		private readonly Animator m_AnimationController;
+		public EndFailureState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
 		{
-			m_CanvasGroup.blocksRaycasts = true;
-			m_CanvasGroup.interactable = true;
-		}, delay: 1.0f);
-		m_LevelLoader.PopulateFailureScreen();
-		m_AnimationController.Play("AnimIn", -1);
-	}
-
-	public override void OnExit()
-	{
-		m_AnimationController.Play("AnimOut", -1);
-	}
-}
-
-public class EndSuccessState : AStateBase
-{
-	private readonly LevelManager m_LevelLoader;
-	private readonly CanvasGroup m_CanvasGroup;
-	private readonly Animator m_AnimationController;
-
-	public EndSuccessState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
-	{
-		m_AnimationController = animator;
-		m_LevelLoader = loader;
-		m_CanvasGroup = pauseGroup;
-	}
-
-	public override void OnEnter()
-	{
-		m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () => 
+			m_AnimationController = animator;
+			m_LevelLoader = loader;
+			m_CanvasGroup = pauseGroup;
+		}
+		public override void OnEnter()
 		{
-			m_CanvasGroup.blocksRaycasts = true;
-			m_CanvasGroup.interactable = true;
-		}, delay: 1.0f);
-		m_LevelLoader.PopulateSuccessScreen();
-		m_AnimationController.Play("AnimIn", -1);
+			m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () =>
+			{
+				m_CanvasGroup.blocksRaycasts = true;
+				m_CanvasGroup.interactable = true;
+			}, delay: 1.0f);
+			m_LevelLoader.PopulateFailureScreen();
+			m_AnimationController.Play("AnimIn", -1);
+		}
+
+		public override void OnExit()
+		{
+			m_AnimationController.Play("AnimOut", -1);
+		}
 	}
 
-	public override void OnExit()
+	public class EndSuccessState : AStateBase
 	{
-		m_AnimationController.Play("AnimOut", -1);
+		private readonly LevelManager m_LevelLoader;
+		private readonly CanvasGroup m_CanvasGroup;
+		private readonly Animator m_AnimationController;
+
+		public EndSuccessState(LevelManager loader, CanvasGroup pauseGroup, Animator animator)
+		{
+			m_AnimationController = animator;
+			m_LevelLoader = loader;
+			m_CanvasGroup = pauseGroup;
+		}
+
+		public override void OnEnter()
+		{
+			m_LevelLoader.SetCurrentCanvas(m_CanvasGroup, () =>
+			{
+				m_CanvasGroup.blocksRaycasts = true;
+				m_CanvasGroup.interactable = true;
+			}, delay: 1.0f);
+			m_LevelLoader.PopulateSuccessScreen();
+			m_AnimationController.Play("AnimIn", -1);
+		}
+
+		public override void OnExit()
+		{
+			m_AnimationController.Play("AnimOut", -1);
+		}
+	}
+
+	public class StartState : AStateBase
+	{
+		private readonly LevelManager m_LevelLoader;
+		private readonly CanvasGroup m_CanvasGroup;
+		public StartState(LevelManager loader, CanvasGroup startGroup)
+		{
+			m_LevelLoader = loader;
+			m_CanvasGroup = startGroup;
+		}
 	}
 }
 
-public class StartState : AStateBase 
-{
-	private readonly LevelManager m_LevelLoader;
-	private readonly CanvasGroup m_CanvasGroup;
-	public StartState(LevelManager loader, CanvasGroup startGroup) 
-	{
-		m_LevelLoader = loader;
-		m_CanvasGroup = startGroup;
-	}
-}
-#endregion

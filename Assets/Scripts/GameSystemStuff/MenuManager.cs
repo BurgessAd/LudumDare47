@@ -1,10 +1,10 @@
 using System.Collections;
 using UnityEngine;
 using System;
+using MenuManagerStates;
 
 public class MenuManager : MonoBehaviour
 {
-
 	[Header("Animation parameters")]
 	[SerializeField] private float m_fTransitionTime;
 	[SerializeField] private float m_fMenuTransitionTime;
@@ -90,22 +90,22 @@ public class MenuManager : MonoBehaviour
 
 	public void OpenSettingsMenu()
 	{
-		m_MenuStateMachine.RequestTransition(typeof(MenuManagerStates.SettingsState));
+		m_MenuStateMachine.RequestTransition(typeof(SettingsState));
 	}
 
 	public void OpenLevelSelect()
 	{
-		m_MenuStateMachine.RequestTransition(typeof(MenuManagerStates.LevelSelectState));
+		m_MenuStateMachine.RequestTransition(typeof(LevelSelectState));
 	}
 
 	public void ReturnToMainMenu()
 	{
-		m_MenuStateMachine.RequestTransition(typeof(MenuManagerStates.MainState));
+		m_MenuStateMachine.RequestTransition(typeof(MainState));
 	}
 
 	public void OpenQuitScreen()
 	{
-		m_MenuStateMachine.RequestTransition(typeof(MenuManagerStates.PreQuitState));
+		m_MenuStateMachine.RequestTransition(typeof(PreQuitState));
 	}
 
 	public void Quit()
@@ -143,6 +143,12 @@ namespace MenuManagerStates
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
+			m_Animator.Play("AnimIn", -1);
+		}
+
+		public override void OnExit()
+		{
+			m_Animator.Play("AnimOut", -1);
 		}
 
 		public override void Tick()
@@ -195,6 +201,12 @@ namespace MenuManagerStates
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
+			m_Animator.Play("AnimIn", -1);
+		}
+
+		public override void OnExit()
+		{
+			m_Animator.Play("AnimOut", -1);
 		}
 
 		public override void Tick()
@@ -225,6 +237,12 @@ namespace MenuManagerStates
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
+			m_Animator.Play("AnimIn", -1);
+		}
+
+		public override void OnExit()
+		{
+			m_Animator.Play("AnimOut", -1);
 		}
 
 		public override void Tick()
