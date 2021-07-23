@@ -120,6 +120,7 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
         m_fSpeed = m_fMaxSpeed * currentMultiplier;
         m_bIsGrounded = Physics.CheckSphere(m_tGroundTransform.position, m_fGroundDistance, groundMask);
         //movement for the player
+		
         float forwardSpeed = Input.GetAxis("Vertical");
         float sideSpeed = Input.GetAxis("Horizontal");
 

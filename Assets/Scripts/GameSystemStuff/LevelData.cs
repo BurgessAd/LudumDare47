@@ -43,7 +43,7 @@ public class LevelData : ScriptableObject
 
 	public float GetTargetTime => m_nTargetTime;
 
-	public string GetBestTimeAsString => UnityUtils.TurnTimeToString(m_nTargetTime);
+	public string GetBestTimeAsString => UnityUtils.UnityUtils.TurnTimeToString(m_nTargetTime);
 
 	#endregion
 

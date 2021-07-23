@@ -280,7 +280,7 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 
 	public bool IsGroundLayer(in int layer)
 	{
-		return UnityUtils.IsLayerInMask(m_TerrainLayerMask, layer);
+		return UnityUtils.UnityUtils.IsLayerInMask(m_TerrainLayerMask, layer);
 	}
 
 	public EntityToken GetTokenForEntity(in EntityTypeComponent gameObject, in EntityInformation entityType)

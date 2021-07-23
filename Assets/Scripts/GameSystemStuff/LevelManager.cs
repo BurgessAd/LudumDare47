@@ -138,7 +138,7 @@ public class LevelManager : MonoBehaviour
 	private void OnSecondIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
 	{
 		m_LevelIntroTextLeft.text = "Time to Beat";
-		m_LevelIntroTextRight.text = UnityUtils.TurnTimeToString(m_LevelData.GetTargetTime);
+		m_LevelIntroTextRight.text = UnityUtils.UnityUtils.TurnTimeToString(m_LevelData.GetTargetTime);
 		ShowIntroText(clip);
 	}
 
