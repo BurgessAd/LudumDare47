@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8beb81855b1de74ba7ee6782b4e2b0f, type: 3}
+  m_Name: SettingsManager
+  m_EditorClassIdentifier: 
+  m_KeyBindings: []
+  m_SFXVol:
+    _value: 0
+  m_MusicVol:
+    _value: 0
+  m_UISFXVol:
+    _value: 0
+  m_bAmbientSFXVol:
+    _value: 0
+  m_bIsMuted:
+    _value: 0
+  m_MouseSensitivityX:
+    _value: 0
+  m_MouseSensitivityY:
+    _value: 0
+  m_InvertY:
+    _value: 0
+  PauseOnMinimise:
+    _value: 0
+  m_ScreenMode:
+    _value: 0

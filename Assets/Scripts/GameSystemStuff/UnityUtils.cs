@@ -31,6 +31,30 @@ namespace UnityUtils
 	}
 
 	[Serializable]
+	public class ObservableVariable<T>
+	{
+		Action<T, T> OnValueChanged;
+
+		public ObservableVariable(Action<T, T> OnChangedFunc)
+		{
+			OnValueChanged = OnChangedFunc;
+		}
+
+		[SerializeField] T _value;
+
+		public T Value
+		{
+			get => _value;
+			set
+			{
+				T previous = _value;
+				_value = value;
+				OnValueChanged?.Invoke(previous, _value);
+			}
+		}
+	}
+
+	[Serializable]
 	public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver
 	{
 		[SerializeField]

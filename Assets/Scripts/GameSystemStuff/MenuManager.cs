@@ -2,7 +2,10 @@ using System.Collections;
 using UnityEngine;
 using System;
 using MenuManagerStates;
+using UnityWeld.Binding;
+using System.ComponentModel;
 
+[Binding]
 public class MenuManager : MonoBehaviour
 {
 	[Header("Animation parameters")]
