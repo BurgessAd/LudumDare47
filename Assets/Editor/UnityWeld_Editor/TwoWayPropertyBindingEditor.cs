@@ -170,6 +170,9 @@ namespace UnityWeld_Editor
                 viewPropertyType, 
                 targetScript.ViewAdapterTypeName
             );
+
+			ShowViewModelTarget(ref targetScript.GetViewModel());
+
             ShowViewModelPropertyMenu(
                 new GUIContent(
                     "View-model property", 

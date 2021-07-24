@@ -8,6 +8,8 @@ public class SoundObject : ScriptableObject
 
 	public AudioClip clip;
 
+	public AudioType m_AudioType;
+
 	[Range(0f, 2f)]
 	public float defaultVolume = 1.0f;
 

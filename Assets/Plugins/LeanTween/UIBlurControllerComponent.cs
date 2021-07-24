@@ -1,22 +1,23 @@
 using UnityEngine;
-
+using UnityEngine.UI;
 namespace S7UI
 {
 	public class UIBlurControllerComponent : MonoBehaviour
 	{
 		[Range(1.0f, 10.0f)][SerializeField] private float m_BlurIntensityScalar;
 		[Range(0.0f, 1.0f)][SerializeField] private float m_BlurDefaultValue;
-		[SerializeField] private SpriteRenderer m_SpriteRenderer;
-
-		private MaterialPropertyBlock m_PropertyBlock = new MaterialPropertyBlock();
+		[SerializeField] private Graphic m_SpriteRenderer;
+		
+		private MaterialPropertyBlock m_PropertyBlock;
 
 		private float m_BlurStrength;
 
 		private void SetBlur(in float m_BlurStrength)
 		{
-			m_SpriteRenderer.GetPropertyBlock(m_PropertyBlock);
-			m_PropertyBlock.SetFloat("_Blur", m_BlurStrength * m_BlurIntensityScalar);
-			m_SpriteRenderer.SetPropertyBlock(m_PropertyBlock);
+			//m_SpriteRenderer.material.prop
+			//m_SpriteRenderer.GetPropertyBlock(m_PropertyBlock);
+			//m_PropertyBlock.SetFloat("_Blur", m_BlurStrength * m_BlurIntensityScalar);
+			//m_SpriteRenderer.SetPropertyBlock(m_PropertyBlock);
 		}
 
 		public float strength
@@ -27,6 +28,7 @@ namespace S7UI
 
 		private void Awake()
 		{
+			m_PropertyBlock = new MaterialPropertyBlock();
 			strength = m_BlurDefaultValue;
 		}
 	}
