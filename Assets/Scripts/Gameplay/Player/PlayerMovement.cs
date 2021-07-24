@@ -21,10 +21,16 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
     [SerializeField] private ThrowableObjectNoRigidComponent m_throwableObjectComponent;
 
     [SerializeField] private AnimationCurve m_SpinningMassSlowCurve;
-    [SerializeField] private LassoStartComponent m_LassoComponent;
+    [SerializeField] private LassoInputComponent m_LassoComponent;
 
     [SerializeField] private GameObject m_GroundImpactEffectsPrefab;
     [SerializeField] private AnimationCurve m_ImpactStrengthByImpactSpeed;
+
+	[SerializeField] private ControlBinding m_ForwardBinding;
+	[SerializeField] private ControlBinding m_LeftBinding;
+	[SerializeField] private ControlBinding m_RightBinding;
+	[SerializeField] private ControlBinding m_BackBinding;
+	[SerializeField] private ControlBinding m_JumpBinding;
 
     public event Action OnSuccessfulJump;
     public event Action<float> OnHitGround;
@@ -119,10 +125,10 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
         float currentMultiplier = m_fCurrentSpinningMassSpeedDecrease * m_fCurrentSpinningStrengthSpeedDecrease * m_fCurrentDraggingSpeedDecrease;
         m_fSpeed = m_fMaxSpeed * currentMultiplier;
         m_bIsGrounded = Physics.CheckSphere(m_tGroundTransform.position, m_fGroundDistance, groundMask);
-        //movement for the player
-		
-        float forwardSpeed = Input.GetAxis("Vertical");
-        float sideSpeed = Input.GetAxis("Horizontal");
+		//movement for the player
+
+		float forwardSpeed = m_ForwardBinding.GetBindingVal() - m_BackBinding.GetBindingVal();
+		float sideSpeed = m_RightBinding.GetBindingVal() - m_LeftBinding.GetBindingVal();
 
         Vector3 playerInputMoveDir = (m_tBodyTransform.right * sideSpeed + m_tBodyTransform.forward * forwardSpeed).normalized;
 
@@ -152,7 +158,7 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
 
 
 
-        if (Input.GetButtonDown("Jump") && m_CharacterController.isGrounded) 
+        if (m_JumpBinding.IsBindingPressed() && m_CharacterController.isGrounded) 
         {
             OnSuccessfulJump?.Invoke();
             m_vVelocity.y = Mathf.Sqrt(m_fJumpHeight * -2f * currentMultiplier * m_fGravity);

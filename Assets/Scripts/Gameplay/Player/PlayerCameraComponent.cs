@@ -27,7 +27,7 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
     [Header("FOV Animation Params")]
     [SerializeField] private Animator m_CameraAnimator;
     [SerializeField] private PlayerMovement m_PlayerMovement;
-    [SerializeField] private LassoStartComponent m_LassoStart;
+    [SerializeField] private LassoInputComponent m_LassoStart;
     [SerializeField] private string m_JumpString;
     [SerializeField] private string m_GroundedAnimString;
     [SerializeField] private string m_MovementSpeedAnimString;

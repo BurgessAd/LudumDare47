@@ -3,7 +3,7 @@ using System;
 using LassoStates;
 using EZCameraShake;
 
-public class LassoStartComponent : MonoBehaviour, IPauseListener
+public class LassoInputComponent : MonoBehaviour, IPauseListener
 {
     private StateMachine m_StateMachine;
     private ThrowableObjectComponent m_Throwable;
@@ -26,6 +26,9 @@ public class LassoStartComponent : MonoBehaviour, IPauseListener
     [SerializeField] private LineRenderer m_HandRopeLineRenderer;
     [SerializeField] private LineRenderer m_LassoSpinningLoopLineRenderer;
     [SerializeField] private LineRenderer m_TrajectoryLineRenderer;
+
+	[SerializeField] private ControlBinding m_TriggerBinding;
+	[SerializeField] private ControlBinding m_CancelBinding;
 
     [SerializeField] private UIObjectReference m_PowerBarObjectReference;
     [SerializeField] private CowGameManager m_Manager;
@@ -82,29 +85,29 @@ public class LassoStartComponent : MonoBehaviour, IPauseListener
         m_StateMachine.AddState(new LassoReturnState(this, m_LassoParams));
         m_StateMachine.AddState(new LassoThrowingState(this));
         m_StateMachine.AddState(new LassoSpinningState(this, m_LassoParams));
-        m_StateMachine.AddState(new LassoAnimalAttachedState(this, m_LassoParams));
+        m_StateMachine.AddState(new LassoAnimalAttachedState(this, m_LassoParams, m_TriggerBinding));
         m_StateMachine.AddState(new LassoAnimalSpinningState(this, m_LassoParams));
 
         // for if we want to start spinning
-        m_StateMachine.AddTransition(typeof(LassoIdleState), typeof(LassoSpinningState), () => Input.GetMouseButtonDown(0) && !m_bIsAttachedToObject && !m_bPlayerThrown);
+        m_StateMachine.AddTransition(typeof(LassoIdleState), typeof(LassoSpinningState), () => m_TriggerBinding.GetBindingDown() && !m_bIsAttachedToObject && !m_bPlayerThrown);
 
         m_StateMachine.AddTransition(typeof(LassoReturnState), typeof(LassoIdleState), () => Vector3.SqrMagnitude(GetEndTransform.position - m_LassoGrabPoint.position) < 1.0f, () => SetLassoAsChildOfPlayer(true));
         // for if we're spinning and want to cancel 
-        m_StateMachine.AddTransition(typeof(LassoSpinningState), typeof(LassoIdleState), () => Input.GetMouseButtonUp(1));
+        m_StateMachine.AddTransition(typeof(LassoSpinningState), typeof(LassoIdleState), () => m_CancelBinding.GetBindingUp());
         // for if we're spinning and want to throw
-        m_StateMachine.AddTransition(typeof(LassoSpinningState), typeof(LassoThrowingState), () => Input.GetMouseButtonUp(0), () => { ProjectLasso(); SetLassoAsChildOfPlayer(false);});
+        m_StateMachine.AddTransition(typeof(LassoSpinningState), typeof(LassoThrowingState), () => m_TriggerBinding.GetBindingUp(), () => { ProjectLasso(); SetLassoAsChildOfPlayer(false);});
         // for if we're spinning an animal and want to cancel
-        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => Input.GetMouseButtonUp(1), () => DetachFromObject());
+        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => m_CancelBinding.GetBindingUp(), () => DetachFromObject());
         // for if we're throwing and want to cancel
-        m_StateMachine.AddTransition(typeof(LassoThrowingState), typeof(LassoReturnState), () => (Input.GetMouseButtonUp(1) || Vector3.SqrMagnitude(GetEndTransform.position - m_LassoGrabPoint.position) > m_LassoParams.m_LassoLength * m_LassoParams.m_LassoLength), () => { m_LassoEndTransform.GetComponent<FreeFallTrajectoryComponent>().enabled = false; } );
+        m_StateMachine.AddTransition(typeof(LassoThrowingState), typeof(LassoReturnState), () => (m_CancelBinding.GetBindingUp() || Vector3.SqrMagnitude(GetEndTransform.position - m_LassoGrabPoint.position) > m_LassoParams.m_LassoLength * m_LassoParams.m_LassoLength), () => { m_LassoEndTransform.GetComponent<FreeFallTrajectoryComponent>().enabled = false; } );
         // for if we've decided we want to unattach to our target
-        m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoReturnState), () => Input.GetMouseButtonUp(1) || m_bPlayerThrown, () => DetachFromObject());
+        m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoReturnState), () => m_CancelBinding.GetBindingUp() || m_bPlayerThrown, () => DetachFromObject());
 
         m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoReturnState), () => !m_bIsAttachedToObject);
         // for if the cow has reached us
-        m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoAnimalSpinningState), () => m_bCanPickUpObject && Input.GetMouseButtonDown(0));
+        m_StateMachine.AddTransition(typeof(LassoAnimalAttachedState), typeof(LassoAnimalSpinningState), () => m_bCanPickUpObject && m_TriggerBinding.GetBindingDown());
         // for if we want to throw the animal
-        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => (!Input.GetMouseButton(0) && !m_LassoParams.SpinningIsInitializing), () => { ProjectObject(); SetLassoAsChildOfPlayer(true); });
+        m_StateMachine.AddTransition(typeof(LassoAnimalSpinningState), typeof(LassoIdleState), () => (!m_TriggerBinding.IsBindingPressed() && !m_LassoParams.SpinningIsInitializing), () => { ProjectObject(); SetLassoAsChildOfPlayer(true); });
         // instant transition back to idle state
         m_StateMachine.InitializeStateMachine();
 
@@ -343,9 +346,9 @@ namespace LassoStates
 		float m_fCurrentAngle;
 		float m_CurrentInitializeTime = 0.0f;
 
-		private readonly LassoStartComponent m_Lasso;
+		private readonly LassoInputComponent m_Lasso;
 		private readonly LassoParams m_LassoParams;
-		public LassoSpinningState(LassoStartComponent lasso, LassoParams lassoParams)
+		public LassoSpinningState(LassoInputComponent lasso, LassoParams lassoParams)
 		{
 			m_LassoParams = lassoParams;
 			m_Lasso = lasso;
@@ -419,9 +422,9 @@ namespace LassoStates
 
 		float m_CurrentInitializeTime = 0.0f;
 
-		private readonly LassoStartComponent m_Lasso;
+		private readonly LassoInputComponent m_Lasso;
 		private readonly LassoParams m_LassoParams;
-		public LassoAnimalSpinningState(LassoStartComponent lasso, LassoParams lassoParams)
+		public LassoAnimalSpinningState(LassoInputComponent lasso, LassoParams lassoParams)
 		{
 			m_LassoParams = lassoParams;
 			m_Lasso = lasso;
@@ -483,8 +486,8 @@ namespace LassoStates
 
 	public class LassoThrowingState : AStateBase
 	{
-		private readonly LassoStartComponent m_Lasso;
-		public LassoThrowingState(LassoStartComponent lasso)
+		private readonly LassoInputComponent m_Lasso;
+		public LassoThrowingState(LassoInputComponent lasso)
 		{
 			m_Lasso = lasso;
 		}
@@ -513,12 +516,14 @@ namespace LassoStates
 		float m_fTotalCurrentForce;
 		float m_fTimeSinceClicked;
 
-		private readonly LassoStartComponent m_Lasso;
+		private readonly ControlBinding m_TriggerBinding;
+		private readonly LassoInputComponent m_Lasso;
 		private readonly LassoParams m_LassoParams;
-		public LassoAnimalAttachedState(LassoStartComponent lasso, LassoParams lassoParams)
+		public LassoAnimalAttachedState(LassoInputComponent lasso, LassoParams lassoParams, ControlBinding triggerBinding)
 		{
 			m_LassoParams = lassoParams;
 			m_Lasso = lasso;
+			m_TriggerBinding = triggerBinding;
 		}
 		public override void OnEnter()
 		{
@@ -547,7 +552,7 @@ namespace LassoStates
 			m_fTotalCurrentForce = Mathf.Max(0.0f, m_fTotalCurrentForce - fForceDecrease * Time.deltaTime);
 			m_fCurrentJerkTime = Mathf.Max(0.0f, m_fCurrentJerkTime - Time.deltaTime);
 
-			if (Input.GetMouseButtonDown(0) && m_fTimeSinceClicked > 0.4f)
+			if (m_TriggerBinding.GetBindingDown() && m_fTimeSinceClicked > 0.4f)
 			{
 				m_Lasso.GetThrowableObject.TuggedByLasso();
 				m_fCurrentJerkTime = m_LassoParams.m_JerkTimeForPull;
@@ -577,9 +582,9 @@ namespace LassoStates
 	{
 		float m_LassoSpeed = 0.0f;
 
-		private readonly LassoStartComponent m_Lasso;
+		private readonly LassoInputComponent m_Lasso;
 		private readonly LassoParams m_LassoParams;
-		public LassoReturnState(LassoStartComponent lasso, LassoParams lassoParams)
+		public LassoReturnState(LassoInputComponent lasso, LassoParams lassoParams)
 		{
 			m_LassoParams = lassoParams;
 			m_Lasso = lasso;
@@ -612,8 +617,8 @@ namespace LassoStates
 
 	public class LassoIdleState : AStateBase
 	{
-		private readonly LassoStartComponent m_Lasso;
-		public LassoIdleState(LassoStartComponent lasso)
+		private readonly LassoInputComponent m_Lasso;
+		public LassoIdleState(LassoInputComponent lasso)
 		{
 			m_Lasso = lasso;
 		}

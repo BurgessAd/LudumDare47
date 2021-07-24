@@ -8,7 +8,7 @@ public class PlayerComponent : MonoBehaviour, IPauseListener
 
 	[SerializeField] private HealthComponent m_HealthComponent;
 
-	[SerializeField] private LassoStartComponent m_LassoComponent;
+	[SerializeField] private LassoInputComponent m_LassoComponent;
 
 	[SerializeField] private Transform m_CamContainer;
 
