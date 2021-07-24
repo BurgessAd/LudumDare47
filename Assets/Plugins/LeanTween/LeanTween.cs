@@ -164,7 +164,8 @@ public enum TweenAction{
     ROTATE_Z,
     ROTATE_AROUND,
     ROTATE_AROUND_LOCAL,
-    CANVAS_ROTATEAROUND,
+	CANVAS_BLUR,
+	CANVAS_ROTATEAROUND,
     CANVAS_ROTATEAROUND_LOCAL,
     CANVAS_PLAYSPRITE,
     ALPHA,
@@ -1182,9 +1183,15 @@ public class LeanTween : MonoBehaviour {
     public static LTDescr alphaCanvas(CanvasGroup canvasGroup, float to, float time){
         return pushNewTween(canvasGroup.gameObject, new Vector3(to,0,0), time, options().setCanvasGroupAlpha());
     }
-    #endif
 
-    /**
+
+	public static LTDescr blur(GameObject gameObject, float to, float time){
+		return pushNewTween(gameObject, new Vector3(to, 0, 0), time, options().setCanvasBlur());
+	}
+
+#endif
+
+	/**
     * <summary>This works by tweening the vertex colors directly</summary>
     <br />
     Vertex-based coloring is useful because you avoid making a copy of your
@@ -1199,7 +1206,7 @@ public class LeanTween : MonoBehaviour {
     * @param {float} time:float The time with which to delay before calling the function
     * @return {LTDescr} LTDescr an object that distinguishes the tween
     */
-    public static LTDescr alphaVertex(GameObject gameObject, float to, float time){
+	public static LTDescr alphaVertex(GameObject gameObject, float to, float time){
         return pushNewTween( gameObject, new Vector3(to,0f,0f), time, options().setAlphaVertex() );
     }
 

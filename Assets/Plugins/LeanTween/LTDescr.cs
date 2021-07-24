@@ -640,6 +640,13 @@ public class LTDescr
 		return this;
 	}
 
+	public LTDescr setCanvasBlur(){
+		this.type = TweenAction.CANVAS_BLUR;
+		this.initInternal = () => { this.fromInternal.x = trans.GetComponent<UIBlurControllerComponent>().strength; };
+		this.easeInternal = () => { this.trans.GetComponent<UIBlurControllerComponent>().strength = easeMethod().x; };
+		return this;
+	}
+
 	public LTDescr setCanvasColor(){
 		this.type = TweenAction.CANVAS_COLOR;
 		this.initInternal = ()=>{
