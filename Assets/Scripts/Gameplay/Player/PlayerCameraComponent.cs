@@ -87,7 +87,15 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         m_CachedType = typeof(PlayerControlledLook);
     }
 
-    public void SetCameraIdle() 
+	private void OnPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName == UnityUtils.UnityUtils.GetPropertyName(() => m_SettingsManager.FoV))
+		{
+			m_fDefaultFOV = m_SettingsManager.FoV;
+		}
+	}
+
+	public void SetCameraIdle() 
     {
         m_CameraStateMachine.RequestTransition(typeof(CameraIdleState));
     }
@@ -99,10 +107,13 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 
     void Start()
     {
+		m_SettingsManager.PropertyChanged += OnPropertyChanged;
+
         m_CameraStateMachine = new StateMachine(new PlayerControlledLook(this));
         m_CameraStateMachine.AddState(new ObjectFocusLook(this));
         m_CameraStateMachine.AddState(new CameraIdleState());
         m_tCamTransform = transform;
+		m_fDefaultFOV = m_SettingsManager.FoV;
         m_fTargetFOV = m_fDefaultFOV;
         m_fCurrentFOV = m_fDefaultFOV;
         m_LassoStart.OnSetPullingStrength += OnSetPullStrength;
@@ -124,7 +135,12 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         enabled = true;
     }
 
-    public void ProcessTargetFOV() 
+	private void OnDestroy()
+	{
+		m_SettingsManager.PropertyChanged -= OnPropertyChanged;
+	}
+
+	public void ProcessTargetFOV() 
     {
         m_fCurrentFOV += Mathf.Clamp(m_fTargetFOV - m_fCurrentFOV, -Time.deltaTime * m_fMaxFOVChangePerSecond, Time.deltaTime * m_fMaxFOVChangePerSecond);
         m_PlayerCamera.fieldOfView = m_fCurrentFOV;

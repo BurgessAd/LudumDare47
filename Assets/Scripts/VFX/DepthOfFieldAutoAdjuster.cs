@@ -10,6 +10,8 @@ public class DepthOfFieldAutoAdjuster : MonoBehaviour
 	[SerializeField] private float m_fMaxFocusDistanceSettleVelocity;
 	[SerializeField] private float m_fMaxFocalLength;
 
+	[SerializeField] private SettingsManager m_Settings;
+
 	private float m_fFocusDistanceSettleVelocity;
 	private DepthOfField m_DepthOfField;
 	private float m_FocusDistance;

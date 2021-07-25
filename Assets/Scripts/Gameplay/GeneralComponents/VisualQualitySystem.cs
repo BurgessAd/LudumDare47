@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
-using System.Linq.Expressions;
+
 using System;
+using UnityUtils;
 
 public class VisualQualitySystem : MonoBehaviour
 {
@@ -27,12 +28,12 @@ public class VisualQualitySystem : MonoBehaviour
 		hasSettings = volumeProfile.TryGetSettings(out m_ColourGrading);
 		hasSettings = volumeProfile.TryGetSettings(out m_AmbientOcclusion);
 
-		string bloomParam = GetPropertyName(() => m_Settings.Bloom);
-		string brightnessParam = GetPropertyName(() => m_Settings.Brightness);
-		string contrastParam = GetPropertyName(() => m_Settings.Contrast);
-		string screenModeParam = GetPropertyName(() => m_Settings.DisplayMode);
-		string motionBlurParam = GetPropertyName(() => m_Settings.MotionBlur);
-		string ambientOcclusionParam = GetPropertyName(() => m_Settings.MotionBlur);
+		string bloomParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.Bloom);
+		string brightnessParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.Brightness);
+		string contrastParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.Contrast);
+		string screenModeParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.DisplayMode);
+		string motionBlurParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.MotionBlur);
+		string ambientOcclusionParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.MotionBlur);
 
 		List<Tuple<string, ParameterOverride>> paramAssociation = new List<Tuple<string, ParameterOverride>>
 		{
@@ -48,8 +49,10 @@ public class VisualQualitySystem : MonoBehaviour
 		{
 			foreach (var tuple in paramAssociation)
 			{
+				// Get T manually from the instantiated types?
 				m_PropertyChangeDict.Add(tuple.Item1, () =>
 				{
+					Type type = tuple.Item2.GetType();
 					dynamic paramOverride = Convert.ChangeType(tuple.Item2, tuple.Item2.GetType());
 					OverrideParamWithPropertyInSettings(paramOverride, tuple.Item1);
 
@@ -94,14 +97,5 @@ public class VisualQualitySystem : MonoBehaviour
 		{
 			val.Invoke();
 		}
-	}
-
-	private string GetPropertyName<T>(Expression<Func<T>> propertyLambda)
-	{
-		if (!(propertyLambda.Body is MemberExpression me))
-		{
-			throw new ArgumentException("You must pass a lambda of the form: '() => Class.Property' or '() => object.Property'");
-		}
-		return me.Member.Name;
 	}
 }
