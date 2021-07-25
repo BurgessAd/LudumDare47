@@ -33,10 +33,11 @@ public class LassoParams : ScriptableObject
 	public float m_MaxTimeSpinning;
 	[Range(0f,1f)]
 	public float m_MaxTimeToSwitchStrength;
+	public AnimationCurve m_SpinSidewaysProfile;
 	public AnimationCurve m_SpinHeightProfile;
 	public AnimationCurve m_SpinSizeProfile;
 	public AnimationCurve m_SpinSpeedProfile;
 
 	public bool SpinningIsInitializing = false;
-	public bool SpunUp;
+	public bool SpunUp = false;
 }

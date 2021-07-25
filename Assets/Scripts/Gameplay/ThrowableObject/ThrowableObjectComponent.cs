@@ -23,6 +23,8 @@ public class ThrowableObjectComponent : IThrowableObjectComponent
 		OnDestroyed?.Invoke();
 	}
 
+	public bool IsImmediatelyThrowable { get; set; } = false;
+
 	public override Transform GetCameraFocusTransform => m_CameraFocusTransform;
 
 	public override Transform GetAttachmentTransform => m_AttachmentTransform;
