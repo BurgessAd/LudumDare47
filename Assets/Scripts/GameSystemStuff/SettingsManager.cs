@@ -9,12 +9,6 @@ using System.ComponentModel;
 [CreateAssetMenu(menuName ="SettingsManager")]
 public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 {
-	public enum ScreenMode
-	{
-		Full,
-		Windowed,
-		Borderless
-	}
 
 	public List<ControlBinding> m_KeyBindings = new List<ControlBinding>();
 
@@ -96,9 +90,9 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_MouseSensitivityY = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MouseSensitivityY")); }
 	}
 
-	private float m_InvertY;
+	private bool m_InvertY;
 	[Binding]
-	public float InvertY
+	public bool InvertY
 	{
 		get => m_InvertY;
 		set { m_InvertY = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("InvertY")); }
@@ -112,9 +106,9 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_bPauseOnMinimise = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("PauseOnMinimise")); }
 	}
 
-	private ScreenMode m_DisplayMode;
+	private FullScreenMode m_DisplayMode;
 	[Binding]
-	public ScreenMode DisplayMode
+	public FullScreenMode DisplayMode
 	{
 		get => m_DisplayMode;
 		set { m_DisplayMode = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DisplayMode")); }

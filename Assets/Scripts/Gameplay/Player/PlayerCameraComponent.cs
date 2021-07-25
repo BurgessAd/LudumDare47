@@ -5,7 +5,7 @@ using System;
 
 public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 {
-    [SerializeField] private float m_fMouseSensitivity = 100.0f;
+    [SerializeField] private float m_fMouseSensitivityMultiplier = 100.0f;
     [SerializeField] private Transform m_tBodyTransform;
     [SerializeField] private Camera m_PlayerCamera;
     [SerializeField] private CowGameManager m_Manager;
@@ -15,6 +15,8 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
     [SerializeField] private AnimationCurve m_FOVTugAnimator;
     [SerializeField] private AnimationCurve m_FOVForceAnimator;
     [SerializeField] private AnimationCurve m_GroundImpactSpeedSize;
+
+	[SerializeField] private SettingsManager m_SettingsManager;
 
     private float m_fCamPoint;
     float m_fTargetFOV;
@@ -130,8 +132,9 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 
     public void ProcessMouseInput() 
     {
-        float mouseX = Input.GetAxis("Mouse X") * m_fMouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * m_fMouseSensitivity * Time.deltaTime;
+        float mouseX = Input.GetAxis("Mouse X") * m_fMouseSensitivityMultiplier * m_SettingsManager.MouseSensitivityX * Time.deltaTime;
+		float invertY = m_SettingsManager.InvertY ? -1 : 1;
+		float mouseY = invertY * Input.GetAxis("Mouse Y") * m_fMouseSensitivityMultiplier * m_SettingsManager.MouseSensitivityY * Time.deltaTime;
 
         m_fCamPoint -= mouseY;
         m_fCamPoint = Mathf.Clamp(m_fCamPoint, -80f, 80f);
