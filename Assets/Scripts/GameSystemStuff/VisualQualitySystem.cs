@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
-
 using System;
-using UnityUtils;
 
 public class VisualQualitySystem : MonoBehaviour
 {
@@ -13,6 +11,7 @@ public class VisualQualitySystem : MonoBehaviour
 	private Bloom m_Bloom;
 	private MotionBlur m_MotionBlur;
 	private ColorGrading m_ColourGrading;
+	private DepthOfField m_DepthOfField;
 	private AmbientOcclusion m_AmbientOcclusion;
 
 	private Dictionary<string, Action> m_PropertyChangeDict = new Dictionary<string, Action>(); 
@@ -27,12 +26,14 @@ public class VisualQualitySystem : MonoBehaviour
 		hasSettings = volumeProfile.TryGetSettings(out m_MotionBlur);
 		hasSettings = volumeProfile.TryGetSettings(out m_ColourGrading);
 		hasSettings = volumeProfile.TryGetSettings(out m_AmbientOcclusion);
+		hasSettings = volumeProfile.TryGetSettings(out m_DepthOfField);
 
 		string bloomParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.Bloom);
 		string brightnessParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.Brightness);
 		string contrastParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.Contrast);
 		string screenModeParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.DisplayMode);
 		string motionBlurParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.MotionBlur);
+		string depthOfFieldParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.DepthOfField);
 		string ambientOcclusionParam = UnityUtils.UnityUtils.GetPropertyName(() => m_Settings.MotionBlur);
 
 		List<Tuple<string, ParameterOverride>> paramAssociation = new List<Tuple<string, ParameterOverride>>
@@ -42,6 +43,7 @@ public class VisualQualitySystem : MonoBehaviour
 			new Tuple<string, ParameterOverride>(contrastParam , m_ColourGrading.contrast),
 			new Tuple<string, ParameterOverride>(ambientOcclusionParam , m_AmbientOcclusion.enabled),
 			new Tuple<string, ParameterOverride>(motionBlurParam , m_MotionBlur.enabled),
+			new Tuple<string, ParameterOverride>(depthOfFieldParam , m_DepthOfField.enabled)
 		};
 
 

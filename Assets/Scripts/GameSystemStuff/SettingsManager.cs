@@ -98,14 +98,6 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_InvertY = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("InvertY")); }
 	}
 
-	private bool m_bPauseOnMinimise;
-	[Binding]
-	public bool PauseOnMinimise
-	{
-		get => m_bPauseOnMinimise;
-		set { m_bPauseOnMinimise = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("PauseOnMinimise")); }
-	}
-
 	private FullScreenMode m_DisplayMode;
 	[Binding]
 	public FullScreenMode DisplayMode
@@ -152,6 +144,14 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 	{
 		get => m_Contrast;
 		set { m_Contrast = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Contrast")); }
+	}
+
+	private bool m_DepthOfField;
+	[Binding]
+	public bool DepthOfField
+	{
+		get => m_DepthOfField;
+		set { m_DepthOfField = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DepthOfField")); }
 	}
 	#endregion
 
