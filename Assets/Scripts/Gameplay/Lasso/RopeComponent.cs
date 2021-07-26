@@ -6,7 +6,7 @@ using UnityEngine;
 public class RopeComponent : MonoBehaviour
 {
 
-    [SerializeField] private float m_GravityStrength;
+    [Range(0.0f, 2.0f)] [SerializeField] private float m_fGravityMultiplier;
     [SerializeField] private float m_fLength;
     [SerializeField] private uint m_ropeIterations;
     [SerializeField] private float m_RopeRadius;
@@ -16,11 +16,6 @@ public class RopeComponent : MonoBehaviour
     [SerializeField] private Transform m_RopeTransform;
     [SerializeField] private LineRenderer m_RopeLineRenderer;
 
-    [SerializeField] private Rigidbody m_StartBody;
-    [SerializeField] private Rigidbody m_EndBody;
-
-
-
     private readonly List<RopeSegmentComponent> m_RopeSegments = new List<RopeSegmentComponent>();
     private float m_fDistBetweenFirstSegments;
     private float m_fDistBetweenLastSegments;
@@ -28,17 +23,21 @@ public class RopeComponent : MonoBehaviour
     private void CreateRopeSegment() 
     {
         RopeSegmentComponent ropeObject = Instantiate(m_RopeElementPrefab, m_RopeTransform, true).GetComponent<RopeSegmentComponent>();
-        ropeObject.SetRopeSize(m_RopeRadius);
-        m_RopeSegments.Add(ropeObject);
-        if (m_RopeSegments.Count > 0) 
+
+		// when we create a rope segment, add it to where our last segment is
+        if (m_RopeSegments.Count >= 1) 
         {
-            ropeObject.GetComponent<RopeSegmentComponent>().SetNewPosition(m_RopeSegments[m_RopeSegments.Count - 1].GetCurrentPosition());
+            ropeObject.GetComponent<RopeSegmentComponent>().SetNewPosition(m_RopeSegments[m_RopeSegments.Count - 1].GetCurrentPosition);
         }
-    }
+
+		m_RopeSegments.Add(ropeObject);
+	}
 
     private void RemoveRopeSegment() 
     {
-        m_RopeSegments.RemoveAt(0);
+		Destroy(m_RopeSegments[m_RopeSegments.Count - 1]);
+
+		m_RopeSegments.RemoveAt(m_RopeSegments.Count-1);	
     }
 
 	private void OnValidate()
@@ -50,13 +49,10 @@ public class RopeComponent : MonoBehaviour
 
 	private void GenerateRopeSegments() 
     {
+		// add 1 at the end for end node - consider distBetweenSegments > length
+		// or when length < 2 * distBetweenSegments
+		// essentially, we need to include the end segment
         int numSegments = (int)Mathf.Ceil(m_fLength / m_fDistBetweenSegments) + 1;
-
-        // make sure that our rope is the right size
-        for (int i = 0; i < Mathf.Min(numSegments, m_RopeSegments.Count); i++) 
-        {
-            m_RopeSegments[i].SetRopeSize(m_RopeRadius);
-        }
 
         // fill in rope segments if we don't have enough
         for (int i = m_RopeSegments.Count; i < numSegments; i++) 
@@ -64,7 +60,7 @@ public class RopeComponent : MonoBehaviour
             CreateRopeSegment();
         }
         // remove rope segments if we have too many
-        for (int i = numSegments; i < m_RopeSegments.Count; i++) 
+        for (int i = m_RopeSegments.Count - 1; i >= numSegments; i--) 
         {
             RemoveRopeSegment();
         }
@@ -72,79 +68,82 @@ public class RopeComponent : MonoBehaviour
         m_fDistBetweenFirstSegments = m_fLength % m_fDistBetweenSegments;
     }
 
-    void ApplyVerletIntegration() 
-    {
-        Vector3 gravityDisplacement = Physics.gravity;
-        for (int i = 0; i < m_RopeSegments.Count-1; i++) 
-        {
-            m_RopeSegments[i].UpdateVerlet(gravityDisplacement);
-        }
-    }
+	//   void FinishRelaxation() 
+	//   {
+	//	RopeSegmentComponent startSegment = m_RopeSegments[0];
+	//	RopeSegmentComponent endSegment = m_RopeSegments[m_RopeSegments.Count - 1];
 
-    void RelaxConstraint(in RopeSegmentComponent segmentA, in RopeSegmentComponent segmentB, float desiredDistance) 
-    {
-        //offset is from B to A: so apply this positively to B, negatively to A
-        Vector3 offset = segmentA.GetCurrentPosition - segmentB.GetCurrentPosition;
-        float distance = offset.magnitude;
-        Vector3 offsetToAdd = (offset / distance) * ((distance - desiredDistance));
+	//	if (startSegment.IsEndPoint && endSegment.IsEndPoint)
+	//	{
+
+	//	}
+
+	//	float totalLength = 0.0f;
+
+	//	for (int i = 0; i < m_RopeSegments.Count - 1; i++)
+	//	{
+	//		totalLength += (m_RopeSegments[i].GetCurrentPosition() - m_RopeSegments[i + 1].GetCurrentPosition()).magnitude;
+	//	}
+
+	//	float offsetLength = totalLength - m_fLength;
+
+	//	if (offsetLength > 0)
+	//	{
+
+	//		//float startSegmentOffsetMult = startSegment.GetMass() / (startSegment.GetMass() + endSegment.GetMass());
+	//		//float endSegmentOffsetMult = 1 - startSegmentOffsetMult;
+
+	//		Vector3 startSegmentOffset = m_RopeSegments[1].GetCurrentPosition() - startSegment.GetCurrentPosition();
+	//		Vector3 endSegmentOffset = m_RopeSegments[m_RopeSegments.Count - 2].GetCurrentPosition() - endSegment.GetCurrentPosition();
+
+	//		// set positions and change velocity of start/end component to account for 
+	//	}
+	//}
+
+
+	void ApplyVerletIntegration()
+	{
+		Vector3 gravityDisplacement = Physics.gravity * m_fGravityMultiplier;
+		for (int i = 0; i < m_RopeSegments.Count; i++)
+		{
+			m_RopeSegments[i].UpdateVerlet(gravityDisplacement);
+		}
+	}
+
+	void Jakobsen()
+	{
+		if (m_RopeSegments.Count > 1)
+		{
+			for (uint i = 0; i < m_ropeIterations; i++)
+			{
+				RelaxConstraint(m_RopeSegments[0], m_RopeSegments[1], m_fDistBetweenFirstSegments);
+				// since we're using j+1, only go up to m_RopeSegments.Count - 1
+				for (int j = 1; j < m_RopeSegments.Count - 1; j++)
+				{
+					RelaxConstraint(m_RopeSegments[j], m_RopeSegments[j + 1], m_fDistBetweenSegments);
+				}
+			}
+		}
+	}
+
+	void RelaxConstraint(in RopeSegmentComponent segmentA, in RopeSegmentComponent segmentB, float desiredDistance)
+	{
+		//offset is from B to A: so apply this positively to B, negatively to A
+		Vector3 offset = segmentA.GetCurrentPosition - segmentB.GetCurrentPosition;
+		float distance = offset.magnitude;
+		Vector3 offsetToAdd = (offset / distance) * ((distance - desiredDistance));
 		segmentA.AddToPosition(-offsetToAdd);
 		segmentA.AddToPosition(offsetToAdd);
 
+		// if I want to not be touching any object, apply that constraint here, too
+	}
 
-        //float segmentAOffsetMult = segmentA.GetMass() / (segmentA.GetMass() + segmentB.GetMass());
-        //segmentA.AddToPosition(-offsetToAdd * segmentAOffsetMult);
-        //segmentB.AddToPosition(offsetToAdd * (1 - segmentAOffsetMult));
-    }
-
-    void FinishRelaxation() 
-    {
-        RopeSegmentComponent startSegment = m_RopeSegments[0];
-        RopeSegmentComponent endSegment = m_RopeSegments[m_RopeSegments.Count - 1];
-
-        if (startSegment.IsEndPoint && endSegment.IsEndPoint) 
-        {
-
-        }
-
-        float totalLength = 0.0f;
-
-        for (int i = 0; i < m_RopeSegments.Count-1; i++) 
-        {
-            totalLength += (m_RopeSegments[i].GetCurrentPosition() - m_RopeSegments[i + 1].GetCurrentPosition()).magnitude;
-        }
-
-        float offsetLength = totalLength - m_fLength;
-
-        if (offsetLength > 0) 
-        {
-
-            //float startSegmentOffsetMult = startSegment.GetMass() / (startSegment.GetMass() + endSegment.GetMass());
-            //float endSegmentOffsetMult = 1 - startSegmentOffsetMult;
-
-            Vector3 startSegmentOffset = m_RopeSegments[1].GetCurrentPosition() - startSegment.GetCurrentPosition();
-            Vector3 endSegmentOffset = m_RopeSegments[m_RopeSegments.Count - 2].GetCurrentPosition() - endSegment.GetCurrentPosition();
-
-            // set positions and change velocity of start/end component to account for 
-        }
-    }
-
-    void Jakobsen() 
-    {
-        for (uint i = 0; i < m_ropeIterations; i++) 
-        {
-            for (int j = 1; j < m_RopeSegments.Count - 1; j++)
-            {
-                RelaxConstraint(m_RopeSegments[j], m_RopeSegments[j + 1], m_fDistBetweenSegments);
-            }
-        }
-    }
-
-    void RenderRope() 
+	void RenderRope() 
     {
         m_RopeLineRenderer.positionCount = m_RopeSegments.Count;
         for (int i = 0; i < m_RopeSegments.Count; i++) 
         {
-            m_RopeLineRenderer.SetPosition(i, m_RopeSegments[i].GetCurrentPosition());
+            m_RopeLineRenderer.SetPosition(i, m_RopeSegments[i].GetCurrentPosition);
         }
     }
 
