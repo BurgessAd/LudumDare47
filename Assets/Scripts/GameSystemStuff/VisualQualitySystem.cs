@@ -49,17 +49,29 @@ public class VisualQualitySystem : MonoBehaviour
 
 		if (hasSettings)
 		{
-			foreach (var tuple in paramAssociation)
-			{
-				// Get T manually from the instantiated types?
-				m_PropertyChangeDict.Add(tuple.Item1, () =>
-				{
-					Type type = tuple.Item2.GetType();
-					dynamic paramOverride = Convert.ChangeType(tuple.Item2, tuple.Item2.GetType());
-					OverrideParamWithPropertyInSettings(paramOverride, tuple.Item1);
+			m_PropertyChangeDict.Add(bloomParam, () => {
+				OverrideParamWithPropertyInSettings(m_Bloom.intensity, bloomParam);
+			});
 
-				});
-			}
+			m_PropertyChangeDict.Add(brightnessParam, () => {
+				OverrideParamWithPropertyInSettings(m_ColourGrading.brightness, brightnessParam);
+			});
+
+			m_PropertyChangeDict.Add(contrastParam, () => {
+				OverrideParamWithPropertyInSettings(m_ColourGrading.contrast, contrastParam);
+			});
+
+			m_PropertyChangeDict.Add(ambientOcclusionParam, () => {
+				OverrideParamWithPropertyInSettings(m_AmbientOcclusion.enabled, ambientOcclusionParam);
+			});
+
+			m_PropertyChangeDict.Add(motionBlurParam, () => {
+				OverrideParamWithPropertyInSettings(m_MotionBlur.enabled, motionBlurParam);
+			});
+
+			m_PropertyChangeDict.Add(depthOfFieldParam, () => {
+				OverrideParamWithPropertyInSettings(m_DepthOfField.enabled, depthOfFieldParam);
+			});
 
 			m_PropertyChangeDict.Add(screenModeParam, () => {
 				FullScreenMode screenMode = ParseSettingsForPropertyVal<FullScreenMode>(screenModeParam);

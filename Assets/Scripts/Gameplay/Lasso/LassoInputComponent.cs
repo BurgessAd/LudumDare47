@@ -460,6 +460,7 @@ namespace LassoStates
 
 			Vector3 normA = swingCentreToRopePos.normalized;
 			Vector3 normB = Vector3.Cross(normA, grapPointToSwingCentre);
+
 			m_Lasso.RenderLoop(r, swingCentre, normA, normB);
 
 			m_fCurrentAngle += m_LassoParams.m_SpinSpeedProfile.Evaluate(time) * Time.deltaTime;
