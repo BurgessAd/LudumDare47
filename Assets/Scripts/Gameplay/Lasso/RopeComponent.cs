@@ -74,7 +74,7 @@ public class RopeComponent : MonoBehaviour
 
     void ApplyVerletIntegration() 
     {
-        Vector3 gravityDisplacement = Time.fixedDeltaTime * Time.fixedDeltaTime * Physics.gravity;
+        Vector3 gravityDisplacement = Physics.gravity;
         for (int i = 0; i < m_RopeSegments.Count-1; i++) 
         {
             m_RopeSegments[i].UpdateVerlet(gravityDisplacement);
@@ -84,9 +84,12 @@ public class RopeComponent : MonoBehaviour
     void RelaxConstraint(in RopeSegmentComponent segmentA, in RopeSegmentComponent segmentB, float desiredDistance) 
     {
         //offset is from B to A: so apply this positively to B, negatively to A
-        Vector3 offset = segmentA.GetCurrentPosition() - segmentB.GetCurrentPosition();
+        Vector3 offset = segmentA.GetCurrentPosition - segmentB.GetCurrentPosition;
         float distance = offset.magnitude;
         Vector3 offsetToAdd = (offset / distance) * ((distance - desiredDistance));
+		segmentA.AddToPosition(-offsetToAdd);
+		segmentA.AddToPosition(offsetToAdd);
+
 
         //float segmentAOffsetMult = segmentA.GetMass() / (segmentA.GetMass() + segmentB.GetMass());
         //segmentA.AddToPosition(-offsetToAdd * segmentAOffsetMult);

@@ -40,7 +40,6 @@ public class RopeSegmentComponent : MonoBehaviour
 	#region Public Methods
 	public void SetNewPosition(in Vector3 position) 
     {
-        //m_PositionLastFrame = m_Transform.position;
         m_OldPosition = m_Transform.position;
         m_Transform.position = position;
     }
@@ -50,39 +49,32 @@ public class RopeSegmentComponent : MonoBehaviour
         m_CachedAcceleration += force;
     }
 
-    public Vector3 GetCurrentPosition() 
-    {
-        return m_Transform.position;
-    }
+    public Vector3 GetCurrentPosition => m_Transform.position;
 
-    public Vector3 GetRegisteredPosition() 
-    {
-        return Vector3.zero;// m_PositionLastFrame;
-    }
+    public Vector3 GetLastPosition => m_OldPosition;
     
     public ref Vector3 GetAdditionalAcceleration() 
     {
         return ref m_CachedAcceleration;
     }
 
-    public void UpdateVerlet(Vector3 gravityDisplacement) 
+    public void UpdateVerlet(Vector3 gravityVector) 
     {
-        //RopeSegmentComponent currentRopeSegment = m_RopeSegments[i];
-        //Vector3 velocity = currentRopeSegment.GetCurrentPosition() - currentRopeSegment.GetRegisteredPosition();
-        //Vector3 totalAcceleration = Vector3.up * -m_GravityStrength + currentRopeSegment.GetAdditionalAcceleration();
-        //currentRopeSegment.SetNewPosition(currentRopeSegment.GetCurrentPosition() + velocity + Time.fixedDeltaTime * Time.fixedDeltaTime * totalAcceleration);
-        //// currentRopeSegment.FinishUpdateLoop();
-        //switch (m_BoundBody.interpolation)
-        //{
-        //    case RigidbodyInterpolation.Interpolate:
-        //        this.UpdatePosition(m_BoundBody.position + (m_BoundBody.velocity * Time.fixedDeltaTime) / 2);
-        //        break;
-        //    case RigidbodyInterpolation.None:
-        //    default:
-        //        this.UpdatePosition(m_BoundBody.position + m_BoundBody.velocity * Time.fixedDeltaTime);
-        //        break;
-        //}
-    }
+		Vector3 velocity = GetCurrentPosition - GetLastPosition;
+		//Vector3 totalAcceleration = Vector3.up * -m_GravityStrength + currentRopeSegment.GetAdditionalAcceleration();
+		SetNewPosition(GetCurrentPosition + velocity + gravityVector * Time.fixedDeltaTime * Time.fixedDeltaTime);
+		// currentRopeSegment.FinishUpdateLoop();
+		//switch (m_BoundBody.interpolation)
+		//{
+		//	case RigidbodyInterpolation.Interpolate:
+		//		this.UpdatePosition(m_BoundBody.position + (m_BoundBody.velocity * Time.fixedDeltaTime) / 2);
+		//		break;
+		//	case RigidbodyInterpolation.None:
+		//	default:
+		//		this.UpdatePosition(m_BoundBody.position + m_BoundBody.velocity * Time.fixedDeltaTime);
+		//		break;
+		//}
+	}
 
     public void UpdatePosition(in Vector3 newPosition) 
     {
