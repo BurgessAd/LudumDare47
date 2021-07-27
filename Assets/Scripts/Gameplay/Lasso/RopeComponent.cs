@@ -1,33 +1,38 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
 public class RopeComponent : MonoBehaviour
 {
+    [Range(0.0f, 2.0f)]		[SerializeField] private float m_fGravityMultiplier = 1.0f;
+    [Range(1.0f, 200.0f)]	[SerializeField] private float m_fLength = 10.0f;
+    [Range(1, 100)]			[SerializeField] private uint  m_ropeIterations = 10;
+	[Range(0.0f, 10.0f)]	[SerializeField] private float m_RopeRadius = 1.0f;
+    [Range(0.0f, 1.0f)]		[SerializeField] private float m_fDistBetweenSegments = 0.5f;
 
-    [Range(0.0f, 2.0f)] [SerializeField] private float m_fGravityMultiplier;
-    [SerializeField] private float m_fLength;
-    [SerializeField] private uint m_ropeIterations;
-    [SerializeField] private float m_RopeRadius;
-    [SerializeField] private float m_fDistBetweenSegments;
-
-    [SerializeField] private GameObject m_RopeElementPrefab;
-    [SerializeField] private Transform m_RopeTransform;
-    [SerializeField] private LineRenderer m_RopeLineRenderer;
+    [SerializeField] private Transform m_RopeTransform = default;
+    [SerializeField] private LineRenderer m_RopeLineRenderer = default;
 
     private readonly List<RopeSegmentComponent> m_RopeSegments = new List<RopeSegmentComponent>();
     private float m_fDistBetweenFirstSegments;
     private float m_fDistBetweenLastSegments;
 
-    private void CreateRopeSegment() 
+	[SerializeField] private Transform m_RopeAttachmentPoint;
+
+	private void Awake()
+	{
+		m_RopeTransform = transform;
+		m_RopeLineRenderer = GetComponent<LineRenderer>();
+	}
+
+	private void CreateRopeSegment() 
     {
-        RopeSegmentComponent ropeObject = Instantiate(m_RopeElementPrefab, m_RopeTransform, true).GetComponent<RopeSegmentComponent>();
+		RopeSegmentComponent ropeObject = new RopeSegmentComponent(m_RopeTransform.position);
 
 		// when we create a rope segment, add it to where our last segment is
         if (m_RopeSegments.Count >= 1) 
         {
-            ropeObject.GetComponent<RopeSegmentComponent>().SetNewPosition(m_RopeSegments[m_RopeSegments.Count - 1].GetCurrentPosition);
+			ropeObject.SetNewPosition(m_RopeSegments[m_RopeSegments.Count - 1].CurrentPosition);
         }
 
 		m_RopeSegments.Add(ropeObject);
@@ -35,16 +40,17 @@ public class RopeComponent : MonoBehaviour
 
     private void RemoveRopeSegment() 
     {
-		Destroy(m_RopeSegments[m_RopeSegments.Count - 1]);
-
 		m_RopeSegments.RemoveAt(m_RopeSegments.Count-1);	
     }
 
 	private void OnValidate()
 	{
-        m_RopeLineRenderer.startWidth = m_RopeRadius * 2;
-        m_RopeLineRenderer.endWidth = m_RopeRadius * 2;
-        GenerateRopeSegments();
+		if (gameObject)
+		{
+			m_RopeLineRenderer.startWidth = m_RopeRadius * 2;
+			m_RopeLineRenderer.endWidth = m_RopeRadius * 2;
+			GenerateRopeSegments();
+		}
 	}
 
 	private void GenerateRopeSegments() 
@@ -124,12 +130,14 @@ public class RopeComponent : MonoBehaviour
 				}
 			}
 		}
+		if (m_RopeAttachmentPoint)
+			m_RopeSegments[m_RopeSegments.Count - 1].SetNewPosition(m_RopeAttachmentPoint.position);
 	}
 
 	void RelaxConstraint(in RopeSegmentComponent segmentA, in RopeSegmentComponent segmentB, float desiredDistance)
 	{
 		//offset is from B to A: so apply this positively to B, negatively to A
-		Vector3 offset = segmentA.GetCurrentPosition - segmentB.GetCurrentPosition;
+		Vector3 offset = segmentA.CurrentPosition - segmentB.CurrentPosition;
 		float distance = offset.magnitude;
 		Vector3 offsetToAdd = (offset / distance) * ((distance - desiredDistance));
 		segmentA.AddToPosition(-offsetToAdd);
@@ -143,7 +151,7 @@ public class RopeComponent : MonoBehaviour
         m_RopeLineRenderer.positionCount = m_RopeSegments.Count;
         for (int i = 0; i < m_RopeSegments.Count; i++) 
         {
-            m_RopeLineRenderer.SetPosition(i, m_RopeSegments[i].GetCurrentPosition);
+            m_RopeLineRenderer.SetPosition(i, m_RopeSegments[i].CurrentPosition);
         }
     }
 
