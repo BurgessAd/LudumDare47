@@ -13,9 +13,9 @@ public class RopeComponent : MonoBehaviour
     [SerializeField] private Transform m_RopeTransform = default;
     [SerializeField] private LineRenderer m_RopeLineRenderer = default;
 
-    private readonly List<RopeSegmentComponent> m_RopeSegments = new List<RopeSegmentComponent>();
-    private float m_fDistBetweenFirstSegments;
-    private float m_fDistBetweenLastSegments;
+    [SerializeField] private readonly List<RopeSegmentComponent> m_RopeSegments = new List<RopeSegmentComponent>();
+    [SerializeField] private float m_fDistBetweenFirstSegments;
+	[SerializeField] private float m_fDistBetweenLastSegments;
 
 	[SerializeField] private Transform m_RopeAttachmentPoint;
 
@@ -47,8 +47,6 @@ public class RopeComponent : MonoBehaviour
 	{
 		if (gameObject)
 		{
-			m_RopeLineRenderer.startWidth = m_RopeRadius * 2;
-			m_RopeLineRenderer.endWidth = m_RopeRadius * 2;
 			GenerateRopeSegments();
 		}
 	}
@@ -130,29 +128,112 @@ public class RopeComponent : MonoBehaviour
 				}
 			}
 		}
-		if (m_RopeAttachmentPoint)
-			m_RopeSegments[m_RopeSegments.Count - 1].SetNewPosition(m_RopeAttachmentPoint.position);
+		if (m_RopeAttachmentPoint != null)
+			m_RopeSegments[m_RopeSegments.Count - 1].AnchorNewPosition(m_RopeAttachmentPoint.position);
 	}
+	//private void AdjustCollisions()
+	//{
+	//	// Loop rope nodes and check if currently colliding
+	//	for (int i = 0; i < TotalNodes - 1; i++)
+	//	{
+	//		RopeNode node = RopeNodes[i];
 
+	//		int result = -1;
+	//		result = Physics2D.OverlapCircleNonAlloc(node.transform.position, node.transform.localScale.x / 2f, ColliderHitBuffer);
+
+	//		if (result > 0)
+	//		{
+	//			for (int n = 0; n < result; n++)
+	//			{
+	//				if (ColliderHitBuffer[n].gameObject.layer != 8)
+	//				{
+	//					if (ColliderHitBuffer[n].gameObject.layer == 9)
+	//					{
+	//						// Adjust the rope node position to be outside collision
+	//						Vector3 collidercenter = ColliderHitBuffer[n].transform.position;
+	//						Vector3 collisionDirection = node.transform.position - collidercenter;
+
+	//						Vector3 hitPos = collidercenter + collisionDirection.normalized * ((ColliderHitBuffer[n].transform.localScale.x / 2f) + (node.transform.localScale.x / 2f));
+	//						node.transform.position = hitPos;
+	//						break;
+
+	//					}
+	//					else if (ColliderHitBuffer[n].gameObject.layer == 10)
+	//					{
+
+	//						Vector3 velocity = RopeNodes[i].transform.position - RopeNodes[i].PreviousPosition;
+
+	//						Vector3 newPos = RopeNodes[i].transform.position + velocity;
+	//						newPos += Gravity * Time.fixedDeltaTime;
+	//						Vector3 direction = RopeNodes[i].transform.position - newPos;
+
+	//						int result1 = -1;
+	//						result1 = Physics2D.CircleCast(RopeNodes[i].transform.position, RopeNodes[i].transform.localScale.x / 2f, -direction.normalized, ContactFilter, RaycastHitBuffer1, direction.magnitude);
+
+	//						if (result1 > 0)
+	//						{
+	//							for (int m = 0; m < result1; m++)
+	//							{
+	//								if (RaycastHitBuffer1[m].collider.gameObject.layer == 10)
+	//								{
+	//									Vector3 collidercenter = ColliderHitBuffer[n].transform.position;
+	//									Vector3 collisionDirection = node.transform.position - collidercenter;
+
+	//									Vector3 raycastHit2DPoint = new Vector3(RaycastHitBuffer1[n].point.x, RaycastHitBuffer1[n].point.y, 0);
+
+	//									Vector3 hitPos1 = raycastHit2DPoint + collisionDirection.normalized * (node.transform.localScale.x / 2f);
+	//									node.transform.position = hitPos1;
+	//									break;
+	//								}
+	//							}
+	//						}
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 	void RelaxConstraint(in RopeSegmentComponent segmentA, in RopeSegmentComponent segmentB, float desiredDistance)
 	{
 		//offset is from B to A: so apply this positively to B, negatively to A
+		// consider B > A in position X: offset -ve
 		Vector3 offset = segmentA.CurrentPosition - segmentB.CurrentPosition;
 		float distance = offset.magnitude;
-		Vector3 offsetToAdd = (offset / distance) * ((distance - desiredDistance));
+
+		// in case the distance between the two is too small to be valid, we'll define a small distance at a random direction instead
+		if (distance < 0.00000001f)
+		{
+			distance = float.Epsilon;
+			offset = Random.insideUnitSphere * distance;
+		}
+
+		// consider B > A by enough such that distance - desiredDistance > 0
+		// such that offsetToAdd is also negative
+		Vector3 offsetToAdd = (offset / distance) * ((distance - desiredDistance))/2;
+		// hence we want to add offsetToAdd positively to B
+		// and negatively to A
+		segmentB.AddToPosition(offsetToAdd);
 		segmentA.AddToPosition(-offsetToAdd);
-		segmentA.AddToPosition(offsetToAdd);
 
 		// if I want to not be touching any object, apply that constraint here, too
+
+	}
+
+	private void OnDrawGizmos()
+	{
+		for (int i = 0; i < m_RopeSegments.Count-1; i++)
+		{
+			Gizmos.DrawLine(m_RopeSegments[i].CurrentPosition, m_RopeSegments[i + 1].CurrentPosition);
+		}
 	}
 
 	void RenderRope() 
     {
-        m_RopeLineRenderer.positionCount = m_RopeSegments.Count;
-        for (int i = 0; i < m_RopeSegments.Count; i++) 
-        {
-            m_RopeLineRenderer.SetPosition(i, m_RopeSegments[i].CurrentPosition);
-        }
+        //m_RopeLineRenderer.positionCount = m_RopeSegments.Count;
+        //for (int i = 0; i < m_RopeSegments.Count; i++) 
+        //{
+        //    m_RopeLineRenderer.SetPosition(i, m_RopeSegments[i].CurrentPosition);
+        //}
     }
 
     void FixedUpdate() 
