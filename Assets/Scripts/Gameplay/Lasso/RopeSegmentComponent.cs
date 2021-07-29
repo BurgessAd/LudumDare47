@@ -25,25 +25,8 @@ public class RopeSegmentComponent
 	RaycastHit[] results;
 	public void UpdateVerlet(in Vector3 gravityVector,in  float radius, in LayerMask layerMask) 
     {
-		Vector3 velocity = CurrentPosition - LastPosition;
-
-		Vector3 newDist = velocity + gravityVector * Time.fixedDeltaTime * Time.fixedDeltaTime;
-
-		SetNewPosition(CurrentPosition + velocity + gravityVector * Time.fixedDeltaTime * Time.fixedDeltaTime);
 
 
-		int result = -1;
-		result = Physics.SphereCastNonAlloc(CurrentPosition, radius, newDist, results, newDist.magnitude, layerMask, QueryTriggerInteraction.Ignore);
-
-		if (result > 0)
-		{
-			for (int n = 0; n < result; n++)
-			{
-				Vector2 hitPos = RaycastHitBuffer[n].point;
-				newPos = hitPos;
-				break;
-			}
-		}
 
 	}
 

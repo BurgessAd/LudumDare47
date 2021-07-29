@@ -108,9 +108,27 @@ public class RopeComponent : MonoBehaviour
 	void ApplyVerletIntegration()
 	{
 		Vector3 gravityDisplacement = Physics.gravity * m_fGravityMultiplier;
-		for (int i = 0; i < m_RopeSegments.Count; i++)
+
+		RopeSegmentComponent currentSegment;
+		// Loop rope nodes and check if currently colliding
+		for (int i = 0; i < m_RopeSegments.Count - 1; i++)
 		{
-			m_RopeSegments[i].UpdateVerlet(gravityDisplacement);
+			currentSegment = m_RopeSegments[i];
+
+			Vector3 velocity = currentSegment.CurrentPosition - currentSegment.LastPosition;
+
+			Vector3 newDist = velocity + gravityDisplacement * Time.fixedDeltaTime * Time.fixedDeltaTime;
+
+			currentSegment.SetNewPosition(currentSegment.CurrentPosition + velocity + gravityDisplacement * Time.fixedDeltaTime * Time.fixedDeltaTime);
+
+			int result = -1;
+			result = Physics.SphereCastNonAlloc(currentSegment.CurrentPosition, m_RopeRadius, newDist, results, newDist.magnitude, layerMask, QueryTriggerInteraction.Ignore);
+
+			if (result > 0)
+			{
+				Vector2 hitPos = results[0].point + results[0].normal;
+				newPos = hitPos;
+			}
 		}
 	}
 
@@ -131,68 +149,23 @@ public class RopeComponent : MonoBehaviour
 		if (m_RopeAttachmentPoint != null)
 			m_RopeSegments[m_RopeSegments.Count - 1].AnchorNewPosition(m_RopeAttachmentPoint.position);
 	}
-	//private void AdjustCollisions()
-	//{
-	//	// Loop rope nodes and check if currently colliding
-	//	for (int i = 0; i < TotalNodes - 1; i++)
-	//	{
-	//		RopeNode node = RopeNodes[i];
+	RaycastHit[] ColliderHitBuffer = new RaycastHit[1];
+	private void AdjustCollisions()
+	{
+		RopeSegmentComponent currentSegment;
+		// Loop rope nodes and check if currently colliding
+		for (int i = 0; i < m_RopeSegments.Count - 1; i++)
+		{
+			currentSegment = m_RopeSegments[i];
 
-	//		int result = -1;
-	//		result = Physics2D.OverlapCircleNonAlloc(node.transform.position, node.transform.localScale.x / 2f, ColliderHitBuffer);
+			int result = -1;
+			result = Physics2D.OverlapCircleNonAlloc(node.transform.position, node.transform.localScale.x / 2f, ColliderHitBuffer);
 
-	//		if (result > 0)
-	//		{
-	//			for (int n = 0; n < result; n++)
-	//			{
-	//				if (ColliderHitBuffer[n].gameObject.layer != 8)
-	//				{
-	//					if (ColliderHitBuffer[n].gameObject.layer == 9)
-	//					{
-	//						// Adjust the rope node position to be outside collision
-	//						Vector3 collidercenter = ColliderHitBuffer[n].transform.position;
-	//						Vector3 collisionDirection = node.transform.position - collidercenter;
+			if (result > 0)
+				currentSegment.SetNewPosition(ColliderHitBuffer[0].point + ColliderHitBuffer[0].normal * m_RopeRadius);
+		}
+	}
 
-	//						Vector3 hitPos = collidercenter + collisionDirection.normalized * ((ColliderHitBuffer[n].transform.localScale.x / 2f) + (node.transform.localScale.x / 2f));
-	//						node.transform.position = hitPos;
-	//						break;
-
-	//					}
-	//					else if (ColliderHitBuffer[n].gameObject.layer == 10)
-	//					{
-
-	//						Vector3 velocity = RopeNodes[i].transform.position - RopeNodes[i].PreviousPosition;
-
-	//						Vector3 newPos = RopeNodes[i].transform.position + velocity;
-	//						newPos += Gravity * Time.fixedDeltaTime;
-	//						Vector3 direction = RopeNodes[i].transform.position - newPos;
-
-	//						int result1 = -1;
-	//						result1 = Physics2D.CircleCast(RopeNodes[i].transform.position, RopeNodes[i].transform.localScale.x / 2f, -direction.normalized, ContactFilter, RaycastHitBuffer1, direction.magnitude);
-
-	//						if (result1 > 0)
-	//						{
-	//							for (int m = 0; m < result1; m++)
-	//							{
-	//								if (RaycastHitBuffer1[m].collider.gameObject.layer == 10)
-	//								{
-	//									Vector3 collidercenter = ColliderHitBuffer[n].transform.position;
-	//									Vector3 collisionDirection = node.transform.position - collidercenter;
-
-	//									Vector3 raycastHit2DPoint = new Vector3(RaycastHitBuffer1[n].point.x, RaycastHitBuffer1[n].point.y, 0);
-
-	//									Vector3 hitPos1 = raycastHit2DPoint + collisionDirection.normalized * (node.transform.localScale.x / 2f);
-	//									node.transform.position = hitPos1;
-	//									break;
-	//								}
-	//							}
-	//						}
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
 	void RelaxConstraint(in RopeSegmentComponent segmentA, in RopeSegmentComponent segmentB, float desiredDistance)
 	{
 		//offset is from B to A: so apply this positively to B, negatively to A
