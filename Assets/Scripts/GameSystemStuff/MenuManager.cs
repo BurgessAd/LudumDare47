@@ -25,6 +25,7 @@ public class MenuManager : MonoBehaviour
 	[SerializeField] private CanvasGroup m_QuitCanvas;
 
 	[SerializeField] private List<CanvasGroup> m_MenuButtons;
+	[SerializeField] private List<Animator> m_SettingsAnimators;
 
 	[Header("Animator References")]
 	[SerializeField] private Animator m_LevelTransitionAnimator;
@@ -66,6 +67,21 @@ public class MenuManager : MonoBehaviour
 		for (int i = 0; i < m_MenuButtons.Count; i++)
 		{
 			m_MenuButtons[i].interactable = menuState;
+			yield return new WaitForSecondsRealtime(0.15f);
+		}
+	}
+
+	public void ShowSettingsStuff(bool shouldShow)
+	{
+		StartCoroutine(ChangeSettingsCoroutine(shouldShow));
+	}
+
+	private IEnumerator ChangeSettingsCoroutine(bool settingsState)
+	{
+		string toPlay = settingsState ? "AnimIn" : "AnimOut";
+		for (int i = 0; i < m_SettingsAnimators.Count; i++)
+		{
+			m_SettingsAnimators[i].Play(toPlay, -1);
 			yield return new WaitForSecondsRealtime(0.15f);
 		}
 	}
@@ -164,6 +180,7 @@ namespace MenuManagerStates
 			{
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
+				m_MenuManager.ShowSettingsStuff(true);
 			});
 			m_Animator.Play("AnimSettingsIn", -1);
 		}
@@ -171,6 +188,7 @@ namespace MenuManagerStates
 		public override void OnExit()
 		{
 			m_Animator.Play("AnimSettingsOut", -1);
+			m_MenuManager.ShowSettingsStuff(false);
 		}
 
 		public override void Tick()
