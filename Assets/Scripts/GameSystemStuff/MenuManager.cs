@@ -1,8 +1,10 @@
 using System.Collections;
 using UnityEngine;
 using System;
+using UnityEngine.UI;
 using MenuManagerStates;
 using UnityWeld.Binding;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 [Binding]
@@ -22,8 +24,11 @@ public class MenuManager : MonoBehaviour
 	[SerializeField] private CanvasGroup m_LevelSelectCanvas;
 	[SerializeField] private CanvasGroup m_QuitCanvas;
 
+	[SerializeField] private List<CanvasGroup> m_MenuButtons;
+
 	[Header("Animator References")]
 	[SerializeField] private Animator m_LevelTransitionAnimator;
+	[SerializeField] private Animator m_MainScreenAnimator;
 	[SerializeField] private Animator m_LevelSelectOpenAnimator;
 	[SerializeField] private Animator m_SettingsOpenAnimator;
 	[SerializeField] private Animator m_QuitScreenOpenAnimator;
@@ -37,7 +42,7 @@ public class MenuManager : MonoBehaviour
 
 	void Awake()
     {
-		m_MenuStateMachine = new StateMachine(new MenuManagerStates.MainState(this, m_MainCanvas));
+		m_MenuStateMachine = new StateMachine(new MenuManagerStates.MainState(this, m_MainCanvas, m_MainScreenAnimator));
 		m_MenuStateMachine.AddState(new MenuManagerStates.LevelSelectState(this, m_LevelSelectCanvas, m_LevelSelectOpenAnimator));
 		m_MenuStateMachine.AddState(new MenuManagerStates.SettingsState(this, m_SettingsCanvas, m_SettingsOpenAnimator));
 		m_MenuStateMachine.AddState(new MenuManagerStates.PreQuitState(this, m_QuitCanvas, m_QuitScreenOpenAnimator));
@@ -50,6 +55,20 @@ public class MenuManager : MonoBehaviour
     {
 		m_MenuStateMachine.Tick();
     }
+
+	public void ShowMenuStuff(bool shouldShow)
+	{
+		StartCoroutine(ChangeMenuCoroutine(shouldShow));
+	}
+
+	private IEnumerator ChangeMenuCoroutine(bool menuState)
+	{
+		for (int i = 0; i < m_MenuButtons.Count; i++)
+		{
+			m_MenuButtons[i].interactable = menuState;
+			yield return new WaitForSecondsRealtime(0.15f);
+		}
+	}
 
 	#endregion
 
@@ -146,12 +165,12 @@ namespace MenuManagerStates
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
-			m_Animator.Play("AnimIn", -1);
+			m_Animator.Play("AnimSettingsIn", -1);
 		}
 
 		public override void OnExit()
 		{
-			m_Animator.Play("AnimOut", -1);
+			m_Animator.Play("AnimSettingsOut", -1);
 		}
 
 		public override void Tick()
@@ -165,22 +184,30 @@ namespace MenuManagerStates
 
 	public class MainState : AStateBase
 	{
+		private readonly Animator m_Animator;
 		private readonly MenuManager m_MenuManager;
 		private readonly CanvasGroup m_CanvasGroup;
 
-		public MainState(MenuManager menuManager, CanvasGroup levelSelectGroup)
+		public MainState(MenuManager menuManager, CanvasGroup levelSelectGroup, Animator animator)
 		{
 			m_MenuManager = menuManager;
 			m_CanvasGroup = levelSelectGroup;
+			m_Animator = animator;
 		}
 
 		public override void OnEnter()
 		{
+			m_MenuManager.ShowMenuStuff(true);
 			m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
 			{
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
+		}
+
+		public override void OnExit()
+		{
+			m_MenuManager.ShowMenuStuff(false);	
 		}
 	}
 
@@ -204,12 +231,12 @@ namespace MenuManagerStates
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
-			m_Animator.Play("AnimIn", -1);
+			m_Animator.Play("AnimQuitIn", -1);
 		}
 
 		public override void OnExit()
 		{
-			m_Animator.Play("AnimOut", -1);
+			m_Animator.Play("AnimQuitOut", -1);
 		}
 
 		public override void Tick()
@@ -235,17 +262,17 @@ namespace MenuManagerStates
 		}
 		public override void OnEnter()
 		{
-			m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
-			{
-				m_CanvasGroup.blocksRaycasts = true;
-				m_CanvasGroup.interactable = true;
-			});
-			m_Animator.Play("AnimIn", -1);
+			//m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
+			//{
+			//	m_CanvasGroup.blocksRaycasts = true;
+			//	m_CanvasGroup.interactable = true;
+			//});
+			m_Animator.Play("AnimLevelsIn", -1);
 		}
 
 		public override void OnExit()
 		{
-			m_Animator.Play("AnimOut", -1);
+			m_Animator.Play("AnimLevelsOut", -1);
 		}
 
 		public override void Tick()

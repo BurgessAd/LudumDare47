@@ -9,6 +9,7 @@ public class RopeComponent : MonoBehaviour
     [Range(1, 100)]			[SerializeField] private uint  m_ropeIterations = 10;
 	[Range(0.0f, 10.0f)]	[SerializeField] private float m_RopeRadius = 1.0f;
     [Range(0.0f, 1.0f)]		[SerializeField] private float m_fDistBetweenSegments = 0.5f;
+	[Range(0.1f, 1.0f)]		[SerializeField] private float m_ColliderUpdateFrequency = 0.5f;
 
     [SerializeField] private Transform m_RopeTransform = default;
     [SerializeField] private LineRenderer m_RopeLineRenderer = default;
@@ -16,6 +17,8 @@ public class RopeComponent : MonoBehaviour
     [SerializeField] private readonly List<RopeSegmentComponent> m_RopeSegments = new List<RopeSegmentComponent>();
     [SerializeField] private float m_fDistBetweenFirstSegments;
 	[SerializeField] private float m_fDistBetweenLastSegments;
+	[SerializeField] private float m_fCurrentColliderUpdateVal;
+	[SerializeField] private LayerMask m_RopeCollisionMask;
 
 	[SerializeField] private Transform m_RopeAttachmentPoint;
 
@@ -110,25 +113,24 @@ public class RopeComponent : MonoBehaviour
 		Vector3 gravityDisplacement = Physics.gravity * m_fGravityMultiplier;
 
 		RopeSegmentComponent currentSegment;
+		Vector3 newPos;
 		// Loop rope nodes and check if currently colliding
 		for (int i = 0; i < m_RopeSegments.Count - 1; i++)
 		{
 			currentSegment = m_RopeSegments[i];
 
-			Vector3 velocity = currentSegment.CurrentPosition - currentSegment.LastPosition;
+			// run dynamics-based verlet integration
+			Vector3 newDist = currentSegment.CurrentPosition - currentSegment.LastPosition + gravityDisplacement * Time.fixedDeltaTime * Time.fixedDeltaTime;
 
-			Vector3 newDist = velocity + gravityDisplacement * Time.fixedDeltaTime * Time.fixedDeltaTime;
+			newPos = currentSegment.CurrentPosition + newDist;
 
-			currentSegment.SetNewPosition(currentSegment.CurrentPosition + velocity + gravityDisplacement * Time.fixedDeltaTime * Time.fixedDeltaTime);
-
-			int result = -1;
-			result = Physics.SphereCastNonAlloc(currentSegment.CurrentPosition, m_RopeRadius, newDist, results, newDist.magnitude, layerMask, QueryTriggerInteraction.Ignore);
-
-			if (result > 0)
+			// but make sure we're not colliding with anything (bad)
+			if (Physics.SphereCastNonAlloc(currentSegment.CurrentPosition, m_RopeRadius, newDist, m_ColliderHitBuffer, newDist.magnitude, m_RopeCollisionMask, QueryTriggerInteraction.Ignore) > 0)
 			{
-				Vector2 hitPos = results[0].point + results[0].normal;
-				newPos = hitPos;
+				newPos = m_ColliderHitBuffer[0].point + m_ColliderHitBuffer[0].normal * m_RopeRadius;
 			}
+
+			currentSegment.SetNewPosition(newPos);
 		}
 	}
 
@@ -146,23 +148,33 @@ public class RopeComponent : MonoBehaviour
 				}
 			}
 		}
+
+		m_fCurrentColliderUpdateVal++;
+		if (m_fCurrentColliderUpdateVal >= 1.0f)
+		{
+			AdjustCollisions();
+			m_fCurrentColliderUpdateVal--;
+		}
+
 		if (m_RopeAttachmentPoint != null)
 			m_RopeSegments[m_RopeSegments.Count - 1].AnchorNewPosition(m_RopeAttachmentPoint.position);
 	}
-	RaycastHit[] ColliderHitBuffer = new RaycastHit[1];
+	RaycastHit[] m_ColliderHitBuffer = new RaycastHit[1];
+
 	private void AdjustCollisions()
 	{
 		RopeSegmentComponent currentSegment;
+		RopeSegmentComponent nextSegment;
+		Vector3 offset;
 		// Loop rope nodes and check if currently colliding
 		for (int i = 0; i < m_RopeSegments.Count - 1; i++)
 		{
 			currentSegment = m_RopeSegments[i];
+			nextSegment = m_RopeSegments[i];
+			offset = nextSegment.CurrentPosition - currentSegment.CurrentPosition;
 
-			int result = -1;
-			result = Physics2D.OverlapCircleNonAlloc(node.transform.position, node.transform.localScale.x / 2f, ColliderHitBuffer);
-
-			if (result > 0)
-				currentSegment.SetNewPosition(ColliderHitBuffer[0].point + ColliderHitBuffer[0].normal * m_RopeRadius);
+			if (Physics.SphereCastNonAlloc(currentSegment.CurrentPosition, m_RopeRadius, offset, m_ColliderHitBuffer, offset.magnitude, m_RopeCollisionMask, QueryTriggerInteraction.Ignore) > 0)
+				currentSegment.SetNewPosition(m_ColliderHitBuffer[0].point + m_ColliderHitBuffer[0].normal * m_RopeRadius);
 		}
 	}
 

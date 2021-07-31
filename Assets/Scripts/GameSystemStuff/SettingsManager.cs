@@ -114,17 +114,17 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_FoV = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("FoV")); }
 	}
 
-	private float m_Bloom;
+	private bool m_Bloom;
 	[Binding]
-	public float Bloom
+	public bool Bloom
 	{
 		get => m_Bloom;
 		set { m_Bloom = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Bloom")); }
 	}
 
-	private float m_MotionBlur;
+	private bool m_MotionBlur;
 	[Binding]
-	public float MotionBlur
+	public bool MotionBlur
 	{
 		get => m_MotionBlur;
 		set { m_MotionBlur = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MotionBlur")); }
