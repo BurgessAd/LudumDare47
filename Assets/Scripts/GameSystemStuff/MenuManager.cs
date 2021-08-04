@@ -1,11 +1,10 @@
 using System.Collections;
 using UnityEngine;
 using System;
-using UnityEngine.UI;
 using MenuManagerStates;
 using UnityWeld.Binding;
 using System.Collections.Generic;
-using System.ComponentModel;
+using TMPro;
 
 [Binding]
 public class MenuManager : MonoBehaviour

@@ -8,17 +8,18 @@ public class LevelData : ScriptableObject
     [SerializeField] private string m_sLevelName = "";
     [SerializeField] private float m_nTargetTime = 0.0f;
 	[SerializeField] private int m_LevelCompleteTime = 0;
-	[SerializeField] private StarRating m_StarRating = StarRating.Uninitialized;
+	[SerializeField] private StarRating m_StarRating = StarRating.Zero;
 	[SerializeField] private int m_Score = 0;
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
 	[SerializeField] private float[] m_Checkpoints = new float[] { 0f, 0f };
+	[SerializeField] private int m_LevelNumber = 0;
 
 	private float m_nAchievedTime = 0.0f;
 
 	public enum StarRating
 	{
-		Uninitialized,
-		One = 1,
+		Zero = 0,
+		Half = 1,
 		Two = 2,
 		Three = 3
 	}
@@ -44,6 +45,8 @@ public class LevelData : ScriptableObject
 	public float GetTargetTime => m_nTargetTime;
 
 	public string GetBestTimeAsString => UnityUtils.UnityUtils.TurnTimeToString(m_nTargetTime);
+
+	public int GetLevelNumber => m_LevelNumber;
 
 	#endregion
 
@@ -90,5 +93,11 @@ public class LevelData : ScriptableObject
 			m_Score = score;
 		}
 	}
+
+	public void SetLevelNumber(in int num)
+	{
+		m_LevelNumber = num;
+	}
+
 	#endregion
 }

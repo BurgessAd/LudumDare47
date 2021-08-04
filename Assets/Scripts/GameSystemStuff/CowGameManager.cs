@@ -49,6 +49,8 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	public EntityTypeComponent GetPlayer => m_EntityCache[m_PlayerEntityInformation][0].GetEntityType;
 
 	public LevelManager GetCurrentLevel { get; private set; } = null;
+
+	public List<LevelData> GetLevelData => m_LevelData;
 	#endregion
 
 	// Called by LevelManager mostly, for scene transitions, etc
@@ -98,7 +100,7 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 		{
 			GameObject go = Instantiate(m_LevelSelectUIPrefab, menuManager.GetLevelSelectTabsTransform);
 			LevelDataUI levelUI = go.GetComponent<LevelDataUI>();
-			levelUI.SetupData(m_LevelData[i], i);
+			levelUI.SetupData(m_LevelData[i]);
 			levelUI.OnSelectLevel += () => menuManager.OnRequestLevel(i);
 		}
 	}

@@ -8,13 +8,16 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 {
 	[SerializeField] private VideoPlayer m_VideoPlayer;
 	[SerializeField] private CanvasGroup m_PadlockImageGroup;
-	[SerializeField] private TextMeshProUGUI m_LevelName;
-	[SerializeField] private TextMeshProUGUI m_LevelTime;
-	[SerializeField] private Animator m_StarRatingAnimator;
+	[SerializeField] private CanvasGroup m_OutGlowCanvasGroup;
 	[SerializeField] private Animator m_BackgroundImageBlurAnimator;
 	[SerializeField] private Animator m_PadlockJiggleAnimator;
 
+	[SerializeField] private float m_OutGlowFadeTime;
+	private int m_OutGlowFadeId;
+
 	private bool m_bIsUnlocked = false;
+	private bool m_bIsSelected = false;
+	private int m_LevelId;
 
 	public event Action OnSelectLevel;
 
@@ -51,19 +54,39 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 			}
 		}
 	}
+
+	public void OnLevelNumSelected(int levelNum)
+	{
+		if (levelNum == m_LevelId)
+		{
+			if (!m_bIsSelected)
+			{
+				LeanTween.cancel(m_OutGlowFadeId);
+				m_OutGlowFadeId = LeanTween.alphaCanvas(m_OutGlowCanvasGroup, 1.0f, m_OutGlowFadeTime).setEaseInOutCubic().uniqueId;
+				m_bIsSelected = true;
+			}
+		}
+		else
+		{
+			if (m_bIsSelected)
+			{
+				LeanTween.cancel(m_OutGlowFadeId);
+				m_OutGlowFadeId = LeanTween.alphaCanvas(m_OutGlowCanvasGroup, 0.0f, m_OutGlowFadeTime).setEaseInOutCubic().uniqueId;
+				m_bIsSelected = false;
+			}
+		}
+	}
 	#endregion
 
 	#region Initialization
-	public void SetupData(LevelData m_Data, int levelNumber)
+	public void SetupData(LevelData m_Data)
 	{
+		m_LevelId = m_Data.GetLevelNumber;
 		m_bIsUnlocked = m_Data.IsUnlocked;
 		m_PadlockImageGroup.alpha = m_Data.IsUnlocked ? 0.0f : 1.0f;
 
 		if (m_bIsUnlocked)
 		{
-			m_StarRatingAnimator.Play("Anim", -1, (float)m_Data.GetCurrentStarRating / 3);
-			m_LevelName.name = "Level " + levelNumber.ToString() + " : " + m_Data.GetLevelName;
-			m_LevelTime.name = m_Data.GetBestTimeAsString;
 			m_BackgroundImageBlurAnimator.Play("Blur", -1, 1.0f);
 		}
 	}
