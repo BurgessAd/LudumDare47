@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.Video;
 
 [CreateAssetMenu(menuName = "LevelData")]
 public class LevelData : ScriptableObject
@@ -13,6 +14,7 @@ public class LevelData : ScriptableObject
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
 	[SerializeField] private float[] m_Checkpoints = new float[] { 0f, 0f };
 	[SerializeField] private int m_LevelNumber = 0;
+	[SerializeField] private VideoClip m_ReferenceClip;
 
 	private float m_nAchievedTime = 0.0f;
 
@@ -35,6 +37,8 @@ public class LevelData : ScriptableObject
 	public int GetSuccessTimerTime => m_LevelCompleteTime;
 
 	public StarRating GetCurrentStarRating => m_StarRating;
+
+	public VideoClip GetLevelVideoClip;
 
 	public ref float[] GetCheckpoints => ref m_Checkpoints;
 
