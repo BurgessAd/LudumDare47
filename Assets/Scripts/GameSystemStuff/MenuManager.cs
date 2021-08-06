@@ -26,12 +26,11 @@ public class MenuManager : MonoBehaviour
 	[SerializeField] private List<CanvasGroup> m_MenuButtons;
 	[SerializeField] private List<Animator> m_SettingsAnimators;
 
+	[SerializeField] private GameObject m_LevelSelectUIPrefab;
+
 	[Header("Animator References")]
 	[SerializeField] private Animator m_LevelTransitionAnimator;
 	[SerializeField] private Animator m_MainScreenAnimator;
-	[SerializeField] private Animator m_LevelSelectOpenAnimator;
-	[SerializeField] private Animator m_SettingsOpenAnimator;
-	[SerializeField] private Animator m_QuitScreenOpenAnimator;
 
 	private StateMachine m_MenuStateMachine;
 	private CanvasGroup m_CurrentOpenCanvas;
@@ -43,12 +42,19 @@ public class MenuManager : MonoBehaviour
 	void Awake()
     {
 		m_MenuStateMachine = new StateMachine(new MenuManagerStates.MainState(this, m_MainCanvas, m_MainScreenAnimator));
-		m_MenuStateMachine.AddState(new MenuManagerStates.LevelSelectState(this, m_LevelSelectCanvas, m_LevelSelectOpenAnimator));
-		m_MenuStateMachine.AddState(new MenuManagerStates.SettingsState(this, m_SettingsCanvas, m_SettingsOpenAnimator));
-		m_MenuStateMachine.AddState(new MenuManagerStates.PreQuitState(this, m_QuitCanvas, m_QuitScreenOpenAnimator));
+		m_MenuStateMachine.AddState(new MenuManagerStates.LevelSelectState(this, m_LevelSelectCanvas, m_MainScreenAnimator));
+		m_MenuStateMachine.AddState(new MenuManagerStates.SettingsState(this, m_SettingsCanvas, m_MainScreenAnimator));
+		m_MenuStateMachine.AddState(new MenuManagerStates.PreQuitState(this, m_QuitCanvas, m_MainScreenAnimator));
 		m_MenuStateMachine.InitializeStateMachine();
 
-		m_Manager.MenuLoaded(this);
+		for (int i = 0; i < m_Manager.GetLevelData.Count; i++)
+		{
+			LevelData levelData = m_Manager.GetLevelData[i];
+			GameObject go = Instantiate(m_LevelSelectUIPrefab, m_LevelSelectTabsTransform);
+			LevelDataUI levelUI = go.GetComponent<LevelDataUI>();
+			levelUI.SetupData(levelData);
+			levelUI.OnSelectLevel += () => OnRequestLevel(i);
+		}
 	}
 
     void Update()
@@ -96,31 +102,6 @@ public class MenuManager : MonoBehaviour
 		m_Manager.ClearLevelData();
 		queuedOnFinish();
 	}
-
-	public void SetCurrentCanvas(CanvasGroup canvas, Action callOnComplete, in float delay = 0.0f)
-	{
-		ClearCanvas();
-		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setOnComplete(callOnComplete).setDelay(delay);
-		m_CurrentOpenCanvas = canvas;
-	}
-
-	public void SetCurrentCanvas(CanvasGroup canvas, in float delay = 0.0f)
-	{
-		ClearCanvas();
-		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setDelay(delay);
-		m_CurrentOpenCanvas = canvas;
-	}
-
-	public void ClearCanvas()
-	{
-		if (m_CurrentOpenCanvas)
-		{
-			m_CurrentOpenCanvas.interactable = false;
-			m_CurrentOpenCanvas.blocksRaycasts = false;
-			LeanTween.alphaCanvas(m_CurrentOpenCanvas, 0.0f, m_fMenuTransitionTime).setEaseInOutCubic();
-		}
-	}
-
 	#endregion
 
 	#region UIFunctions
@@ -150,11 +131,18 @@ public class MenuManager : MonoBehaviour
 		Application.Quit(0);
 	}
 
-	public void OnRequestLevel(int levelId)
+	private int levelIdChosen = 1;
+
+	private void OnRequestLevel(int levelId)
+	{
+		levelIdChosen = levelId;
+	}
+
+	public void OnClickPlay()
 	{
 		m_CurrentOpenCanvas.blocksRaycasts = false;
 		m_CurrentOpenCanvas.interactable = false;
-		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToLevelWithId(levelId)));
+		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToLevelWithId(levelIdChosen)));
 	}
 
 	#endregion
@@ -175,12 +163,6 @@ namespace MenuManagerStates
 		}
 		public override void OnEnter()
 		{
-			m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
-			{
-				m_CanvasGroup.blocksRaycasts = true;
-				m_CanvasGroup.interactable = true;
-				m_MenuManager.ShowSettingsStuff(true);
-			});
 			m_Animator.Play("AnimSettingsIn", -1);
 		}
 
@@ -215,11 +197,6 @@ namespace MenuManagerStates
 		public override void OnEnter()
 		{
 			m_MenuManager.ShowMenuStuff(true);
-			m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
-			{
-				m_CanvasGroup.blocksRaycasts = true;
-				m_CanvasGroup.interactable = true;
-			});
 		}
 
 		public override void OnExit()
@@ -243,11 +220,6 @@ namespace MenuManagerStates
 
 		public override void OnEnter()
 		{
-			m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
-			{
-				m_CanvasGroup.blocksRaycasts = true;
-				m_CanvasGroup.interactable = true;
-			});
 			m_Animator.Play("AnimQuitIn", -1);
 		}
 
@@ -279,11 +251,6 @@ namespace MenuManagerStates
 		}
 		public override void OnEnter()
 		{
-			//m_MenuManager.SetCurrentCanvas(m_CanvasGroup, () =>
-			//{
-			//	m_CanvasGroup.blocksRaycasts = true;
-			//	m_CanvasGroup.interactable = true;
-			//});
 			m_Animator.Play("AnimLevelsIn", -1);
 		}
 

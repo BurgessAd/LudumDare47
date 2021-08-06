@@ -10,7 +10,7 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	[SerializeField] private LayerMask m_TerrainLayerMask;
 	[SerializeField] private RestartState m_RestartState;
 	[SerializeField] private GameObject m_ObjectiveObjectPrefab;
-	[SerializeField] private GameObject m_LevelSelectUIPrefab;
+
 	[SerializeField] private readonly List<LevelData> m_LevelData = new List<LevelData>();
 
 	private readonly Dictionary<EntityInformation, List<EntityToken>> m_EntityCache = new Dictionary<EntityInformation, List<EntityToken>>();
@@ -92,17 +92,6 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 			objective.AddObjectiveListener(this);
 		});
 		newLevel.SetLevelData(m_LevelData[GetCurrentLevelIndex]);
-	}
-
-	public void MenuLoaded(MenuManager menuManager)
-	{
-		for (int i = 0; i < m_LevelData.Count; i++)
-		{
-			GameObject go = Instantiate(m_LevelSelectUIPrefab, menuManager.GetLevelSelectTabsTransform);
-			LevelDataUI levelUI = go.GetComponent<LevelDataUI>();
-			levelUI.SetupData(m_LevelData[i]);
-			levelUI.OnSelectLevel += () => menuManager.OnRequestLevel(i);
-		}
 	}
 
 	// called when new scene is beginning to load
