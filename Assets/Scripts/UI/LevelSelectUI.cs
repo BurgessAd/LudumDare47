@@ -7,20 +7,23 @@ using UnityEngine.Video;
 
 public class LevelSelectUI : MonoBehaviour
 {
+	[Space]
+	[Header("Anim Params")]
+	[SerializeField] private float m_TextFadeInOutTime;
 
+	[Space]
+	[Header("UI references")]
 	[SerializeField] private TextMeshProUGUI m_LevelNameLeft;
 	[SerializeField] private TextMeshProUGUI m_LevelNameRight;
 	[SerializeField] private TextMeshProUGUI m_LevelTime;
+	[SerializeField] private StarUI m_StarUI;
+	[Space]
 	[SerializeField] private CanvasGroup m_LevelInfoCanvasGroup;
-
 	[SerializeField] private Transform m_LevelDataUITransform;
 
-	[SerializeField] private float m_TextFadeInOutTime;
-
-	[SerializeField] private StarUI m_StarUI;
-	 
+	[Space]
+	[Header("Game System References")]
 	[SerializeField] private GameObject m_LevelDataUIPrefab;
-
 	[SerializeField] private CowGameManager m_GameManager;
 
 	private int animId = -1;
@@ -29,18 +32,21 @@ public class LevelSelectUI : MonoBehaviour
 
 	private void Awake()
 	{
+		bool lastLevelCompleted = true;
 		for(int i = 0; i < m_GameManager.GetLevelData.Count; i++)
 		{
 			LevelData levelDatum = m_GameManager.GetLevelData[i];
+			if (lastLevelCompleted && !levelDatum.IsUnlocked)
+				levelDatum.UnlockLevel();
 			levelDatum.SetLevelNumber(i);
 			LevelDataUI levelDataUI = Instantiate(m_LevelDataUIPrefab, m_LevelDataUITransform).GetComponent<LevelDataUI>();
 			levelDataUI.OnSelectLevel += () => UpdateSelectedLevelData(i);
 			m_OnLevelSelected += levelDataUI.OnLevelNumSelected;
 			levelDataUI.SetupData(levelDatum);
+			lastLevelCompleted = levelDatum.IsCompleted;
 		}
 		UpdateSelectedLevelData(0);
 	}
-
 
 	private void UpdateSelectedLevelData(int levelId)
 	{
@@ -50,7 +56,7 @@ public class LevelSelectUI : MonoBehaviour
 		LeanTween.cancel(animId);
 		LTDescr tween = LeanTween.alphaCanvas(m_LevelInfoCanvasGroup, 0.0f, m_TextFadeInOutTime).setEaseInOutCubic().setOnComplete(() => 
 		{
-			m_LevelNameLeft.name = "Level " + levelData.GetLevelNumber.ToString();
+			m_LevelNameLeft.name = "Level " + UnityUtils.UnityUtils.NumberToWords(levelData.GetLevelNumber);
 			m_LevelNameRight.name = levelData.GetLevelName;
 			m_LevelTime.name = levelData.GetBestTimeAsString;
 			m_StarUI.SetStarsVisible((int)levelData.GetCurrentStarRating);

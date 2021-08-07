@@ -11,31 +11,29 @@ public class MenuManager : MonoBehaviour
 {
 	[Header("Animation parameters")]
 	[SerializeField] private float m_fTransitionTime;
-	[SerializeField] private float m_fMenuTransitionTime;
 
+	[Space]
 	[Header("Object references")]
 	[SerializeField] private CowGameManager m_Manager;
-	[SerializeField] private Transform m_LevelSelectTabsTransform;
 
+	[Space]
 	[Header("Canvas references")]
 	[SerializeField] private CanvasGroup m_MainCanvas;
 	[SerializeField] private CanvasGroup m_SettingsCanvas;
 	[SerializeField] private CanvasGroup m_LevelSelectCanvas;
 	[SerializeField] private CanvasGroup m_QuitCanvas;
 
+	[Space]
+	[Header("Misc.")]
 	[SerializeField] private List<CanvasGroup> m_MenuButtons;
 	[SerializeField] private List<Animator> m_SettingsAnimators;
 
-	[SerializeField] private GameObject m_LevelSelectUIPrefab;
-
+	[Space]
 	[Header("Animator References")]
 	[SerializeField] private Animator m_LevelTransitionAnimator;
 	[SerializeField] private Animator m_MainScreenAnimator;
 
 	private StateMachine m_MenuStateMachine;
-	private CanvasGroup m_CurrentOpenCanvas;
-
-	public Transform GetLevelSelectTabsTransform => m_LevelSelectTabsTransform;
 
 	#region UnityFunctions
 
@@ -46,15 +44,6 @@ public class MenuManager : MonoBehaviour
 		m_MenuStateMachine.AddState(new MenuManagerStates.SettingsState(this, m_SettingsCanvas, m_MainScreenAnimator));
 		m_MenuStateMachine.AddState(new MenuManagerStates.PreQuitState(this, m_QuitCanvas, m_MainScreenAnimator));
 		m_MenuStateMachine.InitializeStateMachine();
-
-		for (int i = 0; i < m_Manager.GetLevelData.Count; i++)
-		{
-			LevelData levelData = m_Manager.GetLevelData[i];
-			GameObject go = Instantiate(m_LevelSelectUIPrefab, m_LevelSelectTabsTransform);
-			LevelDataUI levelUI = go.GetComponent<LevelDataUI>();
-			levelUI.SetupData(levelData);
-			levelUI.OnSelectLevel += () => OnRequestLevel(i);
-		}
 	}
 
     void Update()
@@ -97,9 +86,8 @@ public class MenuManager : MonoBehaviour
 
 	private IEnumerator BeginSceneTransition(Action queuedOnFinish)
 	{
-		m_LevelTransitionAnimator.Play("TransitionOut", -1);
+		m_LevelTransitionAnimator.Play("ExitLevelAnimation", -1);
 		yield return new WaitForSeconds(m_fTransitionTime);
-		m_Manager.ClearLevelData();
 		queuedOnFinish();
 	}
 	#endregion
@@ -128,7 +116,8 @@ public class MenuManager : MonoBehaviour
 
 	public void Quit()
 	{
-		Application.Quit(0);
+		m_LevelSelectCanvas.blocksRaycasts = false;
+		StartCoroutine(BeginSceneTransition(() => Application.Quit(0)));
 	}
 
 	private int levelIdChosen = 1;
@@ -140,8 +129,7 @@ public class MenuManager : MonoBehaviour
 
 	public void OnClickPlay()
 	{
-		m_CurrentOpenCanvas.blocksRaycasts = false;
-		m_CurrentOpenCanvas.interactable = false;
+		m_LevelSelectCanvas.blocksRaycasts = false;
 		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToLevelWithId(levelIdChosen)));
 	}
 

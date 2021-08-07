@@ -6,17 +6,19 @@ using UnityEngine.Video;
 [CreateAssetMenu(menuName = "LevelData")]
 public class LevelData : ScriptableObject
 {
+	[Header("Set Values")]
     [SerializeField] private string m_sLevelName = "";
     [SerializeField] private float m_nTargetTime = 0.0f;
-	[SerializeField] private int m_LevelCompleteTime = 0;
-	[SerializeField] private StarRating m_StarRating = StarRating.Zero;
-	[SerializeField] private int m_Score = 0;
+	[SerializeField] private VideoClip m_ReferenceClip;
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
 	[SerializeField] private float[] m_Checkpoints = new float[] { 0f, 0f };
-	[SerializeField] private int m_LevelNumber = 0;
-	[SerializeField] private VideoClip m_ReferenceClip;
 
-	private float m_nAchievedTime = 0.0f;
+	[SerializeField] [HideInInspector] private float m_nAchievedTime = 0.0f;
+	[SerializeField] [HideInInspector] private int m_LevelCompleteTime = 0;
+	[SerializeField] [HideInInspector] private StarRating m_StarRating = StarRating.Zero;
+	[SerializeField] [HideInInspector] private int m_AchievedScore = 0;
+	[SerializeField] [HideInInspector] private bool m_bIsUnlocked;
+	[SerializeField] [HideInInspector] private bool m_bIsCompleted;
 
 	public enum StarRating
 	{
@@ -28,9 +30,9 @@ public class LevelData : ScriptableObject
 
 	#region Properties
 
-	public bool IsUnlocked { get; private set; } = false;
+	public bool IsUnlocked => m_bIsUnlocked;
 
-	public bool IsCompleted { get; private set; } = false;
+	public bool IsCompleted => m_bIsCompleted;
 
 	public int GetObjectiveCount => m_LevelObjectives.Count;
 
@@ -38,11 +40,11 @@ public class LevelData : ScriptableObject
 
 	public StarRating GetCurrentStarRating => m_StarRating;
 
-	public VideoClip GetLevelVideoClip;
+	public VideoClip GetLevelVideoClip => m_ReferenceClip;
 
 	public ref float[] GetCheckpoints => ref m_Checkpoints;
 
-	public int GetScore => m_Score;
+	public int GetScore => m_AchievedScore;
 
 	public string GetLevelName => m_sLevelName;
 
@@ -50,7 +52,7 @@ public class LevelData : ScriptableObject
 
 	public string GetBestTimeAsString => UnityUtils.UnityUtils.TurnTimeToString(m_nTargetTime);
 
-	public int GetLevelNumber => m_LevelNumber;
+	public int GetLevelNumber { get; private set; } = 0;
 
 	#endregion
 
@@ -66,12 +68,12 @@ public class LevelData : ScriptableObject
 
     public void HasCompletedLevel()
     {
-        IsCompleted = true;
+        m_bIsCompleted = true;
     }
 
     public void UnlockLevel()
     {
-        IsUnlocked = true;
+        m_bIsUnlocked = true;
     }
 
     public void TrySetNewTime(in float time) 
@@ -92,15 +94,15 @@ public class LevelData : ScriptableObject
 
 	public void TrySetNewScore(in int score)
 	{
-		if (m_Score < score)
+		if (m_AchievedScore < score)
 		{
-			m_Score = score;
+			m_AchievedScore = score;
 		}
 	}
 
 	public void SetLevelNumber(in int num)
 	{
-		m_LevelNumber = num;
+		GetLevelNumber = num;
 	}
 
 	#endregion

@@ -11,7 +11,7 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	[SerializeField] private RestartState m_RestartState;
 	[SerializeField] private GameObject m_ObjectiveObjectPrefab;
 
-	[SerializeField] private readonly List<LevelData> m_LevelData = new List<LevelData>();
+	[SerializeField] private List<LevelData> m_LevelData = new List<LevelData>();
 
 	private readonly Dictionary<EntityInformation, List<EntityToken>> m_EntityCache = new Dictionary<EntityInformation, List<EntityToken>>();
 	private readonly List<LevelObjective> m_ObjectiveDict = new List<LevelObjective>();
@@ -63,6 +63,7 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	public void MoveToLevelWithId(in int levelIndex)
 	{
 		GetCurrentLevelIndex = levelIndex;
+		Debug.Log("Loading scene with index " + levelIndex.ToString());
 		SceneManager.LoadScene(GetCurrentLevelIndex);
 	}
 
@@ -82,8 +83,8 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	public void NewLevelLoaded(LevelManager newLevel)
 	{
 		GetCurrentLevel = newLevel;
-		m_NumObjectivesToComplete = m_LevelData[GetCurrentLevelIndex].GetObjectiveCount;
-		m_LevelData[GetCurrentLevelIndex].ForEachObjective((LevelObjective objective) =>
+		m_NumObjectivesToComplete = m_LevelData[GetCurrentLevelIndex-1].GetObjectiveCount;
+		m_LevelData[GetCurrentLevelIndex-1].ForEachObjective((LevelObjective objective) =>
 		{
 			m_ObjectiveDict.Add(objective);
 			GameObject go = Instantiate(m_ObjectiveObjectPrefab, newLevel.GetObjectiveCanvasTransform);
@@ -91,13 +92,13 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 			objective.AddObjectiveListener(objectiveUI);
 			objective.AddObjectiveListener(this);
 		});
-		newLevel.SetLevelData(m_LevelData[GetCurrentLevelIndex]);
+		newLevel.SetLevelData(m_LevelData[GetCurrentLevelIndex-1]);
 	}
 
 	// called when new scene is beginning to load
 	public void ClearLevelData()
 	{
-		m_LevelData[GetCurrentLevelIndex].ForEachObjective((LevelObjective objective) =>
+		m_LevelData[GetCurrentLevelIndex-1].ForEachObjective((LevelObjective objective) =>
 		{
 			objective.ClearListeners();
 		});

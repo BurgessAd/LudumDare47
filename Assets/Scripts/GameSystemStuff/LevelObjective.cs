@@ -7,6 +7,7 @@ public enum ObjectiveType
 	Capturing
 }
 
+[CreateAssetMenu(menuName = "Level Objective")]
 public class LevelObjective : ScriptableObject
 {
 	[Header("Gameplay Settings")]
@@ -23,7 +24,7 @@ public class LevelObjective : ScriptableObject
 	[SerializeField] private CowGameManager m_Manager;
 	[SerializeField] private EntityInformation m_CounterAnimalType;
 
-	private UnityUtils.ListenerSet<IObjectiveListener> m_ObjectiveListeners;
+	private UnityUtils.ListenerSet<IObjectiveListener> m_ObjectiveListeners = new UnityUtils.ListenerSet<IObjectiveListener>();
 
 	// Properties for external access of data by the game manager
 	#region AccessibleProperties
@@ -54,9 +55,9 @@ public class LevelObjective : ScriptableObject
 		if (m_HasMaximumFailure)
 			m_MaximumGoal = Mathf.Min(m_MaximumGoal, m_MaximumValue);
 		if (!m_HasMinimumFailure || !m_HasMaximumFailure)
-			Debug.LogErrorFormat("Gameplay UI %s has no failure states", name);
+			Debug.LogError("Gameplay UI has no failure states", this);
 		if ((!m_HasMinimumFailure &&  m_MinimumValue == m_MinimumGoal)|| (!m_HasMaximumFailure && m_MaximumValue == m_MaximumGoal))
-			Debug.LogErrorFormat("Gameplay UI %s failure state is the same as the goal minimum - they should be at least slightly different", name);
+			Debug.LogError("Gameplay UI failure state is the same as the goal minimum - they should be at least slightly different", this);
 	}
 	#endregion
 
