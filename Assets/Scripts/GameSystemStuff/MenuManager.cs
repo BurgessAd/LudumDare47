@@ -15,6 +15,7 @@ public class MenuManager : MonoBehaviour
 	[Space]
 	[Header("Object references")]
 	[SerializeField] private CowGameManager m_Manager;
+	[SerializeField] private LevelSelectUI m_LevelSelectUI;
 
 	[Space]
 	[Header("Canvas references")]
@@ -120,17 +121,10 @@ public class MenuManager : MonoBehaviour
 		StartCoroutine(BeginSceneTransition(() => Application.Quit(0)));
 	}
 
-	private int levelIdChosen = 1;
-
-	private void OnRequestLevel(int levelId)
-	{
-		levelIdChosen = levelId;
-	}
-
 	public void OnClickPlay()
 	{
 		m_LevelSelectCanvas.blocksRaycasts = false;
-		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToLevelWithId(levelIdChosen)));
+		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToLevelWithSceneId(m_LevelSelectUI.GetChosenLevelId + 1)));
 	}
 
 	#endregion

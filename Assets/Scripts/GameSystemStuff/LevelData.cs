@@ -32,7 +32,7 @@ public class LevelData : ScriptableObject
 
 	public bool IsUnlocked => m_bIsUnlocked;
 
-	public bool IsCompleted => m_bIsCompleted;
+	public bool IsCompleted => true;
 
 	public int GetObjectiveCount => m_LevelObjectives.Count;
 

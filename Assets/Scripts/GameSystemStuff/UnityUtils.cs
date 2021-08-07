@@ -73,9 +73,12 @@ namespace UnityUtils
 
 		public static string TurnTimeToString(in float time)
 		{
+			string extra = "";
 			int seconds = Mathf.FloorToInt(time % 60);
+			if (seconds < 10)
+				extra = "0";
 			int minutes = Mathf.FloorToInt(time / 60);
-			return minutes.ToString() + ":" + seconds.ToString();
+			return minutes.ToString() + ":" + extra + seconds.ToString();
 		}
 	}
 

@@ -50,7 +50,9 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 
 	public LevelManager GetCurrentLevel { get; private set; } = null;
 
-	public List<LevelData> GetLevelData => m_LevelData;
+	public LevelData GetLevelDataByLevelIndex(in int index) => m_LevelData[index];
+
+	public int GetNumLevels => m_LevelData.Count;
 	#endregion
 
 	// Called by LevelManager mostly, for scene transitions, etc
@@ -60,10 +62,9 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 		SceneManager.LoadScene(GetCurrentLevelIndex++);
 	}
 
-	public void MoveToLevelWithId(in int levelIndex)
+	public void MoveToLevelWithSceneId(in int levelIndex)
 	{
 		GetCurrentLevelIndex = levelIndex;
-		Debug.Log("Loading scene with index " + levelIndex.ToString());
 		SceneManager.LoadScene(GetCurrentLevelIndex);
 	}
 

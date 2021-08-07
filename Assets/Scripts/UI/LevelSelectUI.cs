@@ -30,17 +30,22 @@ public class LevelSelectUI : MonoBehaviour
 	private int m_SelectedLevelId;
 	public event Action<int> m_OnLevelSelected;
 
+	public int GetChosenLevelId => m_SelectedLevelId;
+
 	private void Awake()
 	{
 		bool lastLevelCompleted = true;
-		for(int i = 0; i < m_GameManager.GetLevelData.Count; i++)
+
+		for(int i = 0; i < m_GameManager.GetNumLevels; i++)
 		{
-			LevelData levelDatum = m_GameManager.GetLevelData[i];
+			LevelData levelDatum = m_GameManager.GetLevelDataByLevelIndex(i);
+			levelDatum.SetLevelNumber(i);
+
 			if (lastLevelCompleted && !levelDatum.IsUnlocked)
 				levelDatum.UnlockLevel();
-			levelDatum.SetLevelNumber(i);
+
 			LevelDataUI levelDataUI = Instantiate(m_LevelDataUIPrefab, m_LevelDataUITransform).GetComponent<LevelDataUI>();
-			levelDataUI.OnSelectLevel += () => UpdateSelectedLevelData(i);
+			levelDataUI.OnSelectLevel += UpdateSelectedLevelData;
 			m_OnLevelSelected += levelDataUI.OnLevelNumSelected;
 			levelDataUI.SetupData(levelDatum);
 			lastLevelCompleted = levelDatum.IsCompleted;
@@ -51,16 +56,16 @@ public class LevelSelectUI : MonoBehaviour
 	private void UpdateSelectedLevelData(int levelId)
 	{
 		m_SelectedLevelId = levelId;
-		LevelData levelData = m_GameManager.GetLevelData[m_SelectedLevelId];
+		LevelData levelData = m_GameManager.GetLevelDataByLevelIndex(m_SelectedLevelId);
 		m_OnLevelSelected.Invoke(m_SelectedLevelId);
 		LeanTween.cancel(animId);
 		LTDescr tween = LeanTween.alphaCanvas(m_LevelInfoCanvasGroup, 0.0f, m_TextFadeInOutTime).setEaseInOutCubic().setOnComplete(() => 
 		{
-			m_LevelNameLeft.name = "Level " + UnityUtils.UnityUtils.NumberToWords(levelData.GetLevelNumber);
-			m_LevelNameRight.name = levelData.GetLevelName;
-			m_LevelTime.name = levelData.GetBestTimeAsString;
+			m_LevelNameLeft.text = "Level " + UnityUtils.UnityUtils.NumberToWords(levelData.GetLevelNumber);
+			m_LevelNameRight.text = levelData.GetLevelName;
+			m_LevelTime.text = levelData.GetBestTimeAsString;
 			m_StarUI.SetStarsVisible((int)levelData.GetCurrentStarRating);
-			tween = LeanTween.alphaCanvas(m_LevelInfoCanvasGroup, 0.0f, m_TextFadeInOutTime).setEaseInOutCubic();
+			tween = LeanTween.alphaCanvas(m_LevelInfoCanvasGroup, 1.0f, m_TextFadeInOutTime).setEaseInOutCubic();
 			animId = tween.uniqueId;
 		});
 		animId = tween.uniqueId;

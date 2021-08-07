@@ -14,7 +14,7 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	[SerializeField] private CanvasGroup m_LevelSplashCanvasGroup;
 
 	[Header("Animation References and Params")]
-	[SerializeField] [Range(0.05f, 0.3f)] private float m_AnimInOutFadeTime;
+	[SerializeField] [Range(0.05f, 1.0f)] private float m_AnimInOutFadeTime;
 	[SerializeField] private StarUI m_StarUI;
 
 	private int m_OutGlowFadeId;
@@ -24,7 +24,7 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	private bool m_bIsSelected = false;
 	private int m_LevelId;
 
-	public event Action OnSelectLevel;
+	public event Action<int> OnSelectLevel;
 
 	#region UnityInterfaces
 	private void OnVideoPlayerPrepared(VideoPlayer source)
@@ -40,33 +40,59 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		if (m_bIsUnlocked)
+		if (m_bIsUnlocked && !m_bIsSelected)
 		{
-			LeanTween.cancel(m_LevelSplashId);
-			m_LevelSplashId = LeanTween.alphaCanvas(m_LevelSplashCanvasGroup, 1.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
-			m_VideoPlayer.Play();
+			HideStarSplash();
 		}
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		if (m_bIsUnlocked)
+		m_bIsPointerIn = false;
+		if (m_bIsUnlocked && !m_bIsSelected)
 		{
-			LeanTween.cancel(m_LevelSplashId);
-			m_LevelSplashId = LeanTween.alphaCanvas(m_LevelSplashCanvasGroup, 1.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
-			m_VideoPlayer.Stop();
+			ShowStarSplash();
 		}
 	}
 
 	public void OnPointerDown(PointerEventData eventData)
 	{
+		m_bIsPointerIn = true;
 		if (eventData.button == PointerEventData.InputButton.Left)
 		{
-			if (m_bIsUnlocked)
+			if (m_bIsUnlocked && !m_bIsSelected)
 			{
-				OnSelectLevel.Invoke();
+				OnSelectLevel.Invoke(m_LevelId);
 			}
 		}
+	}
+
+	bool m_bIsPointerIn = false;
+
+	private void ShowStarSplash()
+	{
+		LeanTween.cancel(m_LevelSplashId);
+		m_LevelSplashId = LeanTween.alphaCanvas(m_LevelSplashCanvasGroup, 1.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
+		m_VideoPlayer.Stop();
+	}
+
+	private void HideStarSplash()
+	{
+		LeanTween.cancel(m_LevelSplashId);
+		m_LevelSplashId = LeanTween.alphaCanvas(m_LevelSplashCanvasGroup, 0.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
+		m_VideoPlayer.Play();
+	}
+
+	private void ShowOutGlow()
+	{
+		LeanTween.cancel(m_OutGlowFadeId);
+		m_OutGlowFadeId = LeanTween.alphaCanvas(m_OutGlowCanvasGroup, 1.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
+	}
+
+	private void HideOutGlow()
+	{
+		LeanTween.cancel(m_OutGlowFadeId);
+		m_OutGlowFadeId = LeanTween.alphaCanvas(m_OutGlowCanvasGroup, 0.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
 	}
 
 	public void OnLevelNumSelected(int levelNum)
@@ -75,18 +101,20 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 		{
 			if (!m_bIsSelected)
 			{
-				LeanTween.cancel(m_OutGlowFadeId);
-				m_OutGlowFadeId = LeanTween.alphaCanvas(m_OutGlowCanvasGroup, 1.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
 				m_bIsSelected = true;
+				ShowOutGlow();
+				if (!m_bIsPointerIn)
+					HideStarSplash();
 			}
 		}
 		else
 		{
 			if (m_bIsSelected)
 			{
-				LeanTween.cancel(m_OutGlowFadeId);
-				m_OutGlowFadeId = LeanTween.alphaCanvas(m_OutGlowCanvasGroup, 0.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
+				HideOutGlow();
 				m_bIsSelected = false;
+				if (!m_bIsPointerIn)
+					ShowStarSplash();
 			}
 		}
 	}
@@ -95,11 +123,13 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	#region Initialization
 	public void SetupData(LevelData m_Data)
 	{
+		m_bIsUnlocked = m_Data.IsUnlocked;
+		m_LevelId = m_Data.GetLevelNumber;
+
 		m_LevelSplashCanvasGroup.alpha = m_bIsUnlocked ? 1.0f : 0.0f;
 		m_StarUI.SetStarsVisible((int)m_Data.GetCurrentStarRating);
-		m_LevelId = m_Data.GetLevelNumber;
-		m_bIsUnlocked = m_Data.IsUnlocked;
 		m_BlurPlaneGo.SetActive(!m_bIsUnlocked);
+		m_OutGlowCanvasGroup.alpha = 0.0f;
 
 		m_VideoPlayer.clip = m_Data.GetLevelVideoClip;
 		m_VideoPlayer.renderMode = VideoRenderMode.RenderTexture;

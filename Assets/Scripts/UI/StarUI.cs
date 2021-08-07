@@ -12,7 +12,7 @@ public class StarUI : MonoBehaviour
 	{
 		for (int i = 0; i < m_StarCanvasGroup.Count; i++)
 		{
-			m_StarCanvasGroup[i].alpha = numStarsVisible >= i ? m_fHighOpacity : m_fLowOpacity;
+			m_StarCanvasGroup[i].alpha = numStarsVisible > i ? m_fHighOpacity : m_fLowOpacity;
 		}
 	}
 }
