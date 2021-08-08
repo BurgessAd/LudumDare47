@@ -5,34 +5,40 @@ using System;
 
 public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 {
-    [SerializeField] private float m_fMouseSensitivityMultiplier = 100.0f;
-    [SerializeField] private Transform m_tBodyTransform;
+	[Header("--- References ---")]
+	[SerializeField] private Transform m_tBodyTransform;
     [SerializeField] private Camera m_PlayerCamera;
     [SerializeField] private CowGameManager m_Manager;
-    [SerializeField] private EZCameraShake.CameraShaker m_CameraShaker;
-    [SerializeField] private float m_fMaxFOVChangePerSecond = 1.0f;
+	[SerializeField] private SettingsManager m_SettingsManager;
+	[SerializeField] private Animator m_CameraAnimator;
+	[SerializeField] private PlayerMovement m_PlayerMovement;
+	[SerializeField] private LassoInputComponent m_LassoStart;
+
+	[Header("--- Cam Shake ---")]
+	[SerializeField] private EZCameraShake.CameraShaker m_CameraShaker;
+	[SerializeField] private AnimationCurve m_GroundImpactSpeedSize;
+
+	[Header("--- FOV Animation ---")]
+	[SerializeField] private float m_fMaxFOVChangePerSecond = 1.0f;
     [SerializeField] private float m_fDefaultFOV;
     [SerializeField] private AnimationCurve m_FOVTugAnimator;
     [SerializeField] private AnimationCurve m_FOVForceAnimator;
-    [SerializeField] private AnimationCurve m_GroundImpactSpeedSize;
 
-	[SerializeField] private SettingsManager m_SettingsManager;
+	[Header("--- Anim Strings ---")]
+	[SerializeField] private string m_JumpString;
+	[SerializeField] private string m_GroundedAnimString;
+	[SerializeField] private string m_MovementSpeedAnimString;
 
-    private float m_fCamPoint;
+	[Header("--- Sensitivity Multipliers ---")]
+	[SerializeField] private float m_fMouseSensitivityMultiplier = 100.0f;
+
+	private float m_fCamPoint;
     float m_fTargetFOV;
     float m_fCurrentFOV;
     private Transform m_tCamTransform;
     private Transform m_tFocusTransform;
     private StateMachine m_CameraStateMachine;
     private Type m_CachedType;
-
-    [Header("FOV Animation Params")]
-    [SerializeField] private Animator m_CameraAnimator;
-    [SerializeField] private PlayerMovement m_PlayerMovement;
-    [SerializeField] private LassoInputComponent m_LassoStart;
-    [SerializeField] private string m_JumpString;
-    [SerializeField] private string m_GroundedAnimString;
-    [SerializeField] private string m_MovementSpeedAnimString;
 
     private void OnSetPullStrength(float force, float yankSize) 
     {

@@ -2,11 +2,12 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using TMPro;
 
 public class CountdownTimerUI : MonoBehaviour
 {
 	[Header("Internal References")]
-	[SerializeField] private Text m_TimerText;
+	[SerializeField] private TextMeshProUGUI m_TimerText;
 	[SerializeField] private RectTransform m_TimerRect;
 	[SerializeField] private CanvasGroup m_TextCanvasGroup;
 	[SerializeField] private AudioManager m_AudioManager;
@@ -32,7 +33,7 @@ public class CountdownTimerUI : MonoBehaviour
 		LeanTween.alphaCanvas(m_TextCanvasGroup, 1.0f, m_TimerFadeTime).setEaseInCubic();
 	}
 
-	public void StartTimerFromTime(in int time)
+	public void StartTimerFromTime(in float time)
     {
 		m_TimerCoroutine = StartTimer(time);
 		StartCoroutine(m_TimerCoroutine);
@@ -45,9 +46,16 @@ public class CountdownTimerUI : MonoBehaviour
 		OnTimerComplete = null;
 	}
 
-	private IEnumerator StartTimer(int time)
+	private IEnumerator StartTimer(float time)
 	{
-		m_CurrentTime = time;
+		float remainder = time % 1;
+		m_CurrentTime = Mathf.FloorToInt(time);
+		if (remainder > 0.01f)
+		{
+			yield return new WaitForSecondsRealtime(remainder);
+		}
+
+		
 		while (m_CurrentTime > 0)
 		{
 			m_AudioManager.Play(m_TimerTickAudioIdentifier);

@@ -13,12 +13,10 @@ public class LevelData : ScriptableObject
 	[SerializeField] private List<LevelObjective> m_LevelObjectives = new List<LevelObjective>();
 	[SerializeField] private float[] m_Checkpoints = new float[] { 0f, 0f };
 
-	[SerializeField] [HideInInspector] private float m_nAchievedTime = 0.0f;
-	[SerializeField] [HideInInspector] private int m_LevelCompleteTime = 0;
-	[SerializeField] [HideInInspector] private StarRating m_StarRating = StarRating.Zero;
-	[SerializeField] [HideInInspector] private int m_AchievedScore = 0;
-	[SerializeField] [HideInInspector] private bool m_bIsUnlocked;
-	[SerializeField] [HideInInspector] private bool m_bIsCompleted;
+	[SerializeField] private float m_nAchievedTime = 0.0f;
+	[SerializeField] private int m_LevelCompleteTime = 0;
+	[SerializeField] private StarRating m_StarRating = StarRating.Zero;
+	[SerializeField] private int m_AchievedScore = 0;
 
 	public enum StarRating
 	{
@@ -30,9 +28,7 @@ public class LevelData : ScriptableObject
 
 	#region Properties
 
-	public bool IsUnlocked => m_bIsUnlocked;
-
-	public bool IsCompleted => true;
+	public bool IsCompleted => !m_StarRating.Equals(StarRating.Zero);
 
 	public int GetObjectiveCount => m_LevelObjectives.Count;
 
@@ -50,7 +46,7 @@ public class LevelData : ScriptableObject
 
 	public float GetTargetTime => m_nTargetTime;
 
-	public string GetBestTimeAsString => UnityUtils.UnityUtils.TurnTimeToString(m_nTargetTime);
+	public string GetBestTimeAsString => UnityUtils.UnityUtils.TurnTimeToString(m_nAchievedTime);
 
 	public int GetLevelNumber { get; private set; } = 0;
 
@@ -65,16 +61,6 @@ public class LevelData : ScriptableObject
 			objectiveFunc.Invoke(objective);
 		}
 	}
-
-    public void HasCompletedLevel()
-    {
-        m_bIsCompleted = true;
-    }
-
-    public void UnlockLevel()
-    {
-        m_bIsUnlocked = true;
-    }
 
     public void TrySetNewTime(in float time) 
     {

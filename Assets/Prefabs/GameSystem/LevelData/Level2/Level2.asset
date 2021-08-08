@@ -24,5 +24,4 @@ MonoBehaviour:
   m_LevelCompleteTime: 0
   m_StarRating: 0
   m_AchievedScore: 0
-  m_bIsUnlocked: 1
-  m_bIsCompleted: 0
+  m_bIsUnlocked: 0

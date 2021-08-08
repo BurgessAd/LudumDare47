@@ -9,13 +9,14 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	[SerializeField] private EntityInformation m_PlayerEntityInformation;
 	[SerializeField] private LayerMask m_TerrainLayerMask;
 	[SerializeField] private RestartState m_RestartState;
-	[SerializeField] private GameObject m_ObjectiveObjectPrefab;
 
 	[SerializeField] private List<LevelData> m_LevelData = new List<LevelData>();
 
 	private readonly Dictionary<EntityInformation, List<EntityToken>> m_EntityCache = new Dictionary<EntityInformation, List<EntityToken>>();
 	private readonly List<LevelObjective> m_ObjectiveDict = new List<LevelObjective>();
 	private readonly Dictionary<UIObjectReference, GameObject> m_UICache = new Dictionary<UIObjectReference, GameObject>();
+	private Transform m_PlayerCameraTransform;
+	private Transform m_PlayerCameraContainerTransform;
 
 	// Enums for defining entity state, restart state, etc.
 	#region EnumDefinitions
@@ -36,11 +37,9 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 
 	// Properties for variable access outside the game manager
 	#region Properties
-	public Transform GetCameraTransform { get; private set; }
-
-	public Transform GetPlayerCameraContainerTransform { get; private set; }
-
 	public int GetCurrentLevelIndex { get; private set; } = 0;
+
+	public Transform GetPlayerCameraContainerTransform => m_PlayerCameraContainerTransform;
 
 	public RestartState GetRestartState { get => m_RestartState; }
 
@@ -84,16 +83,10 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	public void NewLevelLoaded(LevelManager newLevel)
 	{
 		GetCurrentLevel = newLevel;
-		m_NumObjectivesToComplete = m_LevelData[GetCurrentLevelIndex-1].GetObjectiveCount;
-		m_LevelData[GetCurrentLevelIndex-1].ForEachObjective((LevelObjective objective) =>
-		{
-			m_ObjectiveDict.Add(objective);
-			GameObject go = Instantiate(m_ObjectiveObjectPrefab, newLevel.GetObjectiveCanvasTransform);
-			LevelObjectiveUI objectiveUI = go.GetComponent<LevelObjectiveUI>();
-			objective.AddObjectiveListener(objectiveUI);
-			objective.AddObjectiveListener(this);
-		});
-		newLevel.SetLevelData(m_LevelData[GetCurrentLevelIndex-1]);
+		LevelData levelData = m_LevelData[GetCurrentLevelIndex - 1];
+		m_NumObjectivesToComplete = levelData.GetObjectiveCount;
+		levelData.ForEachObjective((objective) => { m_ObjectiveDict.Add(objective); objective.AddObjectiveListener(this); });
+		newLevel.InitializeLevel(levelData, m_PlayerCameraTransform);
 	}
 
 	// called when new scene is beginning to load
@@ -105,6 +98,8 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 		});
 		m_NumObjectivesToComplete = 0;
 		m_NumObjectivesCompleted = 0;
+		m_PlayerCameraTransform = null;
+		m_PlayerCameraContainerTransform = null;
 		m_EntityCache.Clear();
 		m_ObjectiveDict.Clear();
 		m_UICache.Clear();
@@ -148,12 +143,12 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	#region LevelInitializationFunctions
 	public void RegisterCamera(Transform camTransform)
 	{
-		GetCameraTransform = camTransform;
+		m_PlayerCameraTransform = camTransform;
 	}
 
 	public void RegisterInitialCameraContainerTransform(Transform containerTransform)
 	{
-		GetPlayerCameraContainerTransform = containerTransform;
+		m_PlayerCameraContainerTransform = containerTransform;
 	}
 	#endregion
 

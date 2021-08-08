@@ -10,6 +10,8 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	[SerializeField] private VideoPlayer m_VideoPlayer;
 	[SerializeField] private GameObject m_BlurPlaneGo;
 	[SerializeField] private RectTransform m_RectTransformForVideo;
+	[SerializeField] private UnityEngine.UI.RawImage m_RawImage;
+	[SerializeField] private UnityEngine.UI.AspectRatioFitter m_AspectRatioFitter;
 	[SerializeField] private CanvasGroup m_OutGlowCanvasGroup;
 	[SerializeField] private CanvasGroup m_LevelSplashCanvasGroup;
 
@@ -30,12 +32,8 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	private void OnVideoPlayerPrepared(VideoPlayer source)
 	{
 		m_VideoPlayer.frame = 0;
-		m_VideoPlayer.Pause();
-	}
-
-	private void OnVideoPlayerLoop(VideoPlayer source)
-	{
-		m_VideoPlayer.frame = 0;
+		if (!m_bIsSelected)
+			m_VideoPlayer.Pause();
 	}
 
 	public void OnPointerEnter(PointerEventData eventData)
@@ -73,13 +71,15 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	{
 		LeanTween.cancel(m_LevelSplashId);
 		m_LevelSplashId = LeanTween.alphaCanvas(m_LevelSplashCanvasGroup, 1.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
-		m_VideoPlayer.Stop();
+		m_VideoPlayer.Pause();
+		m_VideoPlayer.frame = 0;
 	}
 
 	private void HideStarSplash()
 	{
 		LeanTween.cancel(m_LevelSplashId);
 		m_LevelSplashId = LeanTween.alphaCanvas(m_LevelSplashCanvasGroup, 0.0f, m_AnimInOutFadeTime).setEaseInOutCubic().uniqueId;
+		Debug.Log("Attempting to play video!");
 		m_VideoPlayer.Play();
 	}
 
@@ -121,9 +121,9 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 	#endregion
 
 	#region Initialization
-	public void SetupData(LevelData m_Data)
+	public void SetupData(LevelData m_Data, bool isUnlocked)
 	{
-		m_bIsUnlocked = m_Data.IsUnlocked;
+		m_bIsUnlocked = isUnlocked;
 		m_LevelId = m_Data.GetLevelNumber;
 
 		m_LevelSplashCanvasGroup.alpha = m_bIsUnlocked ? 1.0f : 0.0f;
@@ -131,12 +131,17 @@ public class LevelDataUI : MonoBehaviour, IPointerExitHandler, IPointerEnterHand
 		m_BlurPlaneGo.SetActive(!m_bIsUnlocked);
 		m_OutGlowCanvasGroup.alpha = 0.0f;
 
+		float aspectRatio = (float)m_Data.GetLevelVideoClip.pixelAspectRatioNumerator / m_Data.GetLevelVideoClip.pixelAspectRatioDenominator;
+		m_AspectRatioFitter.aspectRatio = aspectRatio;
+
 		m_VideoPlayer.clip = m_Data.GetLevelVideoClip;
 		m_VideoPlayer.renderMode = VideoRenderMode.RenderTexture;
 		m_VideoPlayer.targetTexture = new RenderTexture((int)m_RectTransformForVideo.rect.height, (int)m_RectTransformForVideo.rect.width, 1);
 		m_VideoPlayer.targetTexture.Create();
+		m_RawImage.texture = m_VideoPlayer.targetTexture;
 		m_VideoPlayer.Prepare();
 		m_VideoPlayer.prepareCompleted += OnVideoPlayerPrepared;
+		m_VideoPlayer.isLooping = true;
 	}
 	#endregion
 

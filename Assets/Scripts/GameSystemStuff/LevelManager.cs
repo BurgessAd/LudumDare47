@@ -12,7 +12,8 @@ public class LevelManager : MonoBehaviour
 	[Header("Animation parameters")]
 	[SerializeField] private float m_fTransitionTime;
 	[SerializeField] private float m_fMenuTransitionTime;
-
+	[SerializeField] private float m_DebugCountdownTimerTime;
+	[SerializeField] private float m_DefaultCountdownTimerTime;
 	[Header("Level parameters")]
 	[SerializeField] private float m_MapSize;
 
@@ -24,6 +25,7 @@ public class LevelManager : MonoBehaviour
 	[SerializeField] private Transform m_Transform;
 	[SerializeField] private Transform m_CameraTransform;
 	[SerializeField] private Transform m_PlayerCameraContainerTransform;
+	[SerializeField] private GameObject m_ObjectiveObjectPrefab;
 
 	[Header("Canvas references")]
 	[SerializeField] private CanvasGroup m_MainCanvas;
@@ -39,12 +41,10 @@ public class LevelManager : MonoBehaviour
 
 	[Header("Animator References")]
 	[SerializeField] private Animator m_LevelTransitionAnimator;
-	[SerializeField] private Animator m_LevelEnterAnimator;
-	[SerializeField] private Animator m_PauseScreenAnimator;
-	[SerializeField] private Animator m_EndScreenFailureAnimator;
-	[SerializeField] private Animator m_EndScreenSuccesseAnimator;
+	[SerializeField] private Animator m_LevelUIAnimator;
 	#endregion
 
+	// private params for internal use
 	#region PrivateParams
 	private LevelData m_LevelData;
 	private bool m_bIsPaused = false;
@@ -73,22 +73,6 @@ public class LevelManager : MonoBehaviour
 
 	#endregion
 
-	// logic controlling the end countdown for a successful level completion
-	#region EndCountdown
-	public void StartSucceedCountdown()
-	{
-		int successTime = m_LevelData.GetSuccessTimerTime;
-		m_FinalCountdownTimer.ShowTimer();
-		m_FinalCountdownTimer.StartTimerFromTime(successTime);
-		m_FinalCountdownTimer.OnTimerComplete += OnLevelSucceeded;
-	}
-
-	public void EndSucceedCountdown()
-	{
-		m_FinalCountdownTimer.StopTimer();
-	}
-	#endregion
-
 	// logic to control the intro animation for levels (zooming in and around the stage before starting)
 	#region IntroAnimation
 	private void InitializeIntroAnimation()
@@ -106,8 +90,8 @@ public class LevelManager : MonoBehaviour
 				m_StartButtonCanvas.alpha = 0.0f;
 				m_StartButtonCanvas.blocksRaycasts = false;
 				m_StartButtonCanvas.interactable = false;
-				m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(3.0f);
-				StartCoroutine(StartLevelWithoutCountdown());
+				m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(m_DebugCountdownTimerTime);
+				StartCoroutine(StartLevelWithoutCountdown(m_DebugCountdownTimerTime));
 				break;
 			default:
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(0, OnFirstIntroAnimationPortionShown);
@@ -119,16 +103,16 @@ public class LevelManager : MonoBehaviour
 		}
 	}
 
-	private void ShowIntroText(CustomAnimation.AnimationClip clip) 
+	private void ShowIntroText(CustomAnimation.AnimationClip clip)
 	{
 		float animInOutTime = 1.0f;
 		float animInOutBuffer = 0.1f;
-		float lengthCanBeShownFor = Mathf.Max(0, clip.animationTime - clip.entranceAnimationDelay - clip.exitAnimationDelay - clip.entranceAnimationTime/2 - clip.exitAnimationTime - 2 * animInOutTime - 2 * animInOutBuffer);
+		float lengthCanBeShownFor = Mathf.Max(0, clip.animationTime - clip.entranceAnimationDelay - clip.exitAnimationDelay - clip.entranceAnimationTime / 2 - clip.exitAnimationTime - 2 * animInOutTime - 2 * animInOutBuffer);
 		LeanTween.cancel(m_TextCanvas.gameObject);
-		LeanTween.alphaCanvas(m_TextCanvas, 1.0f, animInOutTime).setDelay(animInOutBuffer + clip.entranceAnimationDelay + clip.entranceAnimationTime/2).setOnComplete(() => LeanTween.alphaCanvas(m_TextCanvas, 0.0f, animInOutTime).setDelay(lengthCanBeShownFor));
+		LeanTween.alphaCanvas(m_TextCanvas, 1.0f, animInOutTime).setDelay(animInOutBuffer + clip.entranceAnimationDelay + clip.entranceAnimationTime / 2).setOnComplete(() => LeanTween.alphaCanvas(m_TextCanvas, 0.0f, animInOutTime).setDelay(lengthCanBeShownFor));
 	}
 
-	private void OnFirstIntroAnimationPortionShown(CustomAnimation.AnimationClip clip) 
+	private void OnFirstIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
 	{
 		m_LevelIntroTextLeft.text = "Level " + (m_Manager.GetCurrentLevelIndex + 1).ToString();
 		m_LevelIntroTextRight.text = m_LevelData.GetLevelName;
@@ -158,11 +142,27 @@ public class LevelManager : MonoBehaviour
 		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
 
-	private IEnumerator StartLevelWithoutCountdown()
+	private IEnumerator StartLevelWithoutCountdown(float time)
 	{
-		yield return new WaitForSeconds(3.0f);
+		yield return new WaitForSeconds(time);
 		OnLevelStarted?.Invoke();
 		m_LevelState.RequestTransition(typeof(PlayingState));
+	}
+	#endregion
+
+	// logic controlling the end countdown for a successful level completion
+	#region EndCountdown
+	public void StartSucceedCountdown()
+	{
+		int successTime = m_LevelData.GetSuccessTimerTime;
+		m_FinalCountdownTimer.ShowTimer();
+		m_FinalCountdownTimer.StartTimerFromTime(successTime);
+		m_FinalCountdownTimer.OnTimerComplete += OnLevelSucceeded;
+	}
+
+	public void EndSucceedCountdown()
+	{
+		m_FinalCountdownTimer.StopTimer();
 	}
 	#endregion
 
@@ -172,11 +172,11 @@ public class LevelManager : MonoBehaviour
 	private void Awake()
 	{
 		m_LevelState = new StateMachine(new StartState(this, m_StartButtonCanvas));
-		m_LevelState.AddState(new PausedState(this, m_PauseCanvas, m_PauseScreenAnimator));
-		m_LevelState.AddState(new EndFailureState(this, m_EndFailureCanvas, m_EndScreenFailureAnimator));
-		m_LevelState.AddState(new EndSuccessState(this, m_EndSuccessCanvas, m_EndScreenSuccesseAnimator));
+		m_LevelState.AddState(new PausedState(this, m_PauseCanvas, m_LevelUIAnimator));
+		m_LevelState.AddState(new EndFailureState(this, m_EndFailureCanvas, m_LevelUIAnimator));
+		m_LevelState.AddState(new EndSuccessState(this, m_EndSuccessCanvas, m_LevelUIAnimator));
 		m_LevelState.AddState(new PlayingState(this, m_MainCanvas));
-		m_LevelTransitionAnimator.Play("Base Layer.TransitionIn");
+		m_LevelTransitionAnimator.Play("TransitionIn", -1);
 
 		PauseLevel(true);
 		m_Manager.NewLevelLoaded(this);
@@ -185,11 +185,10 @@ public class LevelManager : MonoBehaviour
 	private void Start()
 	{
 		m_LevelState.InitializeStateMachine();
-		m_CameraTransform = m_Manager.GetCameraTransform;
 		InitializeIntroAnimation();
 	}
 
-	private void Update() 
+	private void Update()
 	{
 		m_LevelState.Tick();
 	}
@@ -207,7 +206,7 @@ public class LevelManager : MonoBehaviour
 		queuedOnFinish();
 	}
 
-	public void SetCurrentCanvas(CanvasGroup canvas, Action callOnComplete, in float delay = 0.0f) 
+	public void SetCurrentCanvas(CanvasGroup canvas, Action callOnComplete, in float delay = 0.0f)
 	{
 		ClearCanvas();
 		LeanTween.alphaCanvas(canvas, 1.0f, m_fMenuTransitionTime).setEaseInOutCubic().setOnComplete(callOnComplete).setDelay(delay);
@@ -221,7 +220,7 @@ public class LevelManager : MonoBehaviour
 		m_CurrentOpenCanvas = canvas;
 	}
 
-	public void ClearCanvas() 
+	public void ClearCanvas()
 	{
 		if (m_CurrentOpenCanvas)
 		{
@@ -249,6 +248,19 @@ public class LevelManager : MonoBehaviour
 	{
 		StartCoroutine(BeginSceneTransition(() => m_Manager.MoveToMenu()));
 	}
+
+	public void PlayerStartedLevel()
+	{
+		SetCurrentCanvas(m_StartCountdownCanvas, () => { });
+		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(m_DefaultCountdownTimerTime);
+		m_StartCountdownTimer.StartTimerFromTime(m_DefaultCountdownTimerTime);
+		m_StartCountdownTimer.ShowTimer();
+		m_StartCountdownTimer.OnTimerComplete += () =>
+		{
+			OnLevelStarted?.Invoke();
+			m_LevelState.RequestTransition(typeof(PlayingState));
+		};
+	}
 	#endregion
 
 	// Functions called primarily by the manager, for defining animations before exiting levels, etc
@@ -271,20 +283,27 @@ public class LevelManager : MonoBehaviour
 		}
 	}
 
-	public void SetLevelData(LevelData levelData)
+	public void InitializeLevel(LevelData levelData, Transform camTransform)
 	{
+		m_CameraTransform = camTransform;
 		m_LevelData = levelData;
+		levelData.ForEachObjective((LevelObjective objective) =>
+		{
+			GameObject go = Instantiate(m_ObjectiveObjectPrefab, GetObjectiveCanvasTransform);
+			LevelObjectiveUI objectiveUI = go.GetComponent<LevelObjectiveUI>();
+			objective.AddObjectiveListener(objectiveUI);
+		});
 	}
 
 
-	public void OnLevelSucceeded() 
+	public void OnLevelSucceeded()
 	{
 		OnLevelFinished();
 		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateOut();
-		m_LevelState.RequestTransition(typeof(EndSuccessState)); 
+		m_LevelState.RequestTransition(typeof(EndSuccessState));
 	}
 
-	public void OnLevelFailed() 
+	public void OnLevelFailed()
 	{
 		OnLevelFinished();
 		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateOut();
@@ -295,16 +314,6 @@ public class LevelManager : MonoBehaviour
 	{
 		m_LevelState.RequestTransition(typeof(PlayingState));
 	}
-
-	public void PlayerStartedLevel() 
-	{
-		SetCurrentCanvas(m_StartCountdownCanvas, () => { });
-		m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(3.2f);
-		m_FinalCountdownTimer.StartTimerFromTime(3);
-		m_FinalCountdownTimer.ShowTimer();
-		m_FinalCountdownTimer.OnTimerComplete += () => OnLevelStarted?.Invoke(); m_LevelState.RequestTransition(typeof(PlayingState));
-	}
-
 	#endregion
 
 	// Functions called by the state machine
@@ -329,6 +338,7 @@ public class LevelManager : MonoBehaviour
 	#endregion
 
 }
+
 
 namespace LevelManagerStates
 {
@@ -384,7 +394,7 @@ namespace LevelManagerStates
 				m_CanvasGroup.blocksRaycasts = true;
 				m_CanvasGroup.interactable = true;
 			});
-			m_AnimationController.Play("AnimIn", -1);
+			//m_AnimationController.Play("AnimIn", -1);
 		}
 
 		public override void Tick()
@@ -397,7 +407,7 @@ namespace LevelManagerStates
 
 		public override void OnExit()
 		{
-			m_AnimationController.Play("AnimOut", -1);
+			//m_AnimationController.Play("AnimOut", -1);
 		}
 	}
 
@@ -420,12 +430,12 @@ namespace LevelManagerStates
 				m_CanvasGroup.interactable = true;
 			}, delay: 1.0f);
 			m_LevelLoader.PopulateFailureScreen();
-			m_AnimationController.Play("AnimIn", -1);
+			//m_AnimationController.Play("AnimIn", -1);
 		}
 
 		public override void OnExit()
 		{
-			m_AnimationController.Play("AnimOut", -1);
+			//m_AnimationController.Play("AnimOut", -1);
 		}
 	}
 
@@ -450,12 +460,12 @@ namespace LevelManagerStates
 				m_CanvasGroup.interactable = true;
 			}, delay: 1.0f);
 			m_LevelLoader.PopulateSuccessScreen();
-			m_AnimationController.Play("AnimIn", -1);
+			//m_AnimationController.Play("AnimIn", -1);
 		}
 
 		public override void OnExit()
 		{
-			m_AnimationController.Play("AnimOut", -1);
+			//m_AnimationController.Play("AnimOut", -1);
 		}
 	}
 

@@ -376,5 +376,5 @@ MonoBehaviour:
   - {fileID: 8288638184834388050}
   - {fileID: 8288638185361028599}
   - {fileID: 8288638184969656389}
-  m_fLowOpacity: 0.5
+  m_fLowOpacity: 0.3
   m_fHighOpacity: 1

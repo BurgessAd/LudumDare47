@@ -20,9 +20,7 @@ MonoBehaviour:
   m_Checkpoints:
   - 100
   - 200
-  m_nAchievedTime: 0
+  m_nAchievedTime: 69
   m_LevelCompleteTime: 0
-  m_StarRating: 0
+  m_StarRating: 2
   m_AchievedScore: 0
-  m_bIsUnlocked: 1
-  m_bIsCompleted: 0
