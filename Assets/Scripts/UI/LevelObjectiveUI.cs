@@ -6,8 +6,8 @@ public class LevelObjectiveUI : MonoBehaviour, IObjectiveListener
 {
 	[Header("Internal References")]
 	[SerializeField] private RectTransform m_GoalImage;
+	[SerializeField] private RectTransform m_FailureImage;
 	[SerializeField] private Slider m_Slider;
-	[SerializeField] private Image m_SliderHandleImage;
 	[SerializeField] private RectTransform m_SliderBackgroundRect;
 	[SerializeField] private Image m_SliderBackgroundImage;
 	[SerializeField] private CountdownTimerUI m_CountdownTimer;
@@ -21,7 +21,7 @@ public class LevelObjectiveUI : MonoBehaviour, IObjectiveListener
 	[SerializeField] private float m_fSliderAcceleration;
 	[SerializeField] private Color m_EnterGoalPulseColour;
 	[SerializeField] private Color m_ExitGoalPulseColour;
-	[SerializeField] private float m_FailureEndBarSize;
+	[SerializeField] [Range(0.0f, 0.2f)] private float m_FailureEndBarSize;
 
 	private float m_fCurrentSliderPosition;
 	private float m_fCurrentSliderVelocity;
@@ -81,11 +81,15 @@ public class LevelObjectiveUI : MonoBehaviour, IObjectiveListener
 
 	public void InitializeData(LevelObjective objective)
 	{
+		return;
 		float goalAnchorXMin = objective.GetStartGoalPos;
 		float goalAnchorXMax = objective.GetEndGoalPos;
 
-		m_GoalImage.anchorMax = new Vector2(goalAnchorXMax, m_GoalImage.anchorMax.y);
 		m_GoalImage.anchorMin = new Vector2(goalAnchorXMin, m_GoalImage.anchorMin.y);
+		m_GoalImage.anchorMax = new Vector2(goalAnchorXMax, m_GoalImage.anchorMax.y);
+
+		m_FailureImage.anchorMin = new Vector2(1 - m_FailureEndBarSize, m_FailureImage.anchorMin.y);
+		m_FailureImage.anchorMax = new Vector2(m_FailureEndBarSize, m_FailureImage.anchorMax.y);
 	}
 
 	public void OnObjectiveFailed()

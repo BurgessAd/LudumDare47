@@ -110,9 +110,9 @@ public class CustomAnimation : MonoBehaviour
 				m_CurrentAnimTime -= currentClip.animationTime;
 				m_bHasCalledCompletedEntranceAnim = false;
 				m_bHasCalledStartedExitAnimation = false;
-				if (m_CurrentClipNum + 1 < m_AnimationsList.Count - 1) 
+				if (m_CurrentClipNum + 1 < m_AnimationsList.Count) 
 				{
-					m_AnimationsList[m_CurrentClipNum+1].onClipStarted?.Invoke(m_AnimationsList[m_CurrentClipNum + 1]);
+					m_AnimationsList[m_CurrentClipNum+1].onClipStarted?.Invoke(m_AnimationsList[m_CurrentClipNum]);
 				}
 				m_CurrentClipNum++;
 			}

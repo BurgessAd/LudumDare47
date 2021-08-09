@@ -5552,6 +5552,42 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 99730957}
   m_Mesh: {fileID: 4300000, guid: 5b01d5b142c28394782445649ffd1993, type: 2}
+--- !u!84 &107443563
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: DetailNoise
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_ForcedFallbackFormat: 4
+  m_DownscaleFallback: 0
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 3
+  m_Width: 64
+  m_Height: 64
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthFormat: 0
+  m_ColorFormat: 24
+  m_MipMap: 0
+  m_GenerateMips: 1
+  m_SRGB: 0
+  m_UseDynamicScale: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 0
+    m_WrapV: 0
+    m_WrapW: 0
+  m_Dimension: 3
+  m_VolumeDepth: 64
 --- !u!1001 &107679649
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6720,6 +6756,42 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 343734630}
   m_CullTransparentMesh: 0
+--- !u!84 &353783942
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: WeatherMap
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_ForcedFallbackFormat: 4
+  m_DownscaleFallback: 0
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 3
+  m_Width: 512
+  m_Height: 512
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthFormat: 0
+  m_ColorFormat: 24
+  m_MipMap: 0
+  m_GenerateMips: 1
+  m_SRGB: 0
+  m_UseDynamicScale: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_Dimension: 2
+  m_VolumeDepth: 512
 --- !u!1 &358453527
 GameObject:
   m_ObjectHideFlags: 0
@@ -7906,42 +7978,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6345927856076257381, guid: cf04acb813ac0e6409f4f2d86e7ecb34, type: 3}
   m_PrefabInstance: {fileID: 483109098}
   m_PrefabAsset: {fileID: 0}
---- !u!84 &489167415
-RenderTexture:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: ShapeNoise
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
-  m_Width: 132
-  m_Height: 132
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthFormat: 0
-  m_ColorFormat: 24
-  m_MipMap: 0
-  m_GenerateMips: 1
-  m_SRGB: 0
-  m_UseDynamicScale: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 0
-    m_WrapV: 0
-    m_WrapW: 0
-  m_Dimension: 3
-  m_VolumeDepth: 132
 --- !u!1 &495688464
 GameObject:
   m_ObjectHideFlags: 0
@@ -9437,7 +9473,7 @@ RectTransform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.385, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -10447,8 +10483,8 @@ MonoBehaviour:
   viewerTileAmount: 1
   viewerSize: 0.217
   showSettingsEditor: 1
-  shapeTexture: {fileID: 489167415}
-  detailTexture: {fileID: 907361661}
+  shapeTexture: {fileID: 2105260760}
+  detailTexture: {fileID: 107443563}
 --- !u!1 &728056241
 GameObject:
   m_ObjectHideFlags: 0
@@ -11599,42 +11635,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7248814218996341370, guid: a51e640a3dd8d4e42bce3bdde79b84a9, type: 3}
   m_PrefabInstance: {fileID: 900358497}
   m_PrefabAsset: {fileID: 0}
---- !u!84 &907361661
-RenderTexture:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: DetailNoise
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
-  m_Width: 64
-  m_Height: 64
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthFormat: 0
-  m_ColorFormat: 24
-  m_MipMap: 0
-  m_GenerateMips: 1
-  m_SRGB: 0
-  m_UseDynamicScale: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 0
-    m_WrapV: 0
-    m_WrapW: 0
-  m_Dimension: 3
-  m_VolumeDepth: 64
 --- !u!1001 &922367283
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12292,42 +12292,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5840922292687797662, guid: 6eb1bc9b610c1e94688b4fc1fa60ff5d, type: 3}
   m_PrefabInstance: {fileID: 989384823}
   m_PrefabAsset: {fileID: 0}
---- !u!84 &992207231
-RenderTexture:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: WeatherMap
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
-  m_Width: 512
-  m_Height: 512
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthFormat: 0
-  m_ColorFormat: 24
-  m_MipMap: 0
-  m_GenerateMips: 1
-  m_SRGB: 0
-  m_UseDynamicScale: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_Dimension: 2
-  m_VolumeDepth: 512
 --- !u!1 &999321225
 GameObject:
   m_ObjectHideFlags: 0
@@ -12363,7 +12327,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 603.5, y: 154.53}
+  m_SizeDelta: {x: 205.1, y: 30.1}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &999321227
 MonoBehaviour:
@@ -12385,9 +12349,9 @@ MonoBehaviour:
   m_ChildAlignment: 7
   m_Spacing: 10
   m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 0
+  m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 1
-  m_ChildControlHeight: 0
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
@@ -24011,7 +23975,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1836973256
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24027,9 +23991,9 @@ RectTransform:
   m_Father: {fileID: 798772935}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 203, y: -184.47}
   m_SizeDelta: {x: 387.8, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1836973257
@@ -24409,7 +24373,7 @@ MonoBehaviour:
   noiseCompute: {fileID: 7200000, guid: 610906fb135f245baaa76a04f34d7c24, type: 3}
   noiseSettings: {fileID: 11400000, guid: 8f9c3a65f6f63a54d82c0477aedeac54, type: 2}
   resolution: 512
-  weatherMap: {fileID: 992207231}
+  weatherMap: {fileID: 353783942}
   testParams: {x: 0, y: 1, z: 1, w: 0}
   container: {fileID: 1119820183}
   viewerEnabled: 0
@@ -25835,6 +25799,42 @@ MonoBehaviour:
   m_MaterialColourSettingReference: 0
   m_ColourSettings: []
   m_bRandomizeOnStart: 0
+--- !u!84 &2105260760
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ShapeNoise
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_ForcedFallbackFormat: 4
+  m_DownscaleFallback: 0
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 3
+  m_Width: 132
+  m_Height: 132
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthFormat: 0
+  m_ColorFormat: 24
+  m_MipMap: 0
+  m_GenerateMips: 1
+  m_SRGB: 0
+  m_UseDynamicScale: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 0
+    m_WrapV: 0
+    m_WrapW: 0
+  m_Dimension: 3
+  m_VolumeDepth: 132
 --- !u!1001 &2105273756
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26651,6 +26651,7 @@ MonoBehaviour:
   m_DebugCountdownTimerTime: 0
   m_DefaultCountdownTimerTime: 0
   m_MapSize: 27.73
+  m_LevelNumber: 1
   m_Manager: {fileID: 11400000, guid: f022c58eada24e94f87295ec6ca7c09f, type: 2}
   m_LevelEnterAnimation: {fileID: 1990705894921900910}
   m_LevelIntroTextLeft: {fileID: 377262781}
@@ -26658,7 +26659,7 @@ MonoBehaviour:
   m_Transform: {fileID: 1528584275}
   m_CameraTransform: {fileID: 121361198}
   m_PlayerCameraContainerTransform: {fileID: 495688465}
-  m_ObjectiveObjectPrefab: {fileID: 0}
+  m_ObjectiveObjectPrefab: {fileID: 8000029109370356668, guid: 4a73fb79f8ba26f4ba291ab35e77f227, type: 3}
   m_MainCanvas: {fileID: 798772936}
   m_ObjectiveCanvasTransform: {fileID: 999321226}
   m_FinalCountdownTimer: {fileID: 46391157}
@@ -27070,7 +27071,46 @@ MonoBehaviour:
     exitAnimationDelay: 0.5
     exitAnimationTime: 1
     exitAnimationName: TransitionOut
-  m_AnimEditorClipNumReference: 0
+  - name: Clip4
+    animationTime: 1
+    movementCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    startPos: {x: 0, y: 0, z: 0}
+    startAng: {x: 0, y: 0, z: 0, w: 1}
+    endPos: {x: 0, y: 0, z: 0}
+    endAng: {x: 0, y: 0, z: 0, w: 1}
+    hasMovementAnimation: 0
+    hasEntranceAnimation: 1
+    hasExitAnimation: 0
+    entranceAnimationTime: 1
+    entranceAnimationDelay: 0.5
+    entranceAnimationName: TransitionIn
+    exitAnimationDelay: 0
+    exitAnimationTime: 0
+    exitAnimationName: 
+  m_AnimEditorClipNumReference: 3
 --- !u!114 &2051082023508992897
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28477,6 +28517,10 @@ PrefabInstance:
     - target: {fileID: 7097643374194794427, guid: 12044b67e0016a94c994db5f44d13b54, type: 3}
       propertyPath: m_Name
       value: EndCountdown
+      objectReference: {fileID: 0}
+    - target: {fileID: 7097643374194794427, guid: 12044b67e0016a94c994db5f44d13b54, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 12044b67e0016a94c994db5f44d13b54, type: 3}

@@ -16,6 +16,7 @@ public class LevelManager : MonoBehaviour
 	[SerializeField] private float m_DefaultCountdownTimerTime;
 	[Header("Level parameters")]
 	[SerializeField] private float m_MapSize;
+	[SerializeField] private int m_LevelNumber;
 
 	[Header("Object references")]
 	[SerializeField] private CowGameManager m_Manager;
@@ -54,6 +55,7 @@ public class LevelManager : MonoBehaviour
 
 	// publicly accessible properties and events
 	#region Properties
+	public int GetLevelNumber => m_LevelNumber;
 
 	public float GetMapRadius => m_MapSize;
 
@@ -97,7 +99,7 @@ public class LevelManager : MonoBehaviour
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(0, OnFirstIntroAnimationPortionShown);
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(1, OnSecondIntroAnimationPortionShown);
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(2, OnThirdIntroAnimationPortionShown);
-				m_LevelEnterAnimation.AddOnTransitionInCompleteCallbackToClip(3, OnCanStartLevel);
+				m_LevelEnterAnimation.AddClipStartedCallbackToClip(3, OnCanStartLevel);
 				m_LevelEnterAnimation.StartAnimation();
 				break;
 		}
@@ -135,6 +137,7 @@ public class LevelManager : MonoBehaviour
 
 	private void OnCanStartLevel(CustomAnimation.AnimationClip _)
 	{
+		Debug.Log("CanStartLevel");
 		m_CameraTransform.SetParent(m_Manager.GetPlayerCameraContainerTransform);
 		m_CameraTransform.localPosition = Vector3.zero;
 		m_CameraTransform.localRotation = Quaternion.identity;
@@ -292,6 +295,7 @@ public class LevelManager : MonoBehaviour
 			GameObject go = Instantiate(m_ObjectiveObjectPrefab, GetObjectiveCanvasTransform);
 			LevelObjectiveUI objectiveUI = go.GetComponent<LevelObjectiveUI>();
 			objective.AddObjectiveListener(objectiveUI);
+			objectiveUI.InitializeData(objective);
 		});
 	}
 

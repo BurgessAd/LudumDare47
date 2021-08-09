@@ -83,6 +83,7 @@ public class CowGameManager : ScriptableObject, IObjectiveListener
 	public void NewLevelLoaded(LevelManager newLevel)
 	{
 		GetCurrentLevel = newLevel;
+		GetCurrentLevelIndex = newLevel.GetLevelNumber;
 		LevelData levelData = m_LevelData[GetCurrentLevelIndex - 1];
 		m_NumObjectivesToComplete = levelData.GetObjectiveCount;
 		levelData.ForEachObjective((objective) => { m_ObjectiveDict.Add(objective); objective.AddObjectiveListener(this); });
