@@ -21,8 +21,8 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 	}
 
 	#region BindingProperties
-
-	private float m_SFXVol;
+	[Header("=== Music ===")]
+	[SerializeField] [Range(0.0f, 1.0f)] private float m_SFXVol = 1.0f;
 	[Binding]
 	public float SFXVol
 	{
@@ -33,7 +33,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		} 
 	}
 
-	private float m_AmbientVol = 1.0f;
+	[SerializeField] [Range(0.0f, 1.0f)] private float m_AmbientVol = 1.0f;
 	[Binding]
 	public float AmbientVol
 	{
@@ -44,7 +44,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		}
 	}
 
-	private float m_MusicVol;
+	[SerializeField] [Range(0.0f, 1.0f)] private float m_MusicVol = 1.0f;
 	[Binding]
 	public float MusicVol
 	{
@@ -55,7 +55,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		}
 	}
 
-	private float m_UISFXVol;
+	[SerializeField] [Range(0.0f, 1.0f)] private float m_UISFXVol = 1.0f;
 	[Binding]
 	public float UISFXVol
 	{
@@ -66,7 +66,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		}
 	}
 
-	private bool m_bIsMuted;
+	[SerializeField] private bool m_bIsMuted = false;
 	[Binding]
 	public bool IsMuted
 	{
@@ -74,7 +74,8 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_bIsMuted = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("IsMuted")); }
 	}
 
-	private float m_MouseSensitivityX;
+	[Header("=== Mouse Settings ===")]
+	[SerializeField] [Range(0.1f, 2.0f)] private float m_MouseSensitivityX = 1.0f;
 	[Binding]
 	public float MouseSensitivityX
 	{
@@ -82,7 +83,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_MouseSensitivityX = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MouseSensitivityX")); }
 	}
 
-	private float m_MouseSensitivityY;
+	[SerializeField] [Range(0.1f, 2.0f)] private float m_MouseSensitivityY = 1.0f;
 	[Binding]
 	public float MouseSensitivityY
 	{
@@ -90,7 +91,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_MouseSensitivityY = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MouseSensitivityY")); }
 	}
 
-	private bool m_InvertY;
+	[SerializeField] private bool m_InvertY = false;
 	[Binding]
 	public bool InvertY
 	{
@@ -98,7 +99,8 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_InvertY = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("InvertY")); }
 	}
 
-	private FullScreenMode m_DisplayMode;
+	[Header("=== Screen Settings ===")]
+	[SerializeField] private FullScreenMode m_DisplayMode = FullScreenMode.FullScreenWindow;
 	[Binding]
 	public FullScreenMode DisplayMode
 	{
@@ -106,7 +108,8 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_DisplayMode = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DisplayMode")); }
 	}
 
-	private float m_FoV;
+	[Header("=== Visual Settings ===")]
+	[SerializeField] [Range(10.0f, 100.0f)] private float m_FoV = 60.0f;
 	[Binding]
 	public float FoV
 	{
@@ -114,7 +117,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_FoV = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("FoV")); }
 	}
 
-	private bool m_Bloom;
+	[SerializeField] private bool m_Bloom = true;
 	[Binding]
 	public bool Bloom
 	{
@@ -122,7 +125,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_Bloom = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Bloom")); }
 	}
 
-	private bool m_MotionBlur;
+	[SerializeField] private bool m_MotionBlur = true;
 	[Binding]
 	public bool MotionBlur
 	{
@@ -130,7 +133,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_MotionBlur = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MotionBlur")); }
 	}
 
-	private float m_Brightness;
+	[SerializeField] [Range(0.5f, 1.5f)] private float m_Brightness = 1.0f;
 	[Binding]
 	public float Brightness
 	{
@@ -138,7 +141,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_Brightness = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Brightness")); }
 	}
 
-	private float m_Contrast;
+	[SerializeField] [Range(0.5f, 1.5f)] private float m_Contrast = 1.0f;
 	[Binding]
 	public float Contrast
 	{
@@ -146,7 +149,7 @@ public class SettingsManager : ScriptableObject, INotifyPropertyChanged
 		set { m_Contrast = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Contrast")); }
 	}
 
-	private bool m_DepthOfField;
+	[SerializeField] private bool m_DepthOfField = true;
 	[Binding]
 	public bool DepthOfField
 	{

@@ -89,29 +89,30 @@ public class LevelManager : MonoBehaviour
 				m_LevelState.RequestTransition(typeof(PlayingState));
 				break;
 			case (CowGameManager.RestartState.Quick):
-				m_StartButtonCanvas.alpha = 0.0f;
-				m_StartButtonCanvas.blocksRaycasts = false;
-				m_StartButtonCanvas.interactable = false;
-				m_CameraTransform.GetComponent<CameraStartEndAnimator>().AnimateIn(m_DebugCountdownTimerTime);
-				StartCoroutine(StartLevelWithoutCountdown(m_DebugCountdownTimerTime));
+				StartCountdownTimer();
 				break;
 			default:
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(0, OnFirstIntroAnimationPortionShown);
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(1, OnSecondIntroAnimationPortionShown);
 				m_LevelEnterAnimation.AddClipStartedCallbackToClip(2, OnThirdIntroAnimationPortionShown);
-				m_LevelEnterAnimation.AddClipStartedCallbackToClip(3, OnCanStartLevel);
+				m_LevelEnterAnimation.AddClipStartedCallbackToClip(3, (CustomAnimation.AnimationClip _) => StartCountdownTimer());
 				m_LevelEnterAnimation.StartAnimation();
 				break;
 		}
 	}
-
+	private int m_AlphaAnim = -1;
 	private void ShowIntroText(CustomAnimation.AnimationClip clip)
 	{
 		float animInOutTime = 1.0f;
 		float animInOutBuffer = 0.1f;
-		float lengthCanBeShownFor = Mathf.Max(0, clip.animationTime - clip.entranceAnimationDelay - clip.exitAnimationDelay - clip.entranceAnimationTime / 2 - clip.exitAnimationTime - 2 * animInOutTime - 2 * animInOutBuffer);
-		LeanTween.cancel(m_TextCanvas.gameObject);
-		LeanTween.alphaCanvas(m_TextCanvas, 1.0f, animInOutTime).setDelay(animInOutBuffer + clip.entranceAnimationDelay + clip.entranceAnimationTime / 2).setOnComplete(() => LeanTween.alphaCanvas(m_TextCanvas, 0.0f, animInOutTime).setDelay(lengthCanBeShownFor));
+		float lengthCanBeShownFor = Mathf.Max(0, clip.animationTime - clip.entranceAnimationDelay - clip.exitAnimationDelay - clip.entranceAnimationTime / 2 - clip.exitAnimationTime/2 - 2 * animInOutTime - 2 * animInOutBuffer);
+		LeanTween.cancel(m_AlphaAnim);
+		m_AlphaAnim = LeanTween.alphaCanvas(m_TextCanvas, 1.0f, animInOutTime).setDelay(animInOutBuffer + clip.entranceAnimationDelay + clip.entranceAnimationTime / 2).setOnComplete(() => HideIntroText(animInOutTime, lengthCanBeShownFor)).uniqueId;
+	}
+
+	private void HideIntroText(float animInOutTime, float lengthCanBeShownFor)
+	{
+		m_AlphaAnim = LeanTween.alphaCanvas(m_TextCanvas, 0.0f, animInOutTime).setDelay(lengthCanBeShownFor).uniqueId;
 	}
 
 	private void OnFirstIntroAnimationPortionShown(CustomAnimation.AnimationClip clip)
@@ -135,14 +136,20 @@ public class LevelManager : MonoBehaviour
 		ShowIntroText(clip);
 	}
 
-	private void OnCanStartLevel(CustomAnimation.AnimationClip _)
+	private void StartCountdownTimer()
 	{
-		Debug.Log("CanStartLevel");
+		m_StartCountdownTimer.StartTimerFromTime(3.9f);
+
 		m_CameraTransform.SetParent(m_Manager.GetPlayerCameraContainerTransform);
 		m_CameraTransform.localPosition = Vector3.zero;
 		m_CameraTransform.localRotation = Quaternion.identity;
-		OnLevelStarted?.Invoke();
-		m_LevelState.RequestTransition(typeof(PlayingState));
+
+		m_StartCountdownTimer.OnTimerComplete += () =>
+		{
+			OnLevelStarted?.Invoke();
+			m_LevelState.RequestTransition(typeof(PlayingState));
+			m_StartCountdownTimer.StopTimer();
+		};
 	}
 
 	private IEnumerator StartLevelWithoutCountdown(float time)

@@ -16,7 +16,9 @@ public class CountdownTimerUI : MonoBehaviour
 	[SerializeField] private string m_TimerCompleteAudioIdentifier;
 	[SerializeField] private string m_TimerTickAudioIdentifier;
 	[SerializeField] private AnimationCurve m_TextPulseSizeByTimer;
+	[SerializeField] private AnimationCurve m_TextPulseOpacityByTimer;
 	[SerializeField] private float m_TimerFadeTime;
+	[SerializeField] private string m_FinalTimerTickString = "0";
 	// Start is called before the first frame update
 	private int m_CurrentTime;
 	private IEnumerator m_TimerCoroutine;
@@ -58,15 +60,22 @@ public class CountdownTimerUI : MonoBehaviour
 		
 		while (m_CurrentTime > 0)
 		{
-			m_AudioManager.Play(m_TimerTickAudioIdentifier);
-			float pulseSizeMult = m_TextPulseSizeByTimer.Evaluate(m_CurrentTime);
-			m_TimerRect.sizeDelta = m_InitialTextSize * pulseSizeMult;
-			LeanTween.size(m_TimerRect, m_InitialTextSize, 1.0f).setEaseOutCubic();
-			m_TimerText.text = m_CurrentTime.ToString();
-			m_CurrentTime--;
+			TimerTick(m_CurrentTime.ToString(), m_TimerTickAudioIdentifier);
 			yield return new WaitForSecondsRealtime(1.0f);
 		}
-		m_AudioManager.Play(m_TimerCompleteAudioIdentifier);
+		TimerTick(m_FinalTimerTickString, m_TimerCompleteAudioIdentifier);
+		yield return new WaitForSecondsRealtime(0.5f);
 		OnTimerComplete?.Invoke();
+	}
+
+	private void TimerTick(in string timerText, in string audioIdentifier)
+	{
+		m_AudioManager.Play(audioIdentifier);
+		m_TimerRect.localScale = Vector3.one * (1 + m_TextPulseSizeByTimer.Evaluate(m_CurrentTime));
+		LeanTween.scale(m_TimerRect.gameObject, Vector3.one, 1.0f).setEaseInOutCubic();
+		m_TextCanvasGroup.alpha = 1.0f;
+		LeanTween.alphaCanvas(m_TextCanvasGroup, m_TextPulseOpacityByTimer.Evaluate(m_CurrentTime), 1.0f).setEaseInOutCubic();
+		m_TimerText.text = timerText;
+		m_CurrentTime--;
 	}
 }

@@ -4,7 +4,6 @@ using System;
 [CreateAssetMenu(menuName = "KeyboardBinding")]
 public class ControlBinding : ScriptableObject
 {
-	[SerializeField] private string m_ControlBindingDisplayName;
 	[SerializeField] private KeyCode m_DefaultKeycode;
 	[SerializeField] private KeyCode m_KeyCode;
 
@@ -28,7 +27,7 @@ public class ControlBinding : ScriptableObject
 		set { if (m_bIsDuplicated != value){ m_bIsDuplicated = value; OnControlBindingChanged?.Invoke(); } }
 	}
 
-	public float GetBindingVal() { return Input.GetKey(m_KeyCode) ? 1 : 0; }
+	public float GetBindingVal() { return Input.GetKey(m_KeyCode) ? 1.0f : 0.0f; }
 
 	public bool IsBindingPressed() { return Input.GetKey(m_KeyCode); }
 
@@ -38,5 +37,5 @@ public class ControlBinding : ScriptableObject
 
 	public void ClearOnChangeCallback() { OnControlBindingChanged = null; }
 
-	public string GetBindingDisplayName => m_ControlBindingDisplayName;
+	public string GetBindingDisplayName => name;
 }

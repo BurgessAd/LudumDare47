@@ -90,18 +90,20 @@ public class CustomAnimation : MonoBehaviour
 	}
 	bool m_bHasCalledCompletedEntranceAnim = false;
 	bool m_bHasCalledStartedExitAnimation = false;
+	bool m_bHasPlayedIntroAnim = false;
 	private IEnumerator AnimateRoutine() 
 	{
 		m_CurrentClipNum = 0;
 		m_CurrentAnimTime = 0.0f;
-		if (m_AnimationsList.Count > 0) 
-		{
-			m_AnimationsList[0].onClipStarted?.Invoke(m_AnimationsList[0]);
-		}
 
 		while (m_CurrentClipNum < m_AnimationsList.Count)
 		{
 			AnimationClip currentClip = m_AnimationsList[m_CurrentClipNum];
+			if (!m_bHasPlayedIntroAnim)
+			{
+				currentClip.onClipStarted?.Invoke(currentClip);
+				m_bHasPlayedIntroAnim = true;
+			}
 
 			SetAnimViaClipTime(currentClip, m_CurrentAnimTime);
 
@@ -110,10 +112,7 @@ public class CustomAnimation : MonoBehaviour
 				m_CurrentAnimTime -= currentClip.animationTime;
 				m_bHasCalledCompletedEntranceAnim = false;
 				m_bHasCalledStartedExitAnimation = false;
-				if (m_CurrentClipNum + 1 < m_AnimationsList.Count) 
-				{
-					m_AnimationsList[m_CurrentClipNum+1].onClipStarted?.Invoke(m_AnimationsList[m_CurrentClipNum]);
-				}
+				m_bHasPlayedIntroAnim = false;
 				m_CurrentClipNum++;
 			}
 			m_CurrentAnimTime += Time.deltaTime;

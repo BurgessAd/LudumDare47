@@ -4,22 +4,19 @@ using UnityEngine;
 
 public class PlayerComponent : MonoBehaviour, IPauseListener
 {
+	[Header("Object References")]
 	[SerializeField] private CowGameManager m_GameManager;
-
 	[SerializeField] private HealthComponent m_HealthComponent;
-
 	[SerializeField] private LassoInputComponent m_LassoComponent;
-
 	[SerializeField] private Transform m_CamContainer;
-
 	[SerializeField] private BoxCollider m_GrapplingBufferCollider;
-
 	[SerializeField] private LassoInputComponent m_LassoInput;
 
-	[SerializeField] private int m_OnThrowLayer;
-
+	[Header("Object References")]
+	[SerializeField] private LayerMask m_OnThrowLayer;
 	[SerializeField] private float m_GrabDistance;
 
+	[Header("Control Bindings")]
 	[SerializeField] private ControlBinding m_GrabBinding;
 
 	private void Awake()
@@ -44,7 +41,7 @@ public class PlayerComponent : MonoBehaviour, IPauseListener
 			return;
 		if (!m_GrabBinding.GetBindingDown())
 			return;
-		if (!Physics.Raycast(m_CamContainer.position, m_CamContainer.forward, out RaycastHit hit, m_GrabDistance))
+		if (!Physics.Raycast(m_CamContainer.position, m_CamContainer.forward, out RaycastHit hit, m_GrabDistance, m_OnThrowLayer, QueryTriggerInteraction.Ignore))
 			return;
 		if (hit.collider.gameObject.TryGetComponent(out ThrowableObjectComponent throwableObject))
 			return;

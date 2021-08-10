@@ -5,27 +5,31 @@ using UnityEngine;
 using System;
 public class PlayerMovement : MonoBehaviour, IPauseListener
 {
+	[Header("World Params")]
     [SerializeField] private float m_fGravity;
-    [SerializeField] private Transform m_tGroundTransform = null;
     [SerializeField] private float m_fGroundDistance = 0.1f;
     [SerializeField] private LayerMask groundMask;
-    [SerializeField] private CharacterController m_CharacterController = null;
-    [SerializeField] private Transform m_tBodyTransform = null;
-    [SerializeField] private float m_fMaxSpeed = 4;
-    [SerializeField] private PlayerCameraComponent m_CameraComponent;
-    [SerializeField] private CowGameManager m_Manager;
- 
-    [SerializeField] private float m_fJumpHeight = 3.0f;
+
+	[Header("Movement Params")]
+	[SerializeField] private float m_fMaxSpeed = 4;
+	[SerializeField] private float m_fJumpHeight = 3.0f;
     [SerializeField] private float m_fImpactSpeedReductionPerSecondGrounded;
-    [SerializeField] private AnimationCurve m_SpinningStrengthSlowCurve;
-    [SerializeField] private ThrowableObjectNoRigidComponent m_throwableObjectComponent;
 
+	[Header("Object References")]
+	[SerializeField] private CharacterController m_CharacterController = null;
+	[SerializeField] private Transform m_tBodyTransform = null;
+	[SerializeField] private Transform m_tGroundTransform = null;
+
+	[SerializeField] private PlayerCameraComponent m_CameraComponent;
+	[SerializeField] private CowGameManager m_Manager;
+	[SerializeField] private ThrowableObjectNoRigidComponent m_throwableObjectComponent;
+	[SerializeField] private AnimationCurve m_SpinningStrengthSlowCurve;
     [SerializeField] private AnimationCurve m_SpinningMassSlowCurve;
-    [SerializeField] private LassoInputComponent m_LassoComponent;
-
-    [SerializeField] private GameObject m_GroundImpactEffectsPrefab;
     [SerializeField] private AnimationCurve m_ImpactStrengthByImpactSpeed;
+	[SerializeField] private LassoInputComponent m_LassoComponent;
+	[SerializeField] private GameObject m_GroundImpactEffectsPrefab;
 
+	[Header("Control Bindings")]
 	[SerializeField] private ControlBinding m_ForwardBinding;
 	[SerializeField] private ControlBinding m_LeftBinding;
 	[SerializeField] private ControlBinding m_RightBinding;
@@ -125,13 +129,9 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
         float currentMultiplier = m_fCurrentSpinningMassSpeedDecrease * m_fCurrentSpinningStrengthSpeedDecrease * m_fCurrentDraggingSpeedDecrease;
         m_fSpeed = m_fMaxSpeed * currentMultiplier;
         m_bIsGrounded = Physics.CheckSphere(m_tGroundTransform.position, m_fGroundDistance, groundMask);
-		//movement for the player
 
 		float forwardSpeed = m_ForwardBinding.GetBindingVal() - m_BackBinding.GetBindingVal();
 		float sideSpeed = m_RightBinding.GetBindingVal() - m_LeftBinding.GetBindingVal();
-
-        Vector3 playerInputMoveDir = (m_tBodyTransform.right * sideSpeed + m_tBodyTransform.forward * forwardSpeed).normalized;
-
 
         if (m_CharacterController.isGrounded)
         {
