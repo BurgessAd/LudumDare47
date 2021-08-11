@@ -40,6 +40,7 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
     public event Action<float> OnHitGround;
     public event Action OnNotHitGround;
     public event Action<float> OnSetMovementSpeed;
+	public event Action<Vector3> OnMovingInput;
     private Vector3 m_vVelocity;
     float m_fCurrentSpinningMassSpeedDecrease = 1.0f;
     float m_fCurrentSpinningStrengthSpeedDecrease = 1.0f;
@@ -132,8 +133,16 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
 
 		float forwardSpeed = m_ForwardBinding.GetBindingVal() - m_BackBinding.GetBindingVal();
 		float sideSpeed = m_RightBinding.GetBindingVal() - m_LeftBinding.GetBindingVal();
+		Vector3 playerInputMoveDir = Vector3.zero;
+		if (Mathf.Abs(sideSpeed) > 0 || Mathf.Abs(forwardSpeed) > 0)
+		{
+			playerInputMoveDir = (forwardSpeed * m_tBodyTransform.forward + sideSpeed * m_tBodyTransform.right).normalized;
+		}
 
-        if (m_CharacterController.isGrounded)
+		OnMovingInput?.Invoke(new Vector3(forwardSpeed, 0, sideSpeed).normalized);
+
+
+		if (m_CharacterController.isGrounded)
         {
 			Vector3 horizontalVelocity = Vector3.ProjectOnPlane(m_vVelocity, Vector3.up) / 1.1f;
 			m_vVelocity.x = horizontalVelocity.x;

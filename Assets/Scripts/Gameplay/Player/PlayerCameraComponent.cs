@@ -28,6 +28,8 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 	[SerializeField] private string m_JumpString;
 	[SerializeField] private string m_GroundedAnimString;
 	[SerializeField] private string m_MovementSpeedAnimString;
+	[SerializeField] private string m_LRTiltAnimString;
+	[SerializeField] private string m_FBTiltAnimString;
 
 	[Header("--- Sensitivity Multipliers ---")]
 	[SerializeField] private float m_fMouseSensitivityMultiplier = 100.0f;
@@ -85,6 +87,12 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         m_CameraAnimator.SetFloat(m_MovementSpeedAnimString, speed);
     }
 
+	public void OnMovingInput(Vector3 input)
+	{
+		m_CameraAnimator.SetFloat(m_LRTiltAnimString, (input.x + 1f) / 2f);
+		m_CameraAnimator.SetFloat(m_FBTiltAnimString, (input.y + 1f) / 2f);
+	}
+
     public void ClearFocusedTransform() 
     {
         m_tFocusTransform = null;
@@ -130,6 +138,7 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         m_PlayerMovement.OnHitGround += OnHitGround;
         m_PlayerMovement.OnSuccessfulJump += OnJumped;
         m_PlayerMovement.OnSetMovementSpeed += OnSetMovementSpeed;
+		m_PlayerMovement.OnMovingInput += OnMovingInput;
     }
     public void Pause()
     {

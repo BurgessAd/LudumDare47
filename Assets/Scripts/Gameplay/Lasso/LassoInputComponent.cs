@@ -422,6 +422,11 @@ namespace LassoStates
 			m_Lasso.TriggerPowerBarAnimIn();
 			m_LassoParams.SpinningIsInitializing = true;
 			m_LassoParams.SpunUp = false;
+
+			Vector3 forwardPlanar = Vector3.ProjectOnPlane(m_Lasso.GetLassoGrabPoint.forward, Vector3.up);
+			Quaternion desiredGrabPointToSwingCentreQuat = Quaternion.AngleAxis(m_LassoParams.m_SpinSidewaysProfile.Evaluate(0), forwardPlanar);
+			Vector3 desiredSwingCentre_grabPointSpace = m_LassoParams.m_SpinHeightProfile.Evaluate(0) * (desiredGrabPointToSwingCentreQuat * Vector3.up);
+			m_lastActualSwingCentre_worldSpace = m_Lasso.GetLassoGrabPoint.transform.position + desiredSwingCentre_grabPointSpace;
 		}
 
 		public override void OnExit()
@@ -433,6 +438,9 @@ namespace LassoStates
 			m_Lasso.SetTrajectoryRenderer(false);
 			m_LassoParams.SpinningIsInitializing = false;
 		}
+
+		Vector3 m_LoopCentrePointVelocity;
+		Vector3 m_lastActualSwingCentre_worldSpace;
 
 		public override void Tick()
 		{
@@ -446,22 +454,26 @@ namespace LassoStates
 			m_Lasso.SetSpinStrength(time);
 			m_Lasso.RenderTrajectory();
 
-			Vector3 grapPointToSwingCentre = sidewaysOffset * m_Lasso.GetLassoGrabPoint.transform.right + height * m_Lasso.GetLassoGrabPoint.transform.up;
+			Vector3 forwardPlanar = Vector3.ProjectOnPlane(m_Lasso.GetLassoGrabPoint.forward, Vector3.up);
 
-			Vector3 swingCentre = m_Lasso.GetLassoGrabPoint.transform.position + grapPointToSwingCentre;
+			Quaternion desiredGrabPointToSwingCentreQuat = Quaternion.AngleAxis(m_LassoParams.m_SpinSidewaysProfile.Evaluate(time), forwardPlanar);
+			Vector3 desiredSwingCentre_grabPointSpace = height * (desiredGrabPointToSwingCentreQuat * Vector3.up);
+			Vector3 desiredSwingCentre_worldSpace = m_Lasso.GetLassoGrabPoint.position + desiredSwingCentre_grabPointSpace;
 
-			Quaternion grapPointToSwingCentreQuat = Quaternion.FromToRotation(Vector3.up, grapPointToSwingCentre);
+			Vector3 actualSwingCentre_worldSpace = Vector3.SmoothDamp(m_lastActualSwingCentre_worldSpace, desiredSwingCentre_worldSpace, ref m_LoopCentrePointVelocity, 0.2f);
+			Vector3 actualSwingCentre_grabPointSpace = actualSwingCentre_worldSpace - m_Lasso.GetLassoGrabPoint.position;
+			Quaternion actualGrabPointToSwingCentreQuat = Quaternion.FromToRotation(Vector3.up, actualSwingCentre_grabPointSpace);
 
-			Vector3 swingCentreToRopePos = grapPointToSwingCentreQuat * (new Vector3(r * Mathf.Cos(m_fCurrentAngle), 0, r * Mathf.Sin(m_fCurrentAngle)));
+			Vector3 ropePos_swingCentreSpace = actualGrabPointToSwingCentreQuat * (new Vector3(r * Mathf.Cos(m_fCurrentAngle), 0, r * Mathf.Sin(m_fCurrentAngle)));
 
-			m_Lasso.GetEndTransform.position = m_Lasso.GetSwingingTransform.position + swingCentreToRopePos;
-
+			m_Lasso.GetEndTransform.position = actualSwingCentre_worldSpace + ropePos_swingCentreSpace;
+			m_lastActualSwingCentre_worldSpace = actualSwingCentre_worldSpace;
 			m_Lasso.RenderRope();
 
-			Vector3 normA = swingCentreToRopePos.normalized;
-			Vector3 normB = Vector3.Cross(normA, grapPointToSwingCentre);
+			Vector3 normA = ropePos_swingCentreSpace.normalized;
+			Vector3 normB = Vector3.Cross(normA, actualSwingCentre_grabPointSpace.normalized);
 
-			m_Lasso.RenderLoop(r, swingCentre, normA, normB);
+			m_Lasso.RenderLoop(r, actualSwingCentre_worldSpace, normA, normB);
 
 			m_fCurrentAngle += m_LassoParams.m_SpinSpeedProfile.Evaluate(time) * Time.deltaTime;
 			m_fCurrentAngle %= 360.0f;
