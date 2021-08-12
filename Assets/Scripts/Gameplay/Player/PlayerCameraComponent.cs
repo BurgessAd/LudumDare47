@@ -82,15 +82,21 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         m_CameraShaker.ShakeOnce(animationSize, animationSize / 2, 0.15f, 0.45f);
     }
 
+	float currentMovement = 0.0f;
+	float currentMovementAcceleration = 0.0f;
     public void OnSetMovementSpeed(float speed) 
     {
-        m_CameraAnimator.SetFloat(m_MovementSpeedAnimString, speed);
+		currentMovement = Mathf.SmoothDamp(currentMovement, speed, ref currentMovementAcceleration, 0.15f);
+        m_CameraAnimator.SetFloat(m_MovementSpeedAnimString, currentMovement);
     }
 
+	Vector3 current = Vector3.zero;
+	Vector3 velocity = Vector3.zero;
 	public void OnMovingInput(Vector3 input)
 	{
-		m_CameraAnimator.SetFloat(m_LRTiltAnimString, (input.x + 1f) / 2f);
-		m_CameraAnimator.SetFloat(m_FBTiltAnimString, (input.y + 1f) / 2f);
+		current = Vector3.SmoothDamp(current, input, ref velocity, 0.1f);
+		m_CameraAnimator.SetFloat(m_LRTiltAnimString, current.x);
+		m_CameraAnimator.SetFloat(m_FBTiltAnimString, current.z);
 	}
 
     public void ClearFocusedTransform() 

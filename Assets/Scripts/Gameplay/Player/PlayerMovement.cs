@@ -139,7 +139,7 @@ public class PlayerMovement : MonoBehaviour, IPauseListener
 			playerInputMoveDir = (forwardSpeed * m_tBodyTransform.forward + sideSpeed * m_tBodyTransform.right).normalized;
 		}
 
-		OnMovingInput?.Invoke(new Vector3(forwardSpeed, 0, sideSpeed).normalized);
+		OnMovingInput?.Invoke(new Vector3(forwardSpeed, 0, sideSpeed));
 
 
 		if (m_CharacterController.isGrounded)

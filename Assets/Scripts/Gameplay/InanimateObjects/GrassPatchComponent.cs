@@ -17,6 +17,7 @@ public class GrassPatchComponent : MonoBehaviour
     [SerializeField] private float m_MaxGrassDensity;
     [SerializeField] private float m_GrassMapGenerationHeight;
     [SerializeField] private float m_GrassLength;
+	[SerializeField] private float m_GrassLength2;
     [SerializeField] private LayerMask m_GrassGenerationLayerMask;
     [SerializeField] private LayerMask m_BlockingGrassGenerationLayerMask;
      
@@ -53,12 +54,12 @@ public class GrassPatchComponent : MonoBehaviour
             m_MeshRenderer = GetComponent<MeshRenderer>();
         if (m_PropertyBlock == null)
             m_PropertyBlock = new MaterialPropertyBlock();
-        if (m_lastGrassLength != m_GrassLength)
+        if (m_lastGrassLength != m_GrassLength2)
 		{
 			m_MeshRenderer.GetPropertyBlock(m_PropertyBlock);
-			m_PropertyBlock.SetFloat("_BladeHeightMultiplier", m_GrassLength);
+			m_PropertyBlock.SetFloat("_BladeHeightMultiplier", m_GrassLength2);
 			m_MeshRenderer.SetPropertyBlock(m_PropertyBlock);
-			m_lastGrassLength = m_GrassLength;
+			m_lastGrassLength = m_GrassLength2;
 		}
 	}
 

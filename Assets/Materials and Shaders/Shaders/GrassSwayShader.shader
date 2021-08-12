@@ -252,12 +252,14 @@
 			}
 			ENDCG
 		}
-	/*	Pass
+		/*Pass
 		{
 			Tags
 			{
 				"LightMode" = "ShadowCaster"
 			}
+
+
 
 			CGPROGRAM
 			#pragma vertex vert

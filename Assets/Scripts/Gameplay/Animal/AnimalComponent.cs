@@ -392,6 +392,7 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
             m_AnimalAgent.isStopped = true;
             if (Time.time - m_fLastAttackTime > m_CurrentAttackComponent.GetAttackCooldownTime)
             {
+				Debug.Log("CanAttack");
                 m_fLastAttackTime = Time.time;
                 return true;
             }
@@ -980,6 +981,7 @@ public class AnimalWrangledAttackState : AnimalWrangledState
         animalAnimator.SetRunAnimation();
     }
 }
+
 public abstract class AnimalWrangledState : AStateBase {  }
 
 public class AnimalThrowingState : AStateBase
@@ -1197,8 +1199,8 @@ public class AnimalAttackState : AStateBase
 
     public override void OnEnter()
     {
-        TriggerCallback("sendTargetPosition");
-        animalAnimator.TriggerAttackAnimation(() => TriggerCallback("attackAnimationComplete"), () => TriggerCallback("triggerDamage"));
+        //TriggerCallback("sendTargetPosition");
+        //animalAnimator.TriggerAttackAnimation(() => TriggerCallback("attackAnimationComplete"), () => TriggerCallback("triggerDamage"));
     }
 }
 

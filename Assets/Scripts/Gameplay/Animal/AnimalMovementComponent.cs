@@ -166,6 +166,7 @@ public class AnimalMovementComponent : MonoBehaviour
         Vector3 displacement = m_tObjectTransform.position - tRunTowardTransform.position;
         if ((Vector3.ProjectOnPlane(displacement, Vector3.up)).sqrMagnitude < distanceFrom * distanceFrom)
         {
+			Debug.Log("IsStopped");
             m_NavMeshAgent.isStopped = true;
             return true;
         }
@@ -180,6 +181,7 @@ public class AnimalMovementComponent : MonoBehaviour
         m_fCurrentTimeStuck = 0.0f;
         if (CheckStoppingDistanceForChase(tRunTowardTransform, distanceFrom))
 		{
+			Debug.Log("Stopping");
             return true;
 		}
         m_NavMeshAgent.isStopped = false;
@@ -187,7 +189,8 @@ public class AnimalMovementComponent : MonoBehaviour
         {
             if (m_NavMeshAgent.SetDestination(hit.position)) 
             {
-                m_vDestination = hit.position;
+				Debug.Log("Running");
+				m_vDestination = hit.position;
                 return true;
             }
         }
