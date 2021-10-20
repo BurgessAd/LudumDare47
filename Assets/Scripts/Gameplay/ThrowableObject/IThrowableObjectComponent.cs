@@ -6,6 +6,8 @@ using System;
 public abstract class IThrowableObjectComponent : MonoBehaviour
 {
     [SerializeField] private float m_GravityMultiplier = 1;
+    [SerializeField] private CowGameManager m_CowGameManager = null;
+    [SerializeField] private bool m_CausesHeavyImpact = false;
 
     public event Action OnTuggedByLasso;
     public event Action OnStartSpinning;
@@ -28,6 +30,10 @@ public abstract class IThrowableObjectComponent : MonoBehaviour
     protected void OnObjectLanded() 
     {
         OnLanded?.Invoke();
+        if (m_CausesHeavyImpact) 
+        {
+
+        }
     }
 
     public void TuggedByLasso() { OnTuggedByLasso?.Invoke(); }

@@ -11,7 +11,6 @@ public class AttackTypeRam : AttackBase
 	public override void AttackTarget(in GameObject target, in Vector3 attackDirection)
 	{
 		IThrowableObjectComponent throwableComponent = target.GetComponent<IThrowableObjectComponent>();
-		GameObject ramFXObject = Instantiate(m_RamFXPrefabs, m_RamPoint.position, m_RamPoint.rotation, null);
 		Vector3 planeOfAttackNormal = Vector3.Cross(attackDirection, Vector3.up);
 		Vector3 rammingOffset = (throwableComponent.GetMainTransform.position - m_RamPoint.position).normalized;
 		Vector3 rammingDirection = Vector3.ProjectOnPlane(rammingOffset, planeOfAttackNormal);
@@ -25,14 +24,12 @@ public class AttackTypeRam : AttackBase
 			rammingDirection = Vector3.up;
 		}
 
-
-
 		if (Vector3.Angle(rammingDirection, rammingDirectionPlanar) < m_MinimumElevationAngle) 
 		{
 			rammingDirection = Quaternion.AngleAxis(m_MinimumElevationAngle, planeOfAttackNormal) * rammingDirectionPlanar;
 		}
 
-
+		GameObject ramFXObject = Instantiate(m_RamFXPrefabs, m_RamPoint.position, Quaternion.LookRotation(rammingDirection), null);
 		ramFXObject.GetComponent<ImpactEffectStrengthManager>().SetParamsOfObject(m_RamFXStrength);
 		if (target.TryGetComponent(out PlayerComponent _)) 
 		{

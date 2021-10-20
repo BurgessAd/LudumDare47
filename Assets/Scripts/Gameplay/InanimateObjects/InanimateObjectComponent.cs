@@ -4,7 +4,7 @@
 [RequireComponent(typeof(FreeFallTrajectoryComponent))]
 public class InanimateObjectComponent : MonoBehaviour
 {
-    private StateMachine m_StateMachine;
+    private StateMachine<InanimateObjectComponent> m_StateMachine;
 
     [Header("Object References")]
     [SerializeField] private ThrowableObjectComponent m_throwableObjectComponent;
@@ -21,15 +21,12 @@ public class InanimateObjectComponent : MonoBehaviour
 
         m_freeFallTrajectoryComponent.OnObjectHitGround += OnHitObject;
 
-        m_StateMachine = new StateMachine(new IObjectPhysicalizedState());
+        m_StateMachine = new StateMachine<InanimateObjectComponent>(new IObjectPhysicalizedState(), this);
 
         m_StateMachine.AddState(new IObjectControlledState());
-
-        m_StateMachine.SetCallback("disablePhysics", () => SetPhysicsState(false));
-        m_StateMachine.SetCallback("enablePhysics", () => SetPhysicsState(true));
 	}
 
-    private void SetPhysicsState(bool state) 
+    public void SetPhysicsState(bool state) 
     {
         m_objectRigidBody.isKinematic = !state;
         m_objectRigidBody.useGravity = state;
@@ -56,22 +53,22 @@ public class InanimateObjectComponent : MonoBehaviour
 
 	void Update()
     {
-        m_StateMachine.Tick();
+        m_StateMachine.Tick(Time.deltaTime);
     }
 }
 
-public class IObjectControlledState : AStateBase 
+public class IObjectControlledState : AStateBase<InanimateObjectComponent>
 {
 	public override void OnEnter()
 	{
-        TriggerCallback("disablePhysics");
+		Host.SetPhysicsState(false);
 	}
 }
 
-public class IObjectPhysicalizedState : AStateBase 
+public class IObjectPhysicalizedState : AStateBase<InanimateObjectComponent>
 {
     public override void OnEnter()
     {
-        TriggerCallback("enablePhysics");
+		Host.SetPhysicsState(true);
     }
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerComponent : MonoBehaviour, IPauseListener
+public class PlayerComponent : MonoBehaviour, IPauseListener, IHealthListener
 {
 	[Header("Object References")]
 	[SerializeField] private CowGameManager m_GameManager;
@@ -23,7 +23,7 @@ public class PlayerComponent : MonoBehaviour, IPauseListener
 	{
 		m_LassoComponent.OnSetPullingObject += (ThrowableObjectComponent throwable) => OnStartGrappling();
 		m_LassoComponent.OnStoppedPullingObject += OnStopGrappling;
-		m_HealthComponent.OnEntityDied += (GameObject _, GameObject __, DamageType ___) => OnDied();
+		m_HealthComponent.AddListener(this);
 		m_GrapplingBufferCollider.enabled = false;
 		m_GameManager.AddToPauseUnpause(this);
 		m_GameManager.RegisterInitialCameraContainerTransform(m_CamContainer);
@@ -51,11 +51,6 @@ public class PlayerComponent : MonoBehaviour, IPauseListener
 
 	}
 
-	private void OnDied()
-	{
-		m_GameManager.OnPlayerKilled();
-	}
-
 	public void Pause() 
 	{
 		enabled = false;
@@ -74,5 +69,15 @@ public class PlayerComponent : MonoBehaviour, IPauseListener
 	private void OnStopGrappling() 
 	{
 		m_GrapplingBufferCollider.enabled = false;
+	}
+
+	public void OnEntityTakeDamage(GameObject go1, GameObject go2, DamageType type)
+	{
+
+	}
+
+	public void OnEntityDied(GameObject go1, GameObject go2, DamageType type)
+	{
+		m_GameManager.OnPlayerKilled();
 	}
 }

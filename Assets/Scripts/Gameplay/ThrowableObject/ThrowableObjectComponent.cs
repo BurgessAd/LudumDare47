@@ -2,7 +2,7 @@
 using System;
 
 [RequireComponent(typeof(FreeFallTrajectoryComponent))]
-public class ThrowableObjectComponent : IThrowableObjectComponent
+public class ThrowableObjectComponent : IThrowableObjectComponent, IHealthListener
 {
     [SerializeField] private Rigidbody m_ThrowingBody;
 
@@ -18,11 +18,6 @@ public class ThrowableObjectComponent : IThrowableObjectComponent
 
 	public event Action OnDestroyed;
 
-	public void ThrowableDestroyed()
-	{
-		OnDestroyed?.Invoke();
-	}
-
 	public bool IsImmediatelyThrowable { get; set; } = false;
 
 	public override Transform GetCameraFocusTransform => m_CameraFocusTransform;
@@ -36,7 +31,7 @@ public class ThrowableObjectComponent : IThrowableObjectComponent
 		m_FreeFallComponent.OnObjectNotInFreeFall += OnObjectLanded;
 		if (TryGetComponent(out HealthComponent healthComponent))
 		{
-			healthComponent.OnEntityDied += (GameObject, Vector3, DamageType) => ThrowableDestroyed();
+			healthComponent.AddListener(this);
 		}
 	}
 
@@ -54,5 +49,15 @@ public class ThrowableObjectComponent : IThrowableObjectComponent
 	public override void ApplyForceToObject(Vector3 force)
 	{
 		m_ThrowingBody.AddForce(force, ForceMode.Impulse);
+	}
+
+	public void OnEntityTakeDamage(GameObject go1, GameObject go2, DamageType type)
+	{
+
+	}
+
+	public void OnEntityDied(GameObject go1, GameObject go2, DamageType type)
+	{
+		OnDestroyed?.Invoke();
 	}
 }

@@ -25,6 +25,7 @@ public class LassoParams : ScriptableObject
 	public AnimationCurve m_JerkProfile;
 	[Range(0f, 1f)]
 	public float m_JerkTimeForPull;
+	public float m_LassoRelaxTime;
 
 	[Header("Lasso Spinning Params")]
 	[Range(0f, 1f)]
@@ -38,6 +39,13 @@ public class LassoParams : ScriptableObject
 	public AnimationCurve m_SpinSizeProfile;
 	public AnimationCurve m_SpinSpeedProfile;
 
+	[Header("Lasso Throw Params")]
+	public AnimationCurve m_ThrowSpinSpeedTimeProfile;
+	public AnimationCurve m_WaveLengthTimeProfile;
+	public AnimationCurve m_UnravelSizeTimeProfile;
+	public AnimationCurve m_UnravelSizeDistanceProfile;
+
+	[Header("Gameplay Params")]
 	public bool SpinningIsInitializing = false;
 	public bool SpunUp = false;
 }

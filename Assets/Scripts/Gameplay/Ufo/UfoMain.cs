@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UFOStates;
 
-public class UfoMain : MonoBehaviour, IPauseListener
+public class UfoMain : MonoBehaviour, IPauseListener, IHealthListener
 {
 	[Header("Object references")]
 	[SerializeField] private CowGameManager m_Manager;
@@ -28,7 +28,7 @@ public class UfoMain : MonoBehaviour, IPauseListener
 	public float GetUfoRoamTimeMax => m_UfoRoamTimeMax;
 	public Transform GetTargetCowTransform => m_TargetCow.transform;
 
-	private StateMachine m_UfoStateMachine;
+	private StateMachine<UfoMain> m_UfoStateMachine;
 	private GameObject m_TargetCow;
 
 
@@ -79,14 +79,14 @@ public class UfoMain : MonoBehaviour, IPauseListener
 
 	private void Awake()
 	{
-		m_UfoStateMachine = new StateMachine(new UFOEnterMapState(this));
-		m_UfoStateMachine.AddState(new UFOAbductState(this, m_AnimationComponent));
-		m_UfoStateMachine.AddState(new UFOPatrolState(this));
-		m_UfoStateMachine.AddState(new UFOSearchState(this));
-		m_UfoStateMachine.AddState(new UFOSwoopDownState(this));
-		m_UfoStateMachine.AddState(new UFOStaggeredState(this, m_AnimationComponent));
+		m_UfoStateMachine = new StateMachine<UfoMain>(new UFOEnterMapState(), this);
+		m_UfoStateMachine.AddState(new UFOAbductState( m_AnimationComponent));
+		m_UfoStateMachine.AddState(new UFOPatrolState());
+		m_UfoStateMachine.AddState(new UFOSearchState());
+		m_UfoStateMachine.AddState(new UFOSwoopDownState());
+		m_UfoStateMachine.AddState(new UFOStaggeredState(m_AnimationComponent));
 		m_UfoStateMachine.AddState(new UFODeathState(m_AnimationComponent));
-		m_UfoStateMachine.AddState(new UFOSwoopUpState(this));
+		m_UfoStateMachine.AddState(new UFOSwoopUpState());
 		m_TractorBeamComponent.SetParent(this);
 		m_TractorBeamComponent.OnTractorBeamFinished += () => OnCowDied(null, null, DamageType.Undefined);
 		m_Manager.AddToPauseUnpause(this);
@@ -109,7 +109,7 @@ public class UfoMain : MonoBehaviour, IPauseListener
 
 	private void Update()
 	{
-		m_UfoStateMachine.Tick();
+		m_UfoStateMachine.Tick(Time.deltaTime);
 	}
 
 	private Vector3 GetStartingDestination() 
@@ -184,14 +184,7 @@ public class UfoMain : MonoBehaviour, IPauseListener
 
 	public void OnCowDied(GameObject cow, GameObject target, DamageType killingType) 
 	{
-		if (m_TargetCow) 
-		{
-			EntityToken cowToken = m_Manager.GetTokenForEntity(m_TargetCow.GetComponent<EntityTypeComponent>(), m_TargetCow.GetComponent<EntityTypeComponent>().GetEntityInformation);
-			cowToken.SetAbductionState(CowGameManager.EntityState.Free);
-		}
 
-
-		m_UfoStateMachine.RequestTransition(typeof(UFOSwoopUpState));
 	}
 
 	public void OnTargetedCowStartedAbducted(UfoMain ufo, AbductableComponent cow) 
@@ -199,7 +192,7 @@ public class UfoMain : MonoBehaviour, IPauseListener
 		if (ufo != this) 
 		{
 			m_UfoStateMachine.RequestTransition(typeof(UFOSwoopUpState));
-			cow.GetComponent<HealthComponent>().OnEntityDied -= OnCowDied;
+			cow.GetComponent<HealthComponent>().RemoveListener(this);
 			cow.OnStartedAbducting -= OnTargetedCowStartedAbducted;
 		}
 	}
@@ -208,10 +201,10 @@ public class UfoMain : MonoBehaviour, IPauseListener
 
 	public bool FindCowToAbduct() 
 	{
-		if (m_Manager.GetClosestTransformMatchingList(m_UfoTransform.position, m_EntityInformation.GetHunts, out EntityToken outEntityToken, validEntitiesToFind)) 
+		if (m_Manager.GetClosestTransformMatchingList(m_UfoTransform.position, out EntityToken outEntityToken, validEntitiesToFind, m_EntityInformation.GetHunts)) 
 		{
 			// in case it dies before we get to it
-			outEntityToken.GetEntityType.GetComponent<HealthComponent>().OnEntityDied += OnCowDied;
+			outEntityToken.GetEntityType.GetComponent<HealthComponent>().AddListener(this);
 			outEntityToken.GetEntityType.GetComponent<AbductableComponent>().OnStartedAbducting += OnTargetedCowStartedAbducted;
 			m_TargetCow = outEntityToken.GetEntityType.gameObject;
 			outEntityToken.SetAbductionState(CowGameManager.EntityState.Hunted);
@@ -219,57 +212,61 @@ public class UfoMain : MonoBehaviour, IPauseListener
 		}
 		return false;
 	}
+
+	public void OnEntityTakeDamage(GameObject go1, GameObject go2, DamageType type)
+	{
+		throw new NotImplementedException();
+	}
+
+	public void OnEntityDied(GameObject go1, GameObject go2, DamageType type)
+	{
+		if (m_TargetCow)
+		{
+			EntityToken cowToken = m_Manager.GetTokenForEntity(m_TargetCow.GetComponent<EntityTypeComponent>(), m_TargetCow.GetComponent<EntityTypeComponent>().GetEntityInformation);
+			cowToken.SetAbductionState(CowGameManager.EntityState.Free);
+		}
+
+
+		m_UfoStateMachine.RequestTransition(typeof(UFOSwoopUpState));
+	}
 }
 
 namespace UFOStates
 {
-	public class UFOAbductState : AStateBase
+	public class UFOAbductState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
 		private readonly UfoAnimationComponent m_UfoAnimation;
 		Vector3 hoverPos;
-		public UFOAbductState(UfoMain ufoMain, UfoAnimationComponent ufoAnimation)
+		public UFOAbductState(UfoAnimationComponent ufoAnimation)
 		{
-			m_UfoMain = ufoMain;
 			m_UfoAnimation = ufoAnimation;
 		}
 
 		public override void OnEnter()
 		{
 			Debug.Log("On enter abduct state");
-			hoverPos = m_UfoMain.transform.position;
-			m_UfoMain.SetDestination(hoverPos);
-			m_UfoMain.SetTargetSpeedAtPathEnd(0.0f);
-			m_UfoMain.SetShouldHoldFlight(true);
+			hoverPos = Host.transform.position;
+			Host.SetDestination(hoverPos);
+			Host.SetTargetSpeedAtPathEnd(0.0f);
+			Host.SetShouldHoldFlight(true);
 			m_UfoAnimation.OnAbducting();
-			m_UfoMain.SetTractorBeam(true);
-		}
-
-		public override void Tick()
-		{
-			m_UfoMain.UpdateDestination(hoverPos);
+			Host.SetTractorBeam(true);
 		}
 
 		public override void OnExit()
 		{
 			m_UfoAnimation.OnFlying();
-			m_UfoMain.SetTractorBeam(false);
-			m_UfoMain.SetShouldHoldFlight(false);
+			Host.SetTractorBeam(false);
+			Host.SetShouldHoldFlight(false);
 		}
 	}
 
-	public class UFOSearchState : AStateBase
+	public class UFOSearchState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
-		public UFOSearchState(UfoMain ufoMain)
-		{
-			m_UfoMain = ufoMain;
-		}
 
 		public override void OnEnter()
 		{
-			Debug.Log("Entered search statea");
-			if (m_UfoMain.FindCowToAbduct())
+			if (Host.FindCowToAbduct())
 			{
 				RequestTransition<UFOSwoopDownState>();
 			}
@@ -281,24 +278,18 @@ namespace UFOStates
 
 		public override void OnExit()
 		{
-			m_UfoMain.SetOnStoppedCallback(null);
+			Host.SetOnStoppedCallback(null);
 		}
 	}
 
-	public class UFOSwoopUpState : AStateBase
+	public class UFOSwoopUpState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
-		public UFOSwoopUpState(UfoMain ufoMain)
-		{
-			m_UfoMain = ufoMain;
-		}
-
 		public override void OnEnter()
 		{
 			Debug.Log("On enter swoop up state");
-			m_UfoMain.SetTargetSpeedAtPathEnd(0.0f);
-			m_UfoMain.SetSwoopingUp();
-			m_UfoMain.SetOnReachedDestination(() =>
+			Host.SetTargetSpeedAtPathEnd(0.0f);
+			Host.SetSwoopingUp();
+			Host.SetOnReachedDestination(() =>
 			{
 				RequestTransition<UFOPatrolState>();
 			});
@@ -306,69 +297,55 @@ namespace UFOStates
 
 		public override void OnExit()
 		{
-			m_UfoMain.SetOnReachedDestination(null);
+			Host.SetOnReachedDestination(null);
 		}
 	}
 
-	public class UFOSwoopDownState : AStateBase
+	public class UFOSwoopDownState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
-		public UFOSwoopDownState(UfoMain ufoMain)
-		{
-			m_UfoMain = ufoMain;
-		}
-
 		public override void OnEnter()
 		{
 			Debug.Log("On enter swoop down state");
-			m_UfoMain.SetTargetSpeedAtPathEnd(1.0f);
-			m_UfoMain.SetOnReachedDestination(() =>
+			Host.SetTargetSpeedAtPathEnd(1.0f);
+			Host.SetOnReachedDestination(() =>
 			{
 				RequestTransition<UFOAbductState>();
-				m_UfoMain.GetTargetCowTransform.GetComponent<HealthComponent>().OnEntityDied -= m_UfoMain.OnCowDied;
+				Host.GetTargetCowTransform.GetComponent<HealthComponent>().AddListener(Host);
 			});
-			m_UfoMain.SetDestination(m_UfoMain.GetTargetCowTransform.position);
+			Host.SetDestination(Host.GetTargetCowTransform.position);
 		}
 
 		public override void Tick()
 		{
-			m_UfoMain.UpdateDestination(m_UfoMain.GetTargetCowTransform.position + Vector3.up * 10.0f);
+			Host.UpdateDestination(Host.GetTargetCowTransform.position + Vector3.up * 10.0f);
 		}
 
 		public override void OnExit()
 		{
-			m_UfoMain.SetOnReachedDestination(null);
+			Host.SetOnReachedDestination(null);
 		}
 	}
 
-	public class UFOEnterMapState : AStateBase
+	public class UFOEnterMapState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
-		public UFOEnterMapState(UfoMain ufoMain)
-		{
-			m_UfoMain = ufoMain;
-		}
-
 		public override void OnEnter()
 		{
 			Debug.Log("On enter map state");
-			m_UfoMain.SetTargetSpeedAtPathEnd(0.0f);
-			m_UfoMain.SetOnReachedDestination(() => RequestTransition<UFOPatrolState>());
+			Host.SetTargetSpeedAtPathEnd(0.0f);
+			Host.SetOnReachedDestination(() => RequestTransition<UFOPatrolState>());
 		}
 
 		public override void OnExit()
 		{
-			m_UfoMain.SetOnReachedDestination(null);
+			Host.SetOnReachedDestination(null);
 		}
 	}
 
-	public class UFOStaggeredState : AStateBase
+	public class UFOStaggeredState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
 		private readonly UfoAnimationComponent m_UfoAnimation;
-		public UFOStaggeredState(UfoMain ufoMain, UfoAnimationComponent ufoAnimation)
+		public UFOStaggeredState(UfoAnimationComponent ufoAnimation)
 		{
-			m_UfoMain = ufoMain;
 			m_UfoAnimation = ufoAnimation;
 		}
 
@@ -376,7 +353,7 @@ namespace UFOStates
 		{
 			Debug.Log("On enter staggered state");
 			m_UfoAnimation.OnStaggered();
-			m_UfoMain.ResetMotion();
+			Host.ResetMotion();
 		}
 
 		public override void OnExit()
@@ -385,7 +362,7 @@ namespace UFOStates
 		}
 	}
 
-	public class UFODeathState : AStateBase
+	public class UFODeathState : AStateBase<UfoMain>
 	{
 		private readonly UfoAnimationComponent m_UfoAnimation;
 
@@ -400,53 +377,37 @@ namespace UFOStates
 		}
 	}
 
-	public class UFOPatrolState : AStateBase
+	public class UFOPatrolState : AStateBase<UfoMain>
 	{
-		private readonly UfoMain m_UfoMain;
 		private float m_fTimeToPatrolFor;
-		private float m_fCurrentPatrolTime;
-		private bool m_bIsPatrolling;
-		private bool m_bFinishedPatrolling;
-		public UFOPatrolState(UfoMain ufoMain)
+
+		public UFOPatrolState()
 		{
-			m_UfoMain = ufoMain;
+			AddTimers(2);
 		}
+
 		public override void OnEnter()
 		{
-			m_waypointTimer = 2.0f;
-			m_fCurrentPatrolTime = 0.0f;
-			m_bIsPatrolling = false;
-			m_bFinishedPatrolling = false;
 			Debug.Log("On entered patrol state");
-			m_fTimeToPatrolFor = UnityEngine.Random.Range(m_UfoMain.GetUfoRoamTimeMin, m_UfoMain.GetUfoRoamTimeMax);
-			m_UfoMain.SetTargetSpeedAtPathEnd(0.0f);
-			m_UfoMain.SetOnReachedDestination(OnReachedPatrolWaypoint);
+			m_fTimeToPatrolFor = UnityEngine.Random.Range(Host.GetUfoRoamTimeMin, Host.GetUfoRoamTimeMax);
+			StopTimer(1);
+			Host.SetTargetSpeedAtPathEnd(0.0f);
+			Host.SetOnReachedDestination(OnReachedPatrolWaypoint);
+			Host.SetDestination(Host.GetNewPatrolDestination());
 		}
 
 		public override void Tick()
 		{
-			m_fCurrentPatrolTime += Time.deltaTime;
-
-			if (m_fCurrentPatrolTime > m_fTimeToPatrolFor)
-			{
-				m_bFinishedPatrolling = true;
-			}
-
-			// need this part of the code to be called once, when we're about to start patrolling again
-			if (m_waypointTimer >= 0.0f)
-			{
-				m_waypointTimer -= Time.deltaTime;
-			}
 			// if the waypoint timer has expired
 			// and we're not currently patrolling, I.E we're at a waypoint
-			else if (!m_bIsPatrolling)
+			if (GetTimerVal(1) > 1.0f)
 			{
 				// then if we're not finished patrolling, choose another destination
-				if (!m_bFinishedPatrolling)
+				if (GetTimerVal(0) < m_fTimeToPatrolFor)
 				{
-
-					m_bIsPatrolling = true;
-					m_UfoMain.SetDestination(m_UfoMain.GetNewPatrolDestination());
+					ClearTimer(1);
+					StopTimer(1);
+					Host.SetDestination(Host.GetNewPatrolDestination());
 
 				}
 				// else we change states
@@ -456,16 +417,14 @@ namespace UFOStates
 				}
 			}
 		}
-		private float m_waypointTimer;
 		private void OnReachedPatrolWaypoint()
 		{
-			m_bIsPatrolling = false;
-			m_waypointTimer = 1.0f;
+			StartTimer(1);
 		}
 
 		public override void OnExit()
 		{
-			m_UfoMain.SetOnReachedDestination(null);
+			Host.SetOnReachedDestination(null);
 		}
 	}
 }

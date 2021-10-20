@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67a70ddf5251721468313a3d95844ad4, type: 3}
   m_Name: Player Lasso Param
   m_EditorClassIdentifier: 
-  m_LassoReturnAcceleration: 1
+  m_LassoReturnAcceleration: 0.928
   m_MaxLassoReturnSpeed: 10
   m_LassoLength: 19.74
   m_GrabDistance: 2.015
@@ -113,7 +113,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  m_JerkTimeForPull: 0.25
+  m_JerkTimeForPull: 0.241
+  m_LassoRelaxTime: 5.44
   m_TimeBeforeUserCanThrow: 0.498
   m_MaxTimeSpinning: 1.29
   m_MaxTimeToSwitchStrength: 1
@@ -121,17 +122,17 @@ MonoBehaviour:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: -0.05766668
-      value: 50.40408
-      inSlope: -53.15705
-      outSlope: -53.15705
+      time: -0.00067048706
+      value: 42.727444
+      inSlope: -165.1086
+      outSlope: -165.1086
       tangentMode: 0
       weightedMode: 0
       inWeight: 0.33333334
-      outWeight: 0.07732668
+      outWeight: 0.088161275
     - serializedVersion: 3
-      time: 0.9981146
-      value: 9.93788
+      time: 0.39557552
+      value: 9.708723
       inSlope: -0.32908264
       outSlope: -0.32908264
       tangentMode: 0
@@ -209,6 +210,120 @@ MonoBehaviour:
       tangentMode: 136
       weightedMode: 0
       inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_ThrowSpinSpeedTimeProfile:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.0002119625
+      value: 20.757986
+      inSlope: -15.391615
+      outSlope: -15.391615
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.15203433
+    - serializedVersion: 3
+      time: 2.9838896
+      value: 5.096265
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_WaveLengthTimeProfile:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.021685006
+      value: 2.610011
+      inSlope: -4.36693
+      outSlope: -4.36693
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.32858664
+    - serializedVersion: 3
+      time: 0.50837594
+      value: 0.63477755
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_UnravelSizeTimeProfile:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.010149894
+      value: -0.015478402
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.2994595
+      value: 0.40478253
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 2.0042872
+      value: 0.030434161
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_UnravelSizeDistanceProfile:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.0019888831
+      value: -0.002192133
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.13734455
+      value: 1.003674
+      inSlope: 0.01257538
+      outSlope: 0.01257538
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.23432487
+    - serializedVersion: 3
+      time: 0.99846655
+      value: 0.0020389669
+      inSlope: -1.2086889
+      outSlope: -1.2086889
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.21549912
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2

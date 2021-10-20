@@ -27,7 +27,7 @@ Material:
     - _BendRotationRandom: 0.186
     - _BladeCurve: 1.82
     - _BladeForward: 0.31
-    - _BladeHeight: 1.51
+    - _BladeHeight: 0.92
     - _BladeHeightMinimum: 0.2
     - _BladeHeightMultiplier: 1
     - _BladeHeightRandom: 0.1
@@ -41,4 +41,3 @@ Material:
     - _TopColor: {r: 0.47147563, g: 0.6132076, b: 0.4862394, a: 1}
     - _WindFrequency: {r: 0.01, g: 0, b: 0, a: 0}
     - _WindSpeed: {r: 1.99, g: 1.58, b: 0, a: 0}
-  m_BuildTextureStacks: []

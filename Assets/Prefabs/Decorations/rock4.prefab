@@ -14,12 +14,12 @@ GameObject:
   - component: {fileID: -1230961941302555671}
   - component: {fileID: 352225171326747336}
   - component: {fileID: 5314671004435403217}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: rock4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 4294967295
   m_IsActive: 1
 --- !u!4 &5522195486603174653
 Transform:
@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 8861287814313644270}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -26.92, y: -0.19005167, z: -18.257843}
-  m_LocalScale: {x: 80, y: 80, z: 80}
+  m_LocalScale: {x: 120, y: 392.84695, z: 80}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -126,4 +126,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_DefaultShaderId: _Color
   m_MaterialColourSettingReference: 0
+  m_ColourSettings:
+  - m_ColourGradient:
+      serializedVersion: 2
+      key0: {r: 0.05660379, g: 0.05660379, b: 0.05660379, a: 1}
+      key1: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
+      key2: {r: 0, g: 0, b: 0, a: 0}
+      key3: {r: 0, g: 0, b: 0, a: 0}
+      key4: {r: 0, g: 0, b: 0, a: 0}
+      key5: {r: 0, g: 0, b: 0, a: 0}
+      key6: {r: 0, g: 0, b: 0, a: 0}
+      key7: {r: 0, g: 0, b: 0, a: 0}
+      ctime0: 0
+      ctime1: 65535
+      ctime2: 0
+      ctime3: 0
+      ctime4: 0
+      ctime5: 0
+      ctime6: 0
+      ctime7: 0
+      atime0: 0
+      atime1: 65535
+      atime2: 0
+      atime3: 0
+      atime4: 0
+      atime5: 0
+      atime6: 0
+      atime7: 0
+      m_Mode: 0
+      m_NumColorKeys: 2
+      m_NumAlphaKeys: 2
+    m_RolledColor: {r: 0, g: 0, b: 0, a: 0}
+    m_MaterialIndex: 0
+    m_MaterialColourId: _Color
   m_bRandomizeOnStart: 0

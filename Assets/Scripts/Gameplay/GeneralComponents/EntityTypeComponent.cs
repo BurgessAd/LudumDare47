@@ -11,50 +11,67 @@ public class EntityTypeComponent : MonoBehaviour
 
     [SerializeField] private Transform m_TrackingTransform;
 
+    [SerializeField] private Transform m_PhysicsTransform;
+
     [SerializeField] private float m_TrackableRadius = 0f;
+
+    private UnityUtils.ListenerSet<IEntityTrackingListener> m_Listeners = new UnityUtils.ListenerSet<IEntityTrackingListener>();
 
     public EntityInformation GetEntityInformation => m_EntityInformation;
 
-    private event Action OnCancelTracking;
-
-    private bool m_bIsKnownToGameSystem = false;
-
 	private void Awake()
 	{
-        AddToTrackable();	
+        m_Manager.OnEntitySpawned(this);	
 	}
 
     public Transform GetTrackingTransform => m_TrackingTransform;
 
     public float GetTrackableRadius => m_TrackableRadius;
 
-	public void BeginTrackingObject(in Action OnUnableToTrackFurther) 
+	public void AddListener(in IEntityTrackingListener listener) 
     {
-        OnCancelTracking += OnUnableToTrackFurther;
+        m_Listeners.Add(listener);
     }
 
-    public void EndTrackingObject(in Action RemoveOnUnableToTrackFurther)
+    public void RemoveListener(in IEntityTrackingListener listener)
     {
-        OnCancelTracking -= RemoveOnUnableToTrackFurther;
+        m_Listeners.Remove(listener);
     }
 
     public void RemoveFromTrackable() 
     {
-        if (m_bIsKnownToGameSystem) 
+        m_Manager.OnEntityStopTracking(this);
+        HashSet<IEntityTrackingListener> tempListeners = new HashSet<IEntityTrackingListener>(m_Listeners);
+        foreach (var listener in tempListeners)
         {
-            m_Manager.OnEntityKilled(this, GetEntityInformation);
-            OnCancelTracking?.Invoke();
-            OnCancelTracking = null;
-            m_bIsKnownToGameSystem = false;
+            listener.OnTargetInvalidated();
         }
+        m_Listeners.Clear();
+    }
+
+	public void OnKilled() 
+    {
+        m_Manager.OnEntityKilled(this);
+        HashSet<IEntityTrackingListener> tempListeners = new HashSet<IEntityTrackingListener>(m_Listeners);
+        foreach(var listener in tempListeners) 
+        {
+            listener.OnTargetInvalidated();
+        }
+        m_Listeners.Clear();
     }
 
     public void AddToTrackable() 
     {
-        if (!m_bIsKnownToGameSystem) 
-        {
-            m_Manager.OnEntitySpawned(this, GetEntityInformation);
-            m_bIsKnownToGameSystem = true;
-        }
+       m_Manager.OnEntityStartTracking(this);
     }
+
+	public void OnDrawGizmosSelected()
+	{
+        Gizmos.DrawWireSphere(m_TrackingTransform.position, m_TrackableRadius);
+	}
+}
+
+public interface IEntityTrackingListener 
+{
+    void OnTargetInvalidated();
 }

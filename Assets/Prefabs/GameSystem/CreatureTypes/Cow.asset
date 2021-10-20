@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7ff0617050e79842a1706cc658e4c09, type: 3}
   m_Name: Cow
   m_EditorClassIdentifier: 
-  m_Hunts: []
-  m_HuntedBy:
+  m_Hunts:
+  - {fileID: 11400000, guid: a9892376905e0c846b2a98219a844745, type: 2}
+  m_ScaredOf:
   - {fileID: 11400000, guid: a171ef1ac7ad69046af761265214b3fd, type: 2}
-  - {fileID: 11400000, guid: c896e4e354b6ea94c9559dce14220b45, type: 2}
+  m_Attacks: []

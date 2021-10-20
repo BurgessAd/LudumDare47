@@ -9,7 +9,7 @@ using System.Collections;
 [RequireComponent(typeof(HealthComponent))]
 [RequireComponent(typeof(ThrowableObjectComponent))]
 [RequireComponent(typeof(FreeFallTrajectoryComponent))]
-public class AnimalComponent : MonoBehaviour, IPauseListener
+public class AnimalComponent : MonoBehaviour, IPauseListener, IEntityTrackingListener, IHealthListener, ILevelListener
 {
     [Header("Object references")]
     [SerializeField] protected CowGameManager m_Manager = default;
@@ -20,20 +20,19 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
     [SerializeField] protected Transform m_AnimalBodyTransform = default;
     [SerializeField] protected Collider m_AnimalBodyCollider = default;
 
-    [Header("Variation Parameters")]
-    [Range(0f, 0.3f)][SerializeField] protected float m_SizeVariation;
-
     [Header("Stagger parameters")]
     [SerializeField] AnimationCurve m_StaggerTimeByImpactMomentum;
     [SerializeField] float m_StaggerCooldown = 0.2f;
 
     [Header("Breeding Parameters")]
+    [SerializeField] private float m_fBreedingHungerCooldownTime = default;
     [SerializeField] private float m_fBreedingChaseStartRange = default;
     [SerializeField] private float m_fBreedingChaseEndRange = default;
     [SerializeField] private float m_fBreedingStartRange = default;
     [SerializeField] private float m_fBreedingCooldownTime = default;
     [SerializeField] private float m_fBreedingHungerUsage = default;
     [SerializeField] private float m_fBreedingDuration = default;
+    [SerializeField] private float m_fBreedCheckInterval = default;
     [SerializeField] private float m_fMaximumFullness = default;
 
     [Header("Idle parameters")]
@@ -52,6 +51,9 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
     [SerializeField] private float m_fHuntCheckInterval = default;
     [SerializeField] private float m_fViewFrustrumAngle = default;
 
+    [Header("Born parameters")]
+    [SerializeField] private float m_BornTime = default;
+
     [SerializeField] private AttackBase m_DamageAttackType;
     [SerializeField] private AttackTypeDamage m_EatAttackType;
 
@@ -59,25 +61,37 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
 
     private AttackBase m_CurrentAttackComponent;
 
+    private bool m_bIsHungry = false;
     private bool m_bShouldStagger = false;
     private float m_fFullness = 0.0f;
-    protected float m_TimeGrounded = 0.0f;
-    private float m_CurrentStaggerCooldown;
-    private float m_CurrentBreedingCooldown;
+	private float m_TotalStaggerTime = 0.0f;
+
+	public class Cooldown
+	{
+		private float m_Cooldown;
+		public void DecrementCooldown(in float decrement) { m_Cooldown = Mathf.Max(0f, m_Cooldown - decrement); }
+		public void SetCooldown(in float val) => m_Cooldown = val;
+		public bool CooldownComplete => m_Cooldown == 0f;
+	}
+    private Cooldown m_CurrentStaggerCooldown = new Cooldown();
+	private Cooldown m_CurrentBreedingCooldown = new Cooldown();
 
     private readonly Type[] m_CanStaggerStates = new Type[] {typeof(AnimalFreeFallState), typeof(AnimalLassoThrownState)};
 
-    protected StateMachine m_StateMachine = default;
-    protected AnimalMovementComponent m_AnimalMovement = default;
-    protected FreeFallTrajectoryComponent m_FreeFallComponent = default;
-    protected Rigidbody m_AnimalRigidBody = default;
-    protected NavMeshAgent m_AnimalAgent = default;
-    protected AnimalAnimationComponent m_AnimalAnimator = default;
-    protected EntityTypeComponent m_EntityInformation = default;
-    protected AbductableComponent m_AbductableComponent = default;
-    protected HealthComponent m_AnimalHealthComponent = default;
-    protected AttackBase m_AttackableComponent = default;
-    protected ThrowableObjectComponent m_ThrowableComponent = default;
+	private StateMachine<AnimalComponent> m_StateMachine = default;
+	private AnimalMovementComponent m_AnimalMovement = default;
+	private FreeFallTrajectoryComponent m_FreeFallComponent = default;
+	private Rigidbody m_AnimalRigidBody = default;
+	private NavMeshAgent m_AnimalAgent = default;
+	private AnimalAnimationComponent m_AnimalAnimator = default;
+	private EntityTypeComponent m_EntityInformation = default;
+	private AbductableComponent m_AbductableComponent = default;
+	private HealthComponent m_AnimalHealthComponent = default;
+    private AttackBase m_AttackableComponent = default;
+	private ThrowableObjectComponent m_ThrowableComponent = default;
+
+    public float GetBornDuration => m_BornTime;
+
 
     #region Component Event Handlers
 
@@ -86,26 +100,18 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         m_AnimalAnimator.WasPulled();
     }
 
-    public void OnBorn() 
-    {
-        m_StateMachine.RequestTransition(typeof(AnimalGrowingState));
-    }
-
     private void OnBeginAbducted()
     {
         IsInTractorBeam = true;
-        m_EntityInformation.RemoveFromTrackable();
     }
 
     private void OnFinishedAbducted()
     {
         IsInTractorBeam = false;
-        m_EntityInformation.AddToTrackable();
     }
 
     private void OnWrangledByLasso() 
     {
-        m_StateMachine.SetParam("evadingEntity", m_Manager.GetPlayer);
         IsWrangled = true;
     }
 
@@ -115,27 +121,14 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         if (fromThisToThat.sqrMagnitude - range * range > 0)
             return false;
 
-        Vector3 animalForward = m_AnimalBodyTransform.forward;
-        if (Vector3.Angle(animalForward, fromThisToThat) > m_fViewFrustrumAngle)
-            return false;
+        //Vector3 animalForward = m_AnimalBodyTransform.forward;
+        //if (Vector3.Angle(animalForward, fromThisToThat) > m_fViewFrustrumAngle)
+        //    return false;
 
-        if (Physics.Raycast(m_AnimalMainTransform.position, fromThisToThat, out RaycastHit hit, fromThisToThat.magnitude, m_GroundLayerMask, QueryTriggerInteraction.Ignore))
-            return false;
+        //if (Physics.Raycast(m_AnimalMainTransform.position, fromThisToThat, out RaycastHit hit, fromThisToThat.magnitude, m_GroundLayerMask, QueryTriggerInteraction.Ignore))
+        //    return false;
 
         return true;
-    }
-
-    private bool CanImpactHard() 
-    {
-        for (int i = 0; i< m_CanStaggerStates.Length; i++) 
-        {
-            if (m_StateMachine.GetCurrentState() == m_CanStaggerStates[i]) 
-            {
-                return true;
-            }
-        }      
-
-        return false;
     }
 
     private void OnReleasedByLasso()
@@ -144,49 +137,11 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         IsWrangled = false;
     }
 
-    protected bool ShouldEnterIdleFromWrangled() 
-    {
-        return (Vector3.Angle(GetGroundDir(), Vector3.up) < 20.0f);
-    }
-
-    private void OnThrownByLasso(ProjectileParams projectileParams)
+	private void OnThrownByLasso(ProjectileParams projectileParams)
     {
         m_AnimalBodyCollider.enabled = true;
         IsWrangled = false;
         m_StateMachine.RequestTransition(typeof(AnimalLassoThrownState));
-    }
-
-    private void OnTakeDamage(GameObject source, GameObject target, DamageType damageType, float currentHealthPercentage)
-    {
-        if (damageType == DamageType.PredatorDamage)
-        {
-            Vector3 damageDirection = target.transform.position - source.transform.position;
-            m_AnimalAnimator.TriggerDamageParticles(damageDirection);
-        }
-        m_StateMachine.RequestTransition(typeof(AnimalDamagedState));
-    }
-
-    private void OnDead(GameObject source, GameObject target, DamageType damageType)
-    {
-		switch (damageType) 
-        {
-            case (DamageType.UFODamage):
-                Destroy(gameObject);
-                return;
-            case (DamageType.PredatorDamage):
-                Vector3 damageDirection = target.transform.position - source.transform.position;
-                m_AnimalAnimator.TriggerDamageParticles(damageDirection);
-                break;
-            case (DamageType.FallDamage):
-                StartCoroutine(DelayedDeathDestroy());
-                break;
-            default:
-                Destroy(gameObject);
-                break;
-        }
-        m_StateMachine.RequestTransition(typeof(AnimalDamagedState));
-        IsDead = true;
-        m_EntityInformation.RemoveFromTrackable();
     }
 
     private IEnumerator DelayedDeathDestroy() 
@@ -195,7 +150,7 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         Destroy(gameObject);
     }
 
-    private void OnStartedLassoSpinning()
+	private void OnStartedLassoSpinning()
     {
         m_AnimalBodyCollider.enabled = false;
         IsWrangled = true;
@@ -213,24 +168,34 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
 
     private void OnHitGround(Collision collision) 
     {
-        Vector3 momentum = m_AnimalRigidBody.mass * m_AnimalRigidBody.velocity;
-        float momentumInNormalDirection = -Vector3.Dot(collision.contacts[0].normal, momentum);
-        if (momentumInNormalDirection > m_StaggerTimeByImpactMomentum.keys[0].time && CanImpactHard() && m_CurrentStaggerCooldown == 0) 
+        if (m_AnimalRigidBody != null)
         {
-            m_bShouldStagger = true;
-            m_CurrentStaggerCooldown = m_StaggerCooldown;
-            m_StateMachine.SetParam("staggerTime", m_StaggerTimeByImpactMomentum.Evaluate(momentumInNormalDirection));
-            m_AnimalAnimator.OnHitGround(collision.GetContact(0).point, Quaternion.LookRotation(Vector3.forward, collision.GetContact(0).normal), momentumInNormalDirection);
+            Vector3 momentum = m_AnimalRigidBody.mass * m_AnimalRigidBody.velocity;
+            float momentumInNormalDirection = -Vector3.Dot(collision.contacts[0].normal, momentum);
+            if (momentumInNormalDirection > m_StaggerTimeByImpactMomentum.keys[0].time && CanImpactHard() && m_CurrentStaggerCooldown.CooldownComplete)
+            {
+                m_bShouldStagger = true;
+                m_CurrentStaggerCooldown.SetCooldown(m_StaggerCooldown);
+                m_TotalStaggerTime = m_StaggerTimeByImpactMomentum.Evaluate(momentumInNormalDirection);
+                m_AnimalAnimator.OnHitGround(collision.GetContact(0).point, Quaternion.LookRotation(Vector3.forward, collision.GetContact(0).normal), momentumInNormalDirection);
+            }
         }
     }
-    #endregion
+
+	public void OnStruckByObject(in Vector3 velocity, in float mass)
+	{
+		Vector3 momentum = velocity * mass;
+		if (momentum.sqrMagnitude > m_StaggerTimeByImpactMomentum.keys[0].time * m_StaggerTimeByImpactMomentum.keys[0].time)
+		{
+			m_TotalStaggerTime = m_StaggerTimeByImpactMomentum.Evaluate(momentum.magnitude);
+			m_StateMachine.RequestTransition(typeof(AnimalStaggeredState));
+		}
+		m_AnimalRigidBody.velocity += GetGroundDir() * momentum.magnitude / m_AnimalRigidBody.mass;
+	}
+	#endregion
 
 	#region State Machine Callbacks
-	private void RequestIdleState()
-    {
-        m_StateMachine.RequestTransition(typeof(AnimalIdleState));
-    }
-    private void SetManagedByAgent(bool enable) 
+    public void SetManagedByAgent(bool enable) 
     {
         m_AnimalAgent.enabled = enable;
         if (m_AnimalAgent.isOnNavMesh)
@@ -240,39 +205,39 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         m_AnimalAgent.updateRotation = false;
     }
 
-    private void DisablePhysics() 
+    public void DisablePhysics() 
     {
         m_AnimalRigidBody.isKinematic = true;
         m_AnimalRigidBody.useGravity = false;
     }
 
-    private void SetGeneralPhysics() 
+	public void SetGeneralPhysics() 
     {
         m_AnimalRigidBody.isKinematic = false;
         m_AnimalRigidBody.useGravity = true;
     }
 
-    private void OnStaggered() 
+	public void SetAbductionPhysics()
+	{
+		m_AnimalRigidBody.isKinematic = false;
+		m_AnimalRigidBody.useGravity = false;
+	}
+
+	public void OnStaggered() 
     {
         m_bShouldStagger = false;
     }
 
-    private void OnBreedingCompleted() 
+    public void OnBreedingComplete() 
     {
-        OnSuccessfullyBred();
-        Debug.Log("Successful breeding!");
-        m_TargetEntity.GetComponent<AnimalComponent>().OnSuccessfullyBred();
-        InitiateCancelBreedingAttempt();
-    }
-
-    private void SetAbductionPhysics() 
-    {
-        m_AnimalRigidBody.isKinematic = false;
-        m_AnimalRigidBody.useGravity = false;
-    }
-    private void DamagedAnimationComplete()
-    {
-        m_StateMachine.RequestTransition(typeof(AnimalIdleState));
+        if (m_fFullness > m_fBreedingHungerUsage)
+        {
+            Transform otherTrans = GetTargetEntity.GetTrackingTransform;
+            Vector3 inBetween = (m_EntityInformation.GetTrackingTransform.position + otherTrans.position) / 2f;
+            Instantiate(gameObject, inBetween, Quaternion.identity, null);
+            GetTargetEntity.GetComponent<AnimalComponent>().OnSuccessfullyBred();
+            OnSuccessfullyBred();
+		}
     }
     #endregion
 
@@ -281,118 +246,134 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
     protected bool IsInTractorBeam { get; private set; }
     protected bool IsDead { get; private set; }
 
-    public Vector3 GetGroundDir() 
+	#region evading logic
+	protected bool ShouldStopActionToEvadeNext() 
     {
-        if (Physics.Raycast(m_AnimalMainTransform.position + 0.5f * Vector3.up, -Vector3.up, out RaycastHit hit, 1, layerMask: (1 << 8)))
-        {
-            return hit.normal;
-        }
-        return Vector3.up;
+        return GetEntityTokenToEscapeFrom(out EntityToken _);
     }
 
-
-    public void OnStruckByObject(in Vector3 velocity, in float mass) 
+    private bool GetEntityTokenToEscapeFrom(out EntityToken token) 
     {
-        Vector3 momentum = velocity * mass;
-        if (momentum.sqrMagnitude > m_StaggerTimeByImpactMomentum.keys[0].time * m_StaggerTimeByImpactMomentum.keys[0].time) 
+        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, out token, null, m_EntityInformation.GetEntityInformation.GetScaredOf))
         {
-            m_StateMachine.SetParam("staggerTime", m_StaggerTimeByImpactMomentum.Evaluate(momentum.magnitude));
-            m_StateMachine.RequestTransition(typeof(AnimalStaggeredState));
+            if (Vector3.SqrMagnitude(token.GetEntityTransform.position - m_AnimalMainTransform.position) < m_ScaredDistance * m_ScaredDistance)
+            {
+                return true;
+            }
         }
-        m_AnimalRigidBody.velocity += GetGroundDir() * momentum.magnitude / m_AnimalRigidBody.mass;
-    }
 
-    protected bool ShouldStopActionToEvadeNext() 
-    {
-        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetScaredOf, out EntityToken objToken, null))
-        {
-            float distSq = Vector3.SqrMagnitude(objToken.GetEntityType.GetTrackingTransform.transform.position - m_AnimalMainTransform.position);
-            float distToEscSq = m_ScaredDistance * m_ScaredDistance * 1.0f;
-            return distSq < distToEscSq;
-        }
+
+        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, out token, null, m_Manager.GetHazardType))
+		{
+            if (token.GetEntityTransform.TryGetComponent(out HazardComponent hazard)) 
+            {
+                if (Vector3.SqrMagnitude(token.GetEntityTransform.position - token.GetEntityTransform.position) < hazard.GetHazardRadius * hazard.GetHazardRadius) 
+                {
+                    return true;
+                }         
+            }
+		}
         return false;
     }
 
     protected bool ShouldEvade()
     {
-        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetScaredOf, out EntityToken objToken, null))
-        {
-            if (CanSeeObject(m_ScaredDistance, objToken.GetEntityType.GetTrackingTransform.position))
-            {
-                m_AnimalAnimator.IsScared();
-                SetEvadingAnimal(objToken.GetEntityType);
-                m_StateMachine.SetParam("evadingEntity", objToken.GetEntityType);
-                return true;
-            }
-        }
+       if (GetEntityTokenToEscapeFrom(out EntityToken token)) 
+       {
+            m_AnimalAnimator.IsScared();
+            SetRelevantTargetAnimal(token.GetEntityType);
+            return true;
+       }
         return false;
     }
 
     protected bool HasEvadedEnemy()
     { 
-        if (!m_TargetEntity)
+        if (!GetTargetEntity)
             return true;
-        float distSq = Vector3.SqrMagnitude(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position);
+        float distSq = Vector3.SqrMagnitude(GetTargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position);
         float distToEscSq = m_EvadedDistance * m_EvadedDistance * 1.0f;
         return distSq > distToEscSq;
     }
 
+    // the call that this listener makes removes the listener anyway, so this is just valid.
+    public void OnTargetInvalidated()
+    {
+        if (m_bIsMated) 
+        {
+            m_bIsMated = false;
+        }
+        if (GetTargetEntity) 
+        {
+            GetTargetEntity.RemoveListener(this);
+            GetTargetEntity = null;
+        }
+    }
+
+    protected void SetRelevantTargetAnimal(EntityTypeComponent evadingAnimal)
+	{
+		GetTargetEntity = evadingAnimal;
+		GetTargetEntity.AddListener(this);
+	}
+
+    private void OnResetAttackBool() 
+    {
+        m_bHasAttackBeenTriggered = false;
+    }
+
+    #endregion
+
+    #region chasing logic
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
     /// Chasing Data
     private float m_fLastAttackTime = -Mathf.Infinity;
 
     private bool CanHuntEnemy()
     {
-        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetAttacks, out EntityToken objAtkToken, null))
+        if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, out EntityToken objAtkToken, null, m_EntityInformation.GetEntityInformation.GetAttacks) && TryHuntObject(objAtkToken))
         {
-            if (TryHuntObject(objAtkToken))
-            {
-                m_CurrentAttackComponent = m_DamageAttackType;
-                m_AnimalAnimator.SetCurrentAttackAnimation(m_DamageAttackType);
-                m_AnimalAnimator.HasSeenEnemy();
-                m_StateMachine.SetParam("attackDistance", m_CurrentAttackComponent.GetAttackRange);
-                return true;
-            }
+			SetCurrentAttack(m_DamageAttackType);
+			m_AnimalAnimator.HasSeenEnemy();
+            return true;
         }
 
-        if (!IsFull) 
-        {
-            if (m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetHunts, out EntityToken objToken, null))
-            {
-                if (TryHuntObject(objToken))
-                {
-                    m_AnimalAnimator.HasSeenFood();
-                    m_CurrentAttackComponent = m_EatAttackType;
-                    m_AnimalAnimator.SetCurrentAttackAnimation(m_EatAttackType);
-                    m_StateMachine.SetParam("attackDistance", m_CurrentAttackComponent.GetAttackRange);
-                    return true;
-                }
-            }
-        }    
+        if (!IsFull && m_bIsHungry && m_Manager.GetClosestTransformMatchingList(m_AnimalMainTransform.position, out EntityToken objToken, null, m_EntityInformation.GetEntityInformation.GetHunts) && TryHuntObject(objToken))
+        { 
+		    SetCurrentAttack(m_EatAttackType);
+		    m_AnimalAnimator.HasSeenFood();
+            return true;
+        }
         return false;
     }
+	private void SetCurrentAttack(in AttackBase attack)
+	{
+		m_CurrentAttackComponent = attack;
+		m_AnimalAnimator.SetCurrentAttackAnimation(attack);
+	}
+
     bool TryHuntObject(in EntityToken objToken)
     {
         if (CanSeeObject(m_HuntBeginDistance, objToken.GetEntityType.GetTrackingTransform.position))
         {
-            m_TargetEntity = objToken.GetEntityTransform.GetComponent<EntityTypeComponent>();
-            objToken.GetEntityType.BeginTrackingObject(OnTargetInvalidated);
-            m_StateMachine.SetParam("evadingEntity", m_TargetEntity);
+            SetRelevantTargetAnimal(objToken.GetEntityTransform.GetComponent<EntityTypeComponent>());
             return true;
         }
         return false;
     }
 
-    private bool CanAttackEnemy()
+	#endregion
+
+	#region attacking logic
+
+	private bool CanAttackEnemy()
     {
-        float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
-        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange + m_TargetEntity.GetTrackableRadius, 2);
+        float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(GetTargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
+        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange + GetTargetEntity.GetTrackableRadius, 2);
         if (distSq < distToEscSq )
         {
             m_AnimalAgent.isStopped = true;
             if (Time.time - m_fLastAttackTime > m_CurrentAttackComponent.GetAttackCooldownTime)
             {
-				Debug.Log("CanAttack");
                 m_fLastAttackTime = Time.time;
                 return true;
             }
@@ -404,7 +385,7 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
     {
         EntityTypeComponent targetEntity = m_Manager.GetPlayer;
         float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(targetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
-        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange + m_TargetEntity.GetTrackableRadius, 2);
+        float distToEscSq = Mathf.Pow(m_CurrentAttackComponent.GetAttackRange + GetTargetEntity.GetTrackableRadius, 2);
         if (distSq < distToEscSq)
         {
             if (Time.time - m_fLastAttackTime > m_CurrentAttackComponent.GetAttackCooldownTime)
@@ -412,9 +393,7 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
                 m_CurrentAttackComponent = m_DamageAttackType;
                 m_AnimalAnimator.SetCurrentAttackAnimation(m_DamageAttackType);
 
-                m_TargetEntity = targetEntity;
-                targetEntity.BeginTrackingObject(OnTargetInvalidated);
-                m_StateMachine.SetParam("evadingEntity", m_TargetEntity);
+                SetRelevantTargetAnimal(targetEntity);
                 m_fLastAttackTime = Time.time;
                 return true;
             }
@@ -428,64 +407,69 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         m_StateMachine.RequestTransition(typeof(AnimalIdleState));
     }
 
-    private void AttemptAttackTarget()
+	Vector3 m_CachedTargetDirection = Vector3.zero;
+	public void CacheTargetDirection()
+	{
+		m_CachedTargetDirection = (GetTargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position).normalized;
+		m_AnimalAnimator.SetDesiredLookDirection(m_CachedTargetDirection);
+	}
+
+	public void TriggerAttack()
+	{
+		m_CurrentAttackComponent.AttackTarget(GetTargetEntity.gameObject, m_CachedTargetDirection);
+        m_bHasAttackBeenTriggered = true;
+	}
+
+    bool m_bHasAttackBeenTriggered = false;
+
+	#endregion
+	#region targetting logic (general)
+
+    private bool HasLostAttackTarget(float attackTargetRange) 
     {
-        m_CurrentAttackComponent.AttackTarget(m_TargetEntity.gameObject, targetDirection);
-        OnTargetInvalidated();
+        if (m_bHasAttackBeenTriggered) 
+        {
+            return false;
+        }
+        return HasLostTarget(attackTargetRange);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// General Target Data
-    private EntityTypeComponent m_TargetEntity;
-    private void OnTargetInvalidated()
-    {
-        m_TargetEntity.EndTrackingObject(OnTargetInvalidated);
-        m_TargetEntity = null;
-    }
     private bool HasLostTarget(float targetLostDistance)
     {
-        if (!m_TargetEntity)
-            return true;
-        float distSq = Vector3.SqrMagnitude(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position);
-        float distToEscSq = targetLostDistance * targetLostDistance;
-        return distSq > distToEscSq;
-    }
-
-    private void SendTargetPosition()
-    {
-        if (m_TargetEntity != null)
+        if (!GetTargetEntity)
         {
-            Vector3 targetPositionGroundPlane = Vector3.ProjectOnPlane(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, GetGroundDir()).normalized;
-            targetDirection = targetPositionGroundPlane;
-            m_AnimalAnimator.SetTargetDirection(targetPositionGroundPlane);
+            return true;
         }
+        targetLostDistance += GetTargetEntity.GetTrackableRadius;
+        float currentDistance = Vector3.SqrMagnitude(GetTargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position);
+        float maxDistance = targetLostDistance * targetLostDistance;
+        return currentDistance > maxDistance;
     }
-    Vector3 targetDirection;
+	#endregion
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Breeding Data
-
-    private bool m_bIsMated = true;
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// Breeding Data
+	#region breeding logic
+	private bool m_bIsMated = false;
     private float m_fLastBreedingTime = Mathf.NegativeInfinity;
     private bool FoundBreedingPartner()
     {
-        if (IsReadyToBreed())
+        if (!IsReadyToBreed())
+            return false;
+
+        m_Manager.GetTransformsMatchingType(m_EntityInformation.GetEntityInformation, out List<EntityToken> objTokens);
+
+        for (int i = 0; i < objTokens.Count; i++)
         {
-            if (m_Manager.GetClosestTransformsMatchingList(m_AnimalMainTransform.position, m_EntityInformation.GetEntityInformation.GetScaredOf, out List<EntityToken> objTokens))
+            if ((objTokens[i].GetEntityTransform.gameObject == gameObject))
+                continue;
+
+            if (Vector3.SqrMagnitude(objTokens[i].GetEntityType.GetTrackingTransform.transform.position - m_AnimalMainTransform.position) > m_fBreedingChaseStartRange * m_fBreedingChaseStartRange)
+                continue;
+
+            if (objTokens[i].GetEntityType.TryGetComponent(out AnimalComponent animal) && animal.OnRequestedAsBreedingPartner(gameObject))
             {
-                for (int i = 0; i < objTokens.Count; i++)
-                {
-                    if (Vector3.SqrMagnitude(objTokens[i].GetEntityType.GetTrackingTransform.transform.position - m_AnimalMainTransform.position) < m_fBreedingChaseStartRange * m_fBreedingChaseStartRange)
-                    {
-                        if (objTokens[i].GetEntityType.TryGetComponent(out AnimalComponent animal))
-                        {
-							if (animal.OnRequestedAsBreedingPartner(gameObject)) 
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                }
+                return true;
             }
         }
         return false;
@@ -497,6 +481,7 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         {
             partner.GetComponent<AnimalComponent>().CompleteStartBreeding(gameObject);
             CompleteStartBreeding(partner);
+            m_StateMachine.RequestTransition(typeof(AnimalBreedingChaseState));
             return true;
         }
         return false;
@@ -504,46 +489,43 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
 
     private void CompleteStartBreeding(GameObject partner) 
     {
-        m_TargetEntity = partner.GetComponent<EntityTypeComponent>();
-        m_TargetEntity.BeginTrackingObject(InitiateCancelBreedingAttempt);
+        SetRelevantTargetAnimal(partner.GetComponent<EntityTypeComponent>());
+        m_AnimalAnimator.HasSeenMate();
         m_bIsMated = true;
-    }
-
-    private void InitiateCancelBreedingAttempt() 
-    {
-        AnimalComponent otherAnimal = m_TargetEntity.GetComponent<AnimalComponent>();
-        otherAnimal.CompleteCancelBreedingAttempt();
-        CompleteCancelBreedingAttempt();
     }
 
     public void OnSuccessfullyBred() 
     {
-        Transform otherTrans = m_TargetEntity.GetTrackingTransform;
-        Vector3 inBetween = (m_EntityInformation.GetTrackingTransform.position + otherTrans.position)/2f;
-        Vector3 spawnPosition = inBetween;
-        GameObject child = Instantiate(gameObject, spawnPosition, Quaternion.identity, null);
-        child.GetComponent<AnimalComponent>().OnBorn();
         m_fFullness -= m_fBreedingHungerUsage;
         m_fLastBreedingTime = Time.time;
+        StartCoroutine(WaitForHunger());
+        OnTargetInvalidated();
     }
 
-    public void CompleteCancelBreedingAttempt() 
+    private IEnumerator WaitForHunger() 
     {
-        m_TargetEntity = null;
-        m_TargetEntity.EndTrackingObject(InitiateCancelBreedingAttempt);
-        m_bIsMated = false;
+        m_bIsHungry = false;
+        yield return new WaitForSecondsRealtime(m_fBreedingHungerCooldownTime);
+        m_bIsHungry = true;
     }
 
+    // TODO:
+    // Rethink logic on breeding cancellation - make it identical of finishing or interrupted.
     private bool CanBreedPartner()
     {
-        float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(m_TargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
+        float distSq = Vector3.SqrMagnitude(Vector3.ProjectOnPlane(GetTargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position, Vector3.up));
         float distToEscSq = m_fBreedingStartRange * m_fBreedingStartRange;
-        return distSq < distToEscSq;
+        if (distSq < distToEscSq)
+		{
+            m_AnimalAgent.isStopped = true;
+            return true;
+        }
+        return false;
     }
 
     public bool IsReadyToBreed()
     {
-        return m_fFullness > m_fBreedingHungerUsage && Time.time - m_fLastBreedingTime > m_fBreedingCooldownTime;
+        return m_fFullness > m_fBreedingHungerUsage && Time.time - m_fLastBreedingTime > m_fBreedingCooldownTime &&  m_StateMachine != null && m_StateMachine.GetCurrentState() == typeof(AnimalIdleState) && (m_StateMachine.TimeBeenInstate() > 4.0f);
     }
 
     public bool IsMated()
@@ -551,99 +533,60 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         return m_bIsMated;
     }
 
+	#endregion
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Staggered Data
-    private bool IsStaggered()
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// Staggered Data
+	private bool IsStaggered()
     {
         return m_StateMachine.GetCurrentState() == typeof(AnimalStaggeredState);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Free Fall Data
-    protected bool CanLeaveFreeFall()
+	private bool CanImpactHard()
+	{
+		for (int i = 0; i < m_CanStaggerStates.Length; i++)
+		{
+			if (m_StateMachine.GetCurrentState() == m_CanStaggerStates[i])
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	protected bool ShouldEnterIdleFromWrangled()
+	{
+		return (Vector3.Angle(GetGroundDir(), Vector3.up) < 20.0f);
+	}
+
+	public Vector3 GetGroundDir()
+	{
+		if (Physics.Raycast(m_AnimalMainTransform.position + 0.5f * Vector3.up, -Vector3.up, out RaycastHit hit, 1, layerMask: (1 << 8)))
+		{
+			return hit.normal;
+		}
+		return Vector3.up;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// Free Fall Data
+	protected bool CanLeaveFreeFall()
     {
         return m_AnimalRigidBody.velocity.magnitude < 0.2f && m_AnimalMovement.IsNearNavMesh();
     }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Evading Data
-
-    protected void SetEvadingAnimal(EntityTypeComponent evadingAnimal) 
-    {
-        m_TargetEntity = evadingAnimal;
-        m_TargetEntity.BeginTrackingObject(ClearEvadingAnimal);
-    }
-
-    protected void ClearEvadingAnimal() 
-    {
-        m_TargetEntity.EndTrackingObject(ClearEvadingAnimal);
-        m_TargetEntity = null;
-    }
-
 
     #endregion
 
     #region Unity Functions
     private readonly List<ContactPoint> m_Contacts = new List<ContactPoint>();
-    private Vector3 m_LastGroundedPosition = Vector3.zero;
-    private Vector3 m_LastGroundedNormal = Vector3.zero;
-    public bool IsGrounded()
-    {
-        return Time.time >= m_TimeGrounded;
-    }
 
     public bool IsFull => m_fFullness > m_fMaximumFullness;
 
-    public ref Vector3 GetLastContactPoint()
-    {
-        return ref m_LastGroundedPosition;
-    }
-    public ref Vector3 GetLastContactNormal()
-    {
-        return ref m_LastGroundedNormal;
-    }
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (m_Manager.IsGroundLayer(collision.gameObject.layer))
-        {
-            OnHitGround(collision);
-        }
-    }
-	private void OnCollisionStay(Collision collision)
-	{
-
-        if (m_Manager.IsGroundLayer(collision.gameObject.layer)) 
-        {
-            m_LastGroundedPosition = Vector3.zero;
-            m_LastGroundedNormal = Vector3.zero;
-            collision.GetContacts(m_Contacts);
-
-            m_LastGroundedPosition = m_Contacts[0].point;
-            m_LastGroundedNormal = m_Contacts[0].normal;
-            m_LastGroundedNormal.Normalize();
-
-            m_TimeGrounded = Time.time;
-        }
-	}
-	private void OnCollisionExit(Collision collision)
-    {
-        if (m_Manager.IsGroundLayer(collision.gameObject.layer))
-        {
-            m_TimeGrounded = Mathf.Infinity;
-        }
-    }
 
     private void OnDamageObject(float damageAmount, GameObject target) 
     {
         m_fFullness += damageAmount;
-    }
-
-    protected virtual void Awake()
-    {
-        m_AnimalMainTransform.localScale = Vector3.one * (1 + UnityEngine.Random.Range(-m_SizeVariation, m_SizeVariation));
-
- 
     }
 
     private Vector3 m_BodyVelocity = Vector3.zero;
@@ -695,8 +638,26 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         enabled = true;
     }
 
-    protected void Start()
+	public float GetLowIdleTime => m_LowIdleTimer;
+	public float GetHighIdleTime => m_HighIdleTimer;
+	public EntityTypeComponent GetTargetEntity { get; private set; }
+	public float GetHuntCheckInterval => m_fHuntCheckInterval;
+    public float GetBreedCheckInterval => m_fBreedCheckInterval;
+    public float GetHuntDistance => m_HuntBeginDistance;
+	public float GetEvadedDistance => m_EvadedDistance;
+	public Transform GetBodyTransform => m_AnimalBodyTransform;
+	public float GetTotalStaggerTime => m_TotalStaggerTime;
+	public float GetBreedingDuration => m_fBreedingDuration;
+	public float GetBreedingStartDistance => m_fBreedingStartRange;
+	public float GetBreedingChaseDistance => m_fBreedingChaseStartRange;
+	public float GetAttackDamageTime => m_CurrentAttackComponent.GetAttackTriggerTime * m_CurrentAttackComponent.GetAttackDuration;
+	public float GetAttackDuration => m_CurrentAttackComponent.GetAttackDuration;
+	public float GetAttackRange => m_CurrentAttackComponent.GetAttackRange;
+	public AttackBase GetAttack => m_CurrentAttackComponent;
+	protected void Start()
     {
+        m_bIsHungry = m_fFullness == m_fMaximumFullness ? false : true;
+
         m_AbductableComponent = GetComponent<AbductableComponent>();
         m_AnimalMovement = GetComponent<AnimalMovementComponent>();
         m_FreeFallComponent = GetComponent<FreeFallTrajectoryComponent>();
@@ -720,13 +681,27 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
 
         m_AbductableComponent.OnStartedAbducting += (UfoMain ufo, AbductableComponent abductable) => OnBeginAbducted();
         m_AbductableComponent.OnEndedAbducting += (UfoMain ufo, AbductableComponent abductable) => OnFinishedAbducted();
-        m_AnimalHealthComponent.OnTakenDamageInstance += OnTakeDamage;
-        m_AnimalHealthComponent.OnEntityDied += OnDead;
+        m_AnimalHealthComponent.AddListener(this);
 
-        m_StateMachine = new StateMachine(new AnimalIdleState(m_AnimalMovement, m_AnimalAnimator));
+        if (m_Manager.HasLevelStarted()) 
+        {
+            m_StateMachine = new StateMachine<AnimalComponent>(new AnimalGrowingState(m_AnimalAnimator), this);
+        }
+		else 
+        {
+            m_StateMachine = new StateMachine<AnimalComponent>(new AnimalPrePlayState(m_AnimalAnimator), this);
+        }
+
+        m_Manager.AddToLevelStarted(this);
 
         m_StateMachine.AddState(new AnimalEvadingState(m_AnimalMovement, m_AnimalAnimator));
-        if (m_EntityInformation.GetEntityInformation.GetHunts.Contains(m_Manager.GetPlayer.GetEntityInformation))
+        bool huntsPlayer = false;
+        for (int i = 0; i < m_EntityInformation.GetEntityInformation.GetHunts.Length; i++) 
+        {
+            huntsPlayer |= m_Manager.GetPlayer.GetEntityInformation == m_EntityInformation.GetEntityInformation.GetHunts[i];
+        }
+
+        if (huntsPlayer)
         {
             m_StateMachine.AddState(new AnimalWrangledAttackState(m_AnimalMovement, m_AnimalAnimator));
         }
@@ -744,48 +719,18 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         m_StateMachine.AddState(new AnimalPredatorChaseState(m_AnimalMovement, m_AnimalAnimator));
         m_StateMachine.AddState(new AnimalAttackState(m_AnimalAnimator));
         m_StateMachine.AddState(new AnimalBreedingChaseState(m_AnimalMovement, m_AnimalAnimator));
-        m_StateMachine.AddState(new AnimalBreedingState());
+        m_StateMachine.AddState(new AnimalBreedingState(m_AnimalAnimator));
+        m_StateMachine.AddState(new AnimalIdleState(m_AnimalMovement, m_AnimalAnimator));
 
-        m_StateMachine.AddStateGroup(StateGroup.CreateWithOnExit(InitiateCancelBreedingAttempt, typeof(AnimalBreedingChaseState), typeof(AnimalBreedingState)));
-        m_StateMachine.AddStateGroup(StateGroup.CreateWithOnExit(OnTargetInvalidated, typeof(AnimalPredatorChaseState), typeof(AnimalAttackState)));
-
-        m_StateMachine.SetParam("navmeshAgent", m_AnimalAgent);
-        m_StateMachine.SetParam("animalAnimator", m_AnimalAnimator);
-        m_StateMachine.SetParam("rigidBody", m_AnimalRigidBody);
-        m_StateMachine.SetParam("mainTransform", m_AnimalMainTransform);
-        m_StateMachine.SetParam("bodyTransform", m_AnimalBodyTransform);
-
-        m_StateMachine.SetParam("fleeCheckInterval", m_FleeCheckInterval);
-        m_StateMachine.SetParam("scaredDistance", m_ScaredDistance);
-        m_StateMachine.SetParam("evadedDistance", m_EvadedDistance);
-        m_StateMachine.SetParam("lowIdleTimer", m_LowIdleTimer);
-        m_StateMachine.SetParam("highIdleTimer", m_HighIdleTimer);
-
-        m_StateMachine.SetCallback("attackAnimationComplete", AttackAnimationComplete);
-        m_StateMachine.SetCallback("triggerDamage", AttemptAttackTarget);
-
-        m_StateMachine.SetParam("huntBeginDistance", m_HuntBeginDistance);
-        m_StateMachine.SetParam("huntEndDistance", m_HuntEndDistance);
-        m_StateMachine.SetParam("huntCheckInterval", m_fHuntCheckInterval);
-
-        m_StateMachine.SetParam("breedingTime", m_fBreedingDuration);
-
-        m_StateMachine.SetCallback("stopBeingThrown", () => { m_FreeFallComponent.StopThrowingObject(); });
-        m_StateMachine.SetCallback("sendTargetPosition", () => SendTargetPosition());
-
-        m_StateMachine.SetCallback("onStaggered", OnStaggered);
-        m_StateMachine.SetCallback("damagedAnimationComplete", DamagedAnimationComplete);
-        m_StateMachine.SetCallback("managedByAgent", () => SetManagedByAgent(true));
-        m_StateMachine.SetCallback("unmanagedByAgent", () => SetManagedByAgent(false));
-        m_StateMachine.SetCallback("setAbductionPhysics", SetAbductionPhysics);
-        m_StateMachine.SetCallback("setGeneralPhysics", SetGeneralPhysics);
-        m_StateMachine.SetCallback("disablePhysics", DisablePhysics);
-        m_StateMachine.SetCallback("requestIdleState", RequestIdleState);
-        m_StateMachine.SetCallback("onBreedingCompleted", OnBreedingCompleted);
+        m_StateMachine.AddStateGroup(StateGroup.Create(typeof(AnimalBreedingChaseState), typeof(AnimalBreedingState)).AddOnExit(OnTargetInvalidated));
+        m_StateMachine.AddStateGroup(StateGroup.Create(typeof(AnimalWrangledState), typeof(AnimalAbductedState), typeof(AnimalAbductedAndWrangledState)).AddOnEnter(m_EntityInformation.RemoveFromTrackable).AddOnExit(m_EntityInformation.AddToTrackable));
+        m_StateMachine.AddStateGroup(StateGroup.Create(typeof(AnimalPredatorChaseState), typeof(AnimalAttackState)).AddOnExit(OnTargetInvalidated).AddOnEnter(OnResetAttackBool));
+        m_StateMachine.AddStateGroup(StateGroup.Create(typeof(AnimalEvadingState)).AddOnExit(OnTargetInvalidated));
+        m_StateMachine.AddStateGroup(StateGroup.Create(typeof(AnimalWrangledState)).AddOnExit(OnTargetInvalidated));
 
         m_StateMachine.AddTransition(typeof(AnimalIdleState), typeof(AnimalDeathState), () => IsDead);
-        m_StateMachine.AddAnyTransition(typeof(AnimalAbductedState), () => (!IsWrangled && IsInTractorBeam && !IsStaggered()));
-        m_StateMachine.AddAnyTransition(typeof(AnimalWrangledState), () => (IsWrangled && !IsInTractorBeam && !IsStaggered()));
+        m_StateMachine.AddAnyTransition(typeof(AnimalAbductedState), ShouldEnterAbducted);
+        m_StateMachine.AddAnyTransition(typeof(AnimalWrangledState), ShouldEnterWrangled);
         m_StateMachine.AddTransition(typeof(AnimalThrowingState), typeof(AnimalFreeFallState), () => !IsWrangled);
         m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalStaggeredState), () => m_bShouldStagger);
         m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalAbductedAndWrangledState), () => IsInTractorBeam);
@@ -794,6 +739,7 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalFreeFallState), () => !IsWrangled && CanLeaveFreeFall() && m_bShouldStagger);
         m_StateMachine.AddTransition(typeof(AnimalWrangledState), typeof(AnimalIdleState), () => !IsWrangled && CanLeaveFreeFall() && !m_bShouldStagger);
         m_StateMachine.AddTransition(typeof(AnimalAbductedState), typeof(AnimalFreeFallState), () => !IsInTractorBeam);
+        m_StateMachine.AddTransition(typeof(AnimalGrowingState), typeof(AnimalIdleState), () => m_StateMachine.TimeBeenInstate() > m_BornTime);
 
         // evading states
         m_StateMachine.AddTransition(typeof(AnimalIdleState), typeof(AnimalEvadingState), ShouldEvade);
@@ -801,21 +747,23 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
 
         // breeding and breeding chase states
         m_StateMachine.AddTransition(typeof(AnimalIdleState), typeof(AnimalBreedingChaseState), FoundBreedingPartner);
-        m_StateMachine.AddTransition(typeof(AnimalBreedingChaseState), typeof(AnimalBreedingState), CanBreedPartner);
-        m_StateMachine.AddTransition(typeof(AnimalBreedingChaseState), typeof(AnimalIdleState), ShouldStopActionToEvadeNext);
-        m_StateMachine.AddTransition(typeof(AnimalBreedingState), typeof(AnimalIdleState), ShouldStopActionToEvadeNext);
+
         m_StateMachine.AddTransition(typeof(AnimalBreedingState), typeof(AnimalIdleState), () => HasLostTarget(m_fBreedingChaseEndRange));
         m_StateMachine.AddTransition(typeof(AnimalBreedingChaseState), typeof(AnimalIdleState), () => HasLostTarget(m_fBreedingChaseEndRange));
+        m_StateMachine.AddTransition(typeof(AnimalBreedingChaseState), typeof(AnimalIdleState), ShouldStopActionToEvadeNext);
+        m_StateMachine.AddTransition(typeof(AnimalBreedingState), typeof(AnimalIdleState), ShouldStopActionToEvadeNext);
+        m_StateMachine.AddTransition(typeof(AnimalBreedingChaseState), typeof(AnimalBreedingState), CanBreedPartner);
 
         // free fall transitionary states
         m_StateMachine.AddTransition(typeof(AnimalFreeFallState), typeof(AnimalStaggeredState), () => CanLeaveFreeFall() && m_bShouldStagger);
         m_StateMachine.AddTransition(typeof(AnimalFreeFallState), typeof(AnimalIdleState), () => CanLeaveFreeFall() && !m_bShouldStagger);
 
         // attack and attack chase states
+        m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalIdleState), () => HasLostTarget(m_HuntEndDistance));
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalIdleState), ShouldStopActionToEvadeNext);
         m_StateMachine.AddTransition(typeof(AnimalIdleState), typeof(AnimalPredatorChaseState), CanHuntEnemy);
-        m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalIdleState), () => HasLostTarget(m_HuntEndDistance));
         m_StateMachine.AddTransition(typeof(AnimalPredatorChaseState), typeof(AnimalAttackState), CanAttackEnemy);
+        m_StateMachine.AddTransition(typeof(AnimalAttackState), typeof(AnimalIdleState), () => HasLostAttackTarget(m_CurrentAttackComponent.GetAttackRange * 3.0f));
 
         // only aggressive creatures can attack players from wrangled state
         m_StateMachine.AddTransition(typeof(AnimalWrangledAttackState), typeof(AnimalAttackState), CanAttackPlayerFromWrangle);
@@ -823,108 +771,177 @@ public class AnimalComponent : MonoBehaviour, IPauseListener
         m_Manager.AddToPauseUnpause(this);
         m_StateMachine.InitializeStateMachine();
     }
+
+    private bool ShouldEnterWrangled() 
+    {
+        if (IsWrangled && !IsInTractorBeam && !IsStaggered()) 
+        {
+            SetRelevantTargetAnimal(m_Manager.GetPlayer);
+            return true;
+        }
+        return false;
+    }
+
+    private bool ShouldEnterAbducted() 
+    {
+        if (!IsWrangled && IsInTractorBeam && !IsStaggered()) 
+        {
+            return true;
+        }
+        return false;
+    }
+
     public void FixedUpdate()
     {
-        m_CurrentStaggerCooldown = Mathf.Max(0, m_CurrentStaggerCooldown -= Time.deltaTime);
-        m_CurrentBreedingCooldown = Mathf.Max(0, m_CurrentBreedingCooldown -= Time.deltaTime);
-        m_StateMachine.Tick();
+		m_CurrentStaggerCooldown.DecrementCooldown(Time.fixedDeltaTime);
+        m_CurrentBreedingCooldown.DecrementCooldown(Time.fixedDeltaTime);
+		m_StateMachine.Tick(Time.fixedDeltaTime);
     }
+
+	public void Update()
+	{
+        m_debugTextComponent?.AddLine(string.Format("Current animal state: {0}", m_StateMachine.GetCurrentState().ToString()));
+        m_debugTextComponent?.AddLine(string.Format("Current target entity: {0}", GetTargetEntity ? GetTargetEntity.name : "No Target"));
+        m_debugTextComponent?.AddLine(string.Format("Current food: {0} target food: {1}", m_fFullness, m_fMaximumFullness));
+    }
+
+	public void OnEntityTakeDamage(GameObject go1, GameObject go2, DamageType type)
+	{
+        if (type == DamageType.PredatorDamage)
+        {
+            m_StateMachine.RequestTransition(typeof(AnimalDamagedState));
+        }
+    }
+
+	public void OnEntityDied(GameObject go1, GameObject go2, DamageType type)
+	{
+        switch (type)
+        {
+            case (DamageType.UFODamage):
+                Destroy(gameObject);
+                return;
+            case (DamageType.PredatorDamage):
+                break;
+            case (DamageType.FallDamage):
+                StartCoroutine(DelayedDeathDestroy());
+                break;
+            default:
+                Destroy(gameObject);
+                break;
+        }
+        m_StateMachine.RequestTransition(typeof(AnimalDamagedState));
+        IsDead = true;
+        m_EntityInformation.OnKilled();
+    }
+
+	public void LevelStarted()
+	{
+        m_StateMachine.RequestTransition(typeof(AnimalIdleState));
+	}
+
+	public void LevelFinished()
+	{
+		throw new NotImplementedException();
+	}
+
+	[SerializeField] private DebugTextComponent m_debugTextComponent;
     #endregion
 }
 
 
-public class AnimalIdleState : AStateBase
+public class AnimalIdleState : AStateBase<AnimalComponent>
 {
-    private readonly AnimalMovementComponent animalMovement;
-    private readonly AnimalAnimationComponent animalMovementAnimator;
-    private float m_fLowIdleTime;
-    private float m_fHighIdleTime;
+    private readonly AnimalMovementComponent m_animalMovement;
+    private readonly AnimalAnimationComponent m_animalMovementAnimator;
+
     public AnimalIdleState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
-        this.animalMovement = animalMovement;
-        this.animalMovementAnimator = animalAnimator;
+        m_animalMovement = animalMovement;
+        m_animalMovementAnimator = animalAnimator;
+		AddTimers(1);
     }
 
-    private float timeTot = 0.0f;
-    public override void Tick()
+	public override void Tick()
+	{
+		if (m_animalMovement.HasReachedDestination())
+		{
+			StartTimer(0);
+		}
+		else if (m_animalMovement.IsStuck())
+		{
+			StartTimer(0);
+			if (GetTimerVal(0) < -Host.GetLowIdleTime)
+				SetTimer(0, -Host.GetLowIdleTime);
+		}
+
+		if (GetTimerVal(0) > 0f)
+		{
+			if (m_animalMovement.ChooseRandomDestination())
+			{
+				SetTimer(0, -UnityEngine.Random.Range(Host.GetLowIdleTime, Host.GetHighIdleTime));
+				StopTimer(0);
+			}
+		}
+	}
+	public override void OnEnter()
+	{
+		StartTimer(0);
+		Host.SetManagedByAgent(true);
+		Host.DisablePhysics();
+		m_animalMovementAnimator.SetWalkAnimation();
+		m_animalMovementAnimator.IsIdling();
+		m_animalMovement.SetWalking();
+		m_animalMovement.ClearDestination();
+	}
+}
+
+public class AnimalPrePlayState : AStateBase<AnimalComponent> 
+{
+    private readonly AnimalAnimationComponent m_animalAnimator;
+    public AnimalPrePlayState(AnimalAnimationComponent animalAnimator)
     {
-        if (animalMovement.HasReachedDestination())
-        {
-            timeTot -= Time.deltaTime;
-        }
-        else if (animalMovement.IsStuck())
-        {
-            timeTot = 0.0f;
-        }
-
-        if (timeTot <= 0.0f)
-        {
-            if (animalMovement.ChooseRandomDestination())
-            {
-                timeTot = UnityEngine.Random.Range(m_fLowIdleTime, m_fHighIdleTime);
-            }
-        }
+        m_animalAnimator = animalAnimator;
     }
+
     public override void OnEnter()
     {
-        TriggerCallback("managedByAgent");
-        TriggerCallback("disablePhysics");
-        animalMovementAnimator.SetWalkAnimation();
-        animalMovement.SetWalking();
-        animalMovement.ClearDestination();
-        m_fLowIdleTime = GetParam<float>("lowIdleTimer");
-        m_fHighIdleTime = GetParam<float>("highIdleTimer");
-        timeTot = 0.0f;
+        m_animalAnimator.SetSizeOnStartup();
     }
 }
 
-public class AnimalEvadingState : AStateBase
+public class AnimalEvadingState : AStateBase<AnimalComponent>
 {
     private readonly AnimalAnimationComponent animalAnimator;
     private readonly AnimalMovementComponent animalMovement;
-    private EntityTypeComponent m_RunningTransform;
-    private float m_fFleeCheckInterval;
-    private float m_fEvadeDistance;
-    float currentRunTime = 0.0f;
     public AnimalEvadingState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
         this.animalMovement = animalMovement;
         this.animalAnimator = animalAnimator;
+        AddTimers(1);
     }
 
     public override void OnEnter()
     {
-        currentRunTime = 0.0f;
-        m_RunningTransform = GetParam<EntityTypeComponent>("evadingEntity");
-        m_fFleeCheckInterval = GetParam<float>("fleeCheckInterval");
-        m_fEvadeDistance = GetParam<float>("evadedDistance");
-        animalMovement.enabled = true;
-        animalMovement.RunAwayFromObject(m_RunningTransform.GetTrackingTransform, m_fEvadeDistance);
+        animalMovement.RunAwayFromObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetEvadedDistance);
         animalAnimator.SetRunAnimation();
         animalMovement.SetRunning();
 
-        TriggerCallback("managedByAgent");
-        TriggerCallback("disablePhysics");
+		Host.SetManagedByAgent(true);
+		Host.DisablePhysics();
+
     }
     public override void Tick()
     {
-        currentRunTime += Time.deltaTime;
-        if (currentRunTime > m_fFleeCheckInterval) 
+        if (GetTimerVal(0) > Host.GetHuntCheckInterval) 
         {
-            animalMovement.RunAwayFromObject(m_RunningTransform.GetTrackingTransform, m_fEvadeDistance);
-            currentRunTime = 0.0f;
+            animalMovement.RunAwayFromObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetEvadedDistance);
+			ClearTimer(0);
         }
         if (animalMovement.IsStuck()) 
         {
-            animalMovement.RunAwayFromObject(m_RunningTransform.GetTrackingTransform, m_fEvadeDistance);
-            currentRunTime = m_fFleeCheckInterval / 2f; 
+            animalMovement.RunAwayFromObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetEvadedDistance);
+			SetTimer(0, Host.GetHuntCheckInterval / 2f);
         }
-    }
-
-	public override void OnExit()
-	{
-		TriggerCallback("onLeaveEvadeState");
-
     }
 }
 
@@ -932,7 +949,6 @@ public class AnimalWrangledRunState : AnimalWrangledState
 {
     private readonly AnimalMovementComponent animalMovement;
     private readonly AnimalAnimationComponent animalMovementAnimator;
-    private Transform m_BodyTransform;
     public AnimalWrangledRunState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
         this.animalMovement = animalMovement;
@@ -941,15 +957,15 @@ public class AnimalWrangledRunState : AnimalWrangledState
 
     public override void Tick()
     {
-        Vector3 dir = (m_BodyTransform.position - GetParam<EntityTypeComponent>("evadingEntity").GetTrackingTransform.position).normalized;
+        Vector3 dir = (Host.GetBodyTransform.position - Host.GetTargetEntity.GetTrackingTransform.position).normalized;
         animalMovement.RunInDirection(dir);
         animalMovementAnimator.SetDesiredLookDirection(dir);
     }
     public override void OnEnter()
     {
-        TriggerCallback("unmanagedByAgent");
-        TriggerCallback("setGeneralPhysics");
-        m_BodyTransform = GetParam<Transform>("bodyTransform");
+		Host.SetManagedByAgent(false);
+		Host.SetGeneralPhysics();
+
         animalMovement.enabled = false;
         animalMovementAnimator.SetEscapingAnimation();
     }
@@ -959,7 +975,6 @@ public class AnimalWrangledAttackState : AnimalWrangledState
 {
     private readonly AnimalMovementComponent animalMovement;
     private readonly AnimalAnimationComponent animalAnimator;
-    private Transform m_BodyTransform;
     public AnimalWrangledAttackState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
         this.animalMovement = animalMovement;
@@ -968,23 +983,23 @@ public class AnimalWrangledAttackState : AnimalWrangledState
 
     public override void Tick()
     {
-        Vector3 dir = -(m_BodyTransform.position - GetParam<EntityTypeComponent>("evadingEntity").GetTrackingTransform.position).normalized;
+        Vector3 dir = -(Host.GetBodyTransform.position - Host.GetTargetEntity.GetTrackingTransform.position).normalized;
         animalMovement.RunInDirection(dir);
         animalAnimator.SetDesiredLookDirection(dir);
     }
     public override void OnEnter()
     {
-        TriggerCallback("unmanagedByAgent");
-        TriggerCallback("setGeneralPhysics");
-        m_BodyTransform = GetParam<Transform>("bodyTransform");
+		Host.SetManagedByAgent(false);
+		Host.SetGeneralPhysics();
+
         animalMovement.enabled = false;
         animalAnimator.SetRunAnimation();
     }
 }
 
-public abstract class AnimalWrangledState : AStateBase {  }
+public abstract class AnimalWrangledState : AStateBase<AnimalComponent> {  }
 
-public class AnimalThrowingState : AStateBase
+public class AnimalThrowingState : AStateBase<AnimalComponent>
 {
     private readonly AnimalAnimationComponent animalAnimator;
     public AnimalThrowingState(AnimalAnimationComponent animalAnimator)
@@ -993,58 +1008,43 @@ public class AnimalThrowingState : AStateBase
     }
 }
 
-public class AnimalDamagedState : AStateBase 
+public class AnimalDamagedState : AStateBase<AnimalComponent>
 {
     private readonly AnimalAnimationComponent animalAnimator;
     public AnimalDamagedState(AnimalAnimationComponent animalAnimator)
     {
         this.animalAnimator = animalAnimator;
     }
-
-    public override void OnEnter()
-    {
-        animalAnimator.TriggerDamagedAnimation(() => RequestTransition<AnimalIdleState>());
-    }
 }
 
-public class AnimalStaggeredState : AStateBase 
+public class AnimalStaggeredState : AStateBase<AnimalComponent>
 {
     private readonly AnimalAnimationComponent animalAnimator;
-    private float m_fTimeStaggered;
-    private float m_fTotalStaggerTime;
 
     public AnimalStaggeredState(AnimalAnimationComponent animalAnimator)
     {       
         this.animalAnimator = animalAnimator;
+        AddTimers(1);
     }
 
     public override void OnEnter()
     {
-        Debug.Log("Staggered");
-        m_fTimeStaggered = 0.0f;
         animalAnimator.SetIdleAnimation();
-        m_fTotalStaggerTime = GetParam<float>("staggerTime");
         animalAnimator.SetStaggeredAnimation();
-        TriggerCallback("setGeneralPhysics");
-        TriggerCallback("onStaggered");
+
+		Host.SetGeneralPhysics();
     }
 
     public override void Tick()
     {
-        m_fTimeStaggered += Time.deltaTime;
-        if (m_fTimeStaggered > m_fTotalStaggerTime) 
+        if (GetTimerVal(0) > Host.GetTotalStaggerTime) 
         {
-            TriggerCallback("requestIdleState");
+			RequestTransition<AnimalIdleState>();
         }
     }
-
-	public override void OnExit()
-	{
-        base.OnExit();
-	}
 }
 
-public class AnimalLassoThrownState : AStateBase 
+public class AnimalLassoThrownState : AStateBase<AnimalComponent> 
 {
     private readonly AnimalAnimationComponent animalAnimator;
     public AnimalLassoThrownState(AnimalAnimationComponent animalAnimator)
@@ -1054,83 +1054,80 @@ public class AnimalLassoThrownState : AStateBase
 
     public override void OnEnter()
     {
-        TriggerCallback("setGeneralPhysics");
-        TriggerCallback("unmanagedByAgent");
-        animalAnimator.SetIdleAnimation();
-    }
+		Host.SetManagedByAgent(false);
+		Host.SetGeneralPhysics();
 
-	public override void OnExit()
-	{
-        TriggerCallback("stopBeingThrown");
-	}
+		animalAnimator.SetIdleAnimation();
+    }
 }
 
-public class AnimalBreedingState : AStateBase 
+public class AnimalBreedingState : AStateBase<AnimalComponent>
 {
-    float currentBreedingTime = 0.0f;
-    public override void OnEnter()
+    private readonly AnimalAnimationComponent animalAnimator;
+
+    public AnimalBreedingState(AnimalAnimationComponent animalAnimator)
     {
-        currentBreedingTime = GetParam<float>("breedingTime");
-    }
-    public override void Tick()
+        this.animalAnimator = animalAnimator;
+		AddTimers(1);
+	}
+
+	public override void OnEnter()
+	{
+        Host.CacheTargetDirection();
+        animalAnimator.TriggerBreedingAnimation();
+        StartTimer(0);
+	}
+
+	public override void Tick()
     {
-        currentBreedingTime -= Time.deltaTime;
-        if (currentBreedingTime < 0) 
+        if (GetTimerVal(0) > Host.GetBreedingDuration) 
         {
-            TriggerCallback("onBreedingCompleted");
-        }
+            Host.OnBreedingComplete();
+            ClearTimer(0);
+            StopTimer(0);
+		}
     }
 }
 
-public class AnimalBreedingChaseState : AStateBase 
+public class AnimalBreedingChaseState : AStateBase<AnimalComponent> 
 {
     private readonly AnimalAnimationComponent animalAnimator;
     private readonly AnimalMovementComponent animalMovement;
-    private EntityTypeComponent m_RunningTransform;
-    private float m_fHuntCheckInterval;
-    private float m_fBreedingDistance;
-    private float m_fHuntDistance;
-    float currentRunTime = 0.0f;
+
     public AnimalBreedingChaseState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
         this.animalMovement = animalMovement;
         this.animalAnimator = animalAnimator;
+        AddTimers(1);
     }
 
     public override void OnEnter()
     {
-        currentRunTime = 0.0f;
-        m_RunningTransform = GetParam<EntityTypeComponent>("evadingEntity");
-        m_fHuntCheckInterval = GetParam<float>("huntCheckInterval");
-        m_fHuntDistance = GetParam<float>("breedingHuntBeginDistance");
-        m_fBreedingDistance = GetParam<float>("breedingDistance");
-        animalMovement.enabled = true;
-        animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance);
-        animalAnimator.SetRunAnimation();
+		animalMovement.RunTowardsObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetBreedingChaseDistance, 0.8f * Host.GetBreedingStartDistance);
+		animalAnimator.SetRunAnimation();
         animalMovement.SetRunning();
-        currentRunTime = m_fHuntCheckInterval;
 
-        TriggerCallback("managedByAgent");
-        TriggerCallback("disablePhysics");
-    }
+		Host.SetManagedByAgent(true);
+		Host.DisablePhysics();
+        StartTimer(0);
+	}
     public override void Tick()
     {
-        currentRunTime += Time.deltaTime;
-        if (currentRunTime > m_fHuntCheckInterval)
-        {
-            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fBreedingDistance);
-            currentRunTime = 0.0f;
-        }
-        if (animalMovement.IsStuck())
-        {
-            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fBreedingDistance);
-            currentRunTime = m_fHuntCheckInterval / 2f;
-        }
-    }
+		if (GetTimerVal(0) > Host.GetBreedCheckInterval)
+		{
+			animalMovement.RunTowardsObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetBreedingChaseDistance, 0.8f * Host.GetBreedingStartDistance);
+			ClearTimer(0);
+		}
+		if (animalMovement.IsStuck())
+		{
+			animalMovement.RunTowardsObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetBreedingChaseDistance, 0.8f * Host.GetBreedingStartDistance);
+			SetTimer(0, Host.GetBreedCheckInterval / 2f);
+		}
+	}
 }
 
 
-public class AnimalFreeFallState : AStateBase 
+public class AnimalFreeFallState : AStateBase<AnimalComponent> 
 {
     private readonly AnimalAnimationComponent animalAnimator;
     public AnimalFreeFallState(AnimalAnimationComponent animalAnimator) 
@@ -1140,13 +1137,14 @@ public class AnimalFreeFallState : AStateBase
 
     public override void OnEnter()
     {
-        TriggerCallback("setGeneralPhysics");
-        TriggerCallback("unmanagedByAgent");
-        animalAnimator.SetFreeFallAnimation();
+		Host.SetManagedByAgent(false);
+		Host.SetGeneralPhysics();
+
+		animalAnimator.SetFreeFallAnimation();
     }
 }
 
-public class AnimalDeathState : AStateBase 
+public class AnimalDeathState : AStateBase<AnimalComponent>
 {
         private readonly AnimalAnimationComponent animalAnimator;
     public AnimalDeathState(AnimalAnimationComponent animalAnimator) 
@@ -1156,13 +1154,14 @@ public class AnimalDeathState : AStateBase
 
     public override void OnEnter()
     {
-        TriggerCallback("setGeneralPhysics");
-        TriggerCallback("unmanagedByAgent");
+		Host.SetManagedByAgent(false);
+		Host.SetGeneralPhysics();
+
         animalAnimator.SetIdleAnimation();
     }
 }
     
-public class AnimalAbductedState : AStateBase
+public class AnimalAbductedState : AStateBase<AnimalComponent>
 {
     private readonly AnimalMovementComponent animalMovement;
 
@@ -1174,89 +1173,110 @@ public class AnimalAbductedState : AStateBase
     public override void OnEnter()
     {
         animalMovement.enabled = false;
-        TriggerCallback("setAbductionPhysics");
-        TriggerCallback("unmanagedByAgent");
-    }
+
+		Host.SetManagedByAgent(false);
+		Host.SetAbductionPhysics();
+	}
 }
 
-public class AnimalAbductedAndWrangledState : AStateBase 
+public class AnimalAbductedAndWrangledState : AStateBase<AnimalComponent>
 {
-    private readonly AnimalComponent animalStateHandler;
 
-    public AnimalAbductedAndWrangledState(AnimalComponent animalStateHandler)
-    {
-        this.animalStateHandler = animalStateHandler;
-    }
 }
 
-public class AnimalAttackState : AStateBase
+public class AnimalAttackState : AStateBase<AnimalComponent>
 {
-    private readonly AnimalAnimationComponent animalAnimator;
+    private readonly AnimalAnimationComponent m_animalAnimator;
     public AnimalAttackState(AnimalAnimationComponent animalAnimator)
     {
-        this.animalAnimator = animalAnimator;
+        m_animalAnimator = animalAnimator;
+		AddTimers(2);
     }
 
     public override void OnEnter()
     {
-        //TriggerCallback("sendTargetPosition");
-        //animalAnimator.TriggerAttackAnimation(() => TriggerCallback("attackAnimationComplete"), () => TriggerCallback("triggerDamage"));
+		m_animalAnimator.TriggerAttackAnimation();
+		StartTimer(0);
+		StartTimer(1);
+		Host.CacheTargetDirection();
+	}
+
+    private void SomeMemeFunction() { }
+
+	public override void OnExit()
+	{
+        SomeMemeFunction();
+	}
+
+	public override void Tick()
+	{
+		if (GetTimerVal(0) > Host.GetAttackDamageTime)
+		{
+			Host.TriggerAttack();
+			ClearTimer(0);
+			StopTimer(0);
+		}
+		if (GetTimerVal(1) > Host.GetAttackDuration)
+		{
+			RequestTransition<AnimalIdleState>();
+		}
+	}
+}
+
+public class AnimalGrowingState : AStateBase<AnimalComponent>
+{
+    private readonly AnimalAnimationComponent m_animalAnimator;
+    public AnimalGrowingState(AnimalAnimationComponent animalAnimator) 
+    {
+        m_animalAnimator = animalAnimator;
     }
+	public override void OnEnter()
+	{
+        m_animalAnimator.OnBorn();
+	}
+
 }
 
-public class AnimalGrowingState : AStateBase 
+public class AnimalPredatorChaseState : AStateBase<AnimalComponent>
 {
+    private readonly AnimalAnimationComponent m_animalAnimator;
+    private readonly AnimalMovementComponent m_animalMovement;
 
-
-}
-
-public class AnimalPredatorChaseState : AStateBase
-{
-    private readonly AnimalAnimationComponent animalAnimator;
-    private readonly AnimalMovementComponent animalMovement;
-    private EntityTypeComponent m_RunningTransform;
-    private float m_fHuntCheckInterval;
-    private float m_fAttackDistance;
-    private float m_fHuntDistance;
-    float currentRunTime = 0.0f;
     public AnimalPredatorChaseState(AnimalMovementComponent animalMovement, AnimalAnimationComponent animalAnimator)
     {
-        this.animalMovement = animalMovement;
-        this.animalAnimator = animalAnimator;
+        m_animalMovement = animalMovement;
+        m_animalAnimator = animalAnimator;
+		AddTimers(1);
     }
 
     public override void OnEnter()
     {
-        currentRunTime = 0.0f;
-        m_RunningTransform = GetParam<EntityTypeComponent>("evadingEntity");
-        m_fHuntCheckInterval = GetParam<float>("huntCheckInterval");
-        m_fHuntDistance = GetParam<float>("huntBeginDistance");
-        m_fAttackDistance = GetParam<float>("attackDistance");
-        animalMovement.enabled = true;
-        animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
-        animalAnimator.SetRunAnimation();
-        animalMovement.SetRunning();
-        currentRunTime = m_fHuntCheckInterval;
+        m_animalMovement.RunTowardsObject(Host.GetTargetEntity.GetTrackingTransform, Host.GetHuntDistance, Host.GetAttackRange + Host.GetTargetEntity.GetTrackableRadius);
+        m_animalAnimator.SetRunAnimation();
+        m_animalMovement.SetRunning();
 
-        TriggerCallback("managedByAgent");
-        TriggerCallback("disablePhysics");
-    }
+		Host.SetManagedByAgent(true);
+		Host.DisablePhysics();
+	}
     public override void Tick()
     {
-        currentRunTime += Time.deltaTime;
-        if (currentRunTime > m_fHuntCheckInterval)
+		EntityTypeComponent targetTransform = Host.GetTargetEntity;
+		float moveDist = Host.GetHuntDistance;
+		float attackDist = Host.GetAttackRange + targetTransform.GetTrackableRadius;
+
+		if (GetTimerVal(0) > Host.GetHuntCheckInterval)
         {
-            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
-            currentRunTime = 0.0f;
-        }
-        else if (animalMovement.IsStuck())
+            m_animalMovement.RunTowardsObject(targetTransform.GetTrackingTransform, moveDist, attackDist);
+			ClearTimer(0);
+		}
+        else if (m_animalMovement.IsStuck())
         {
-            animalMovement.RunTowardsObject(m_RunningTransform.GetTrackingTransform, m_fHuntDistance, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
-            currentRunTime = m_fHuntCheckInterval / 2f;
+            m_animalMovement.RunTowardsObject(targetTransform.GetTrackingTransform, Host.GetHuntDistance, attackDist);
+            SetTimer(0, Host.GetHuntCheckInterval / 2f);
         }
 		else 
         {
-            animalMovement.CheckStoppingDistanceForChase(m_RunningTransform.GetTrackingTransform, m_fAttackDistance + m_RunningTransform.GetTrackableRadius);
+            m_animalMovement.CheckStoppingDistanceForChase(targetTransform.GetTrackingTransform, attackDist);
         }
     }
 }

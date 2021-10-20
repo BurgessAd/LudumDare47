@@ -17,6 +17,7 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 	[Header("--- Cam Shake ---")]
 	[SerializeField] private EZCameraShake.CameraShaker m_CameraShaker;
 	[SerializeField] private AnimationCurve m_GroundImpactSpeedSize;
+    [SerializeField] private AnimationCurve m_ThrowForceCamShake;
 
 	[Header("--- FOV Animation ---")]
 	[SerializeField] private float m_fMaxFOVChangePerSecond = 1.0f;
@@ -39,7 +40,7 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
     float m_fCurrentFOV;
     private Transform m_tCamTransform;
     private Transform m_tFocusTransform;
-    private StateMachine m_CameraStateMachine;
+    private StateMachine<PlayerCameraComponent> m_CameraStateMachine;
     private Type m_CachedType;
 
     private void OnSetPullStrength(float force, float yankSize) 
@@ -56,7 +57,6 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
     {
         ClearFocusedTransform();
     }
-
     public void SetFocusedTransform(Transform focusTransform) 
     {
         m_tFocusTransform = focusTransform;
@@ -69,18 +69,20 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         m_CameraAnimator.SetBool(m_JumpString, true);
     }
 
-    private void OnLeftGround() 
-    {
-        m_CameraAnimator.SetBool(m_GroundedAnimString, false);
-    }
-
     private void OnHitGround(float impactSpeed) 
     {
         m_CameraAnimator.SetBool(m_JumpString, false);
-        float animationSize = m_GroundImpactSpeedSize.Evaluate(Mathf.Abs(impactSpeed));
         m_CameraAnimator.SetBool(m_GroundedAnimString, true);
+
+        float animationSize = m_GroundImpactSpeedSize.Evaluate(Mathf.Abs(impactSpeed));
         m_CameraShaker.ShakeOnce(animationSize, animationSize / 2, 0.15f, 0.45f);
     }
+
+	private void OnThrowObject(float throwForce)
+	{
+        float animationSize = m_ThrowForceCamShake.Evaluate(throwForce);
+		m_CameraShaker.ShakeOnce(animationSize/3, animationSize, 0.3f, 0.3f);
+	}
 
 	float currentMovement = 0.0f;
 	float currentMovementAcceleration = 0.0f;
@@ -129,8 +131,8 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
     {
 		m_SettingsManager.PropertyChanged += OnPropertyChanged;
 
-        m_CameraStateMachine = new StateMachine(new PlayerControlledLook(this));
-        m_CameraStateMachine.AddState(new ObjectFocusLook(this));
+        m_CameraStateMachine = new StateMachine<PlayerCameraComponent>(new PlayerControlledLook(), this);
+        m_CameraStateMachine.AddState(new ObjectFocusLook());
         m_CameraStateMachine.AddState(new CameraIdleState());
         m_tCamTransform = transform;
 		m_fDefaultFOV = m_SettingsManager.FoV;
@@ -139,6 +141,7 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
         m_LassoStart.OnSetPullingStrength += OnSetPullStrength;
         m_LassoStart.OnSetPullingObject += OnSetPullingObject;
         m_LassoStart.OnStoppedPullingObject += OnStoppedPullingObject;
+        m_LassoStart.OnThrowObject += OnThrowObject;
 
         m_Manager.AddToPauseUnpause(this);
         m_PlayerMovement.OnHitGround += OnHitGround;
@@ -196,40 +199,29 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
     // Update is called once per frame
     void Update()
     {
-        m_CameraStateMachine.Tick();
+        m_CameraStateMachine.Tick(Time.deltaTime);
     }
 }
 
-public class PlayerControlledLook : AStateBase
+public class PlayerControlledLook : AStateBase<PlayerCameraComponent>
 {
-    private readonly PlayerCameraComponent mouseLook;
-    public PlayerControlledLook(PlayerCameraComponent mouseLook) 
-    {
-        this.mouseLook = mouseLook;
-    }
-
     public override void Tick()
     {
-        mouseLook.ProcessMouseInput();
-        mouseLook.ProcessTargetFOV();
+        Host.ProcessMouseInput();
+		Host.ProcessTargetFOV();
     }
 }
 
-public class ObjectFocusLook : AStateBase 
+public class ObjectFocusLook : AStateBase<PlayerCameraComponent>
 {
-    private readonly PlayerCameraComponent mouseLook;
-    public ObjectFocusLook(PlayerCameraComponent mouseLook)
-    {
-        this.mouseLook = mouseLook;
-    }
     public override void Tick()
     {
-        mouseLook.ProcessLookTowardsTransform();
-        mouseLook.ProcessTargetFOV();
+		Host.ProcessLookTowardsTransform();
+		Host.ProcessTargetFOV();
     }
 }
 
-public class CameraIdleState : AStateBase 
+public class CameraIdleState : AStateBase <PlayerCameraComponent>
 {
     
 }

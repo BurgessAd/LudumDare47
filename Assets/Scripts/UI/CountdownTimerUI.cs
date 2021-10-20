@@ -19,16 +19,17 @@ public class CountdownTimerUI : MonoBehaviour
 	[SerializeField] private AnimationCurve m_TextPulseOpacityByTimer;
 	[SerializeField] private float m_TimerFadeTime;
 	[SerializeField] private string m_FinalTimerTickString = "0";
+
 	// Start is called before the first frame update
 	private int m_CurrentTime;
 	private IEnumerator m_TimerCoroutine;
-	private Vector2 m_InitialTextSize = default;
 	public event Action OnTimerComplete;
+	public event Action<float> OnTimerTick;
 
-	private void Awake()
-	{
-		m_InitialTextSize = m_TimerRect.sizeDelta;
-	}
+	//private void Awake()
+	//{
+	//	m_InitialTextSize = m_TimerRect.sizeDelta;
+	//}
 
 	public void ShowTimer()
 	{
@@ -37,15 +38,46 @@ public class CountdownTimerUI : MonoBehaviour
 
 	public void StartTimerFromTime(in float time)
     {
+		m_TimeTimerStarted = Time.time;
+		m_InitialTime = time;
 		m_TimerCoroutine = StartTimer(time);
 		StartCoroutine(m_TimerCoroutine);
     }
 
-	public void StopTimer()
+	public void StopTimer(bool hideTimer = true)
 	{
-		LeanTween.alphaCanvas(m_TextCanvasGroup, 0.0f, m_TimerFadeTime).setEaseInCubic();
+		if (hideTimer)
+			LeanTween.alphaCanvas(m_TextCanvasGroup, 0.0f, m_TimerFadeTime).setEaseInCubic();
+
 		StopCoroutine(m_TimerCoroutine);
 		OnTimerComplete = null;
+		m_TimeTimerStarted = 0.0f;
+		m_TimeRemainingWhenTimerPaused = 0.0f;
+		m_bIsTimerPaused = false;
+	}
+
+	private bool m_bIsTimerPaused = false;
+	private float m_TimeRemainingWhenTimerPaused = 0.0f;
+	public void PauseTimer() 
+	{
+		if (m_InitialTime != 0) 
+		{
+			m_TimeRemainingWhenTimerPaused = m_InitialTime - (Time.time - m_TimeTimerStarted);
+			m_bIsTimerPaused = true;
+			StopCoroutine(m_TimerCoroutine);
+		}
+	}
+
+	public void ContinueTimer() 
+	{
+		if (m_bIsTimerPaused) 
+		{
+			m_TimerCoroutine = StartTimer(m_TimeRemainingWhenTimerPaused);
+			StartCoroutine(m_TimerCoroutine);
+			m_bIsTimerPaused = false;
+			m_TimeTimerStarted = Time.time;
+			m_TimeRemainingWhenTimerPaused = 0;
+		}
 	}
 
 	private IEnumerator StartTimer(float time)
@@ -66,12 +98,17 @@ public class CountdownTimerUI : MonoBehaviour
 		TimerTick(m_FinalTimerTickString, m_TimerCompleteAudioIdentifier);
 		yield return new WaitForSecondsRealtime(0.5f);
 		OnTimerComplete?.Invoke();
+		StopTimer(false);
 	}
+
+	private float m_InitialTime = 0;
+	private float m_TimeTimerStarted = 0;
 
 	private void TimerTick(in string timerText, in string audioIdentifier)
 	{
 		m_AudioManager.Play(audioIdentifier);
-		m_TimerRect.localScale = Vector3.one * (1 + m_TextPulseSizeByTimer.Evaluate(m_CurrentTime));
+		OnTimerTick?.Invoke(m_CurrentTime / m_InitialTime);
+		m_TimerRect.localScale = Vector3.one * (1 + m_TextPulseSizeByTimer.Evaluate(m_CurrentTime / m_InitialTime));
 		LeanTween.scale(m_TimerRect.gameObject, Vector3.one, 1.0f).setEaseInOutCubic();
 		m_TextCanvasGroup.alpha = 1.0f;
 		LeanTween.alphaCanvas(m_TextCanvasGroup, m_TextPulseOpacityByTimer.Evaluate(m_CurrentTime), 1.0f).setEaseInOutCubic();

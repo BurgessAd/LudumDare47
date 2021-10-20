@@ -4,20 +4,13 @@ using UnityEngine;
 
 public class UfoAnimationComponent : MonoBehaviour, IPauseListener 
 {
-    [SerializeField]
-    private float m_RotationalVelocity;
-    [SerializeField]
-    private float m_MaxRotationalAngle;
-    [SerializeField]
-    private float m_MaxAccelerationRotation;
-    [SerializeField]
-    private float m_AccelerationRequiredToTilt;
-    [SerializeField]
-    private Rigidbody m_Body;
-    [SerializeField]
-    private ParticleSystem m_SpeedParticleSystem;
-    [SerializeField]
-    private float m_StaggerAnimationTime;
+    [SerializeField] private float m_RotationalVelocity;
+    [SerializeField] private float m_MaxRotationalAngle;
+    [SerializeField] private float m_MaxAccelerationRotation;
+    [SerializeField] private float m_AccelerationRequiredToTilt;
+    [SerializeField] private Rigidbody m_Body;
+    [SerializeField] private ParticleSystem m_SpeedParticleSystem;
+    [SerializeField] private float m_StaggerAnimationTime;
     [SerializeField] private CowGameManager m_Manager;
 
     [SerializeField] private AnimationCurve m_AngularAccelerationDampening;
@@ -34,13 +27,13 @@ public class UfoAnimationComponent : MonoBehaviour, IPauseListener
     public float GetAccelerationDampingVal(in float angle) { return m_AngularAccelerationDampening.Evaluate(angle / m_MaxRotationalAngle); }
     public Rigidbody GetBody => m_Body;
 
-    private StateMachine m_AnimationStateMachine;
+    private StateMachine<UfoAnimationComponent> m_AnimationStateMachine;
     private void Awake()
     {
-        m_AnimationStateMachine = new StateMachine(new UFOFlyAnimationState(this));
-        m_AnimationStateMachine.AddState(new UFOStaggeredAnimationState(this));
-        m_AnimationStateMachine.AddState(new UFOAbductAnimationState(this));
-        m_AnimationStateMachine.AddState(new UFODeathAnimationState(this));
+        m_AnimationStateMachine = new StateMachine<UfoAnimationComponent>(new UFOFlyAnimationState(), this);
+        m_AnimationStateMachine.AddState(new UFOStaggeredAnimationState());
+        m_AnimationStateMachine.AddState(new UFOAbductAnimationState());
+        m_AnimationStateMachine.AddState(new UFODeathAnimationState());
         m_Manager.AddToPauseUnpause(this);
     }
     public void Pause()
@@ -55,7 +48,7 @@ public class UfoAnimationComponent : MonoBehaviour, IPauseListener
 
     private void Update()
     {
-        m_AnimationStateMachine.Tick();
+        m_AnimationStateMachine.Tick(Time.deltaTime);
     }
     public void OnStaggered() 
     {
@@ -78,14 +71,11 @@ public class UfoAnimationComponent : MonoBehaviour, IPauseListener
     }
 }
 
-public class UFOStaggeredAnimationState : AStateBase 
+public class UFOStaggeredAnimationState : AStateBase<UfoAnimationComponent>
 {
-    private readonly UfoAnimationComponent m_UfoAnimations;
+
     private float m_CurrentAnimationTime = 0.0f;
-    public UFOStaggeredAnimationState(in UfoAnimationComponent animationComponent)
-    {
-        m_UfoAnimations = animationComponent;
-    }
+
     public override void OnEnter()
     {
         m_CurrentAnimationTime = 0.0f;
@@ -93,26 +83,22 @@ public class UFOStaggeredAnimationState : AStateBase
     public override void Tick()
     {
         m_CurrentAnimationTime += Time.deltaTime;
-        float scaledTime = m_CurrentAnimationTime / m_UfoAnimations.GetStaggerAnimationTime;
-        float pitch = m_UfoAnimations.EvaluatePitchCurve(scaledTime);
-        float roll = m_UfoAnimations.EvaluateTiltCurve(scaledTime);
+        float scaledTime = m_CurrentAnimationTime / Host.GetStaggerAnimationTime;
+        float pitch = Host.EvaluatePitchCurve(scaledTime);
+        float roll = Host.EvaluateTiltCurve(scaledTime);
 
-        m_UfoAnimations.GetBody.rotation = Quaternion.RotateTowards(m_UfoAnimations.GetBody.rotation, Quaternion.identity, m_UfoAnimations.GetRotationalVelocity);
+		Host.GetBody.rotation = Quaternion.RotateTowards(Host.GetBody.rotation, Quaternion.identity, Host.GetRotationalVelocity);
     }
 }
 
-public class UFOFlyAnimationState : AStateBase 
+public class UFOFlyAnimationState : AStateBase<UfoAnimationComponent>
 {
-    private readonly UfoAnimationComponent m_UfoAnimations;
-    public UFOFlyAnimationState(in UfoAnimationComponent animationComponent) 
-    {
-        m_UfoAnimations = animationComponent;
-    }
+
     private Vector3 velocityLastFrame;
     private Vector3 accelerationLastFrame;
     public override void Tick()
     {
-        Vector3 velocity = m_UfoAnimations.GetBody.velocity;
+        Vector3 velocity = Host.GetBody.velocity;
         Vector3 acceleration = (velocity - velocityLastFrame) / Time.deltaTime;
 
         if (velocity.magnitude > 2.0f) 
@@ -126,7 +112,7 @@ public class UFOFlyAnimationState : AStateBase
         Vector3 accelerationInPlane = Vector3.ProjectOnPlane(acceleration, Vector3.up).normalized;
         float tiltAngle = 30;
         Quaternion targetQuat = Quaternion.identity;
-        if (acceleration.magnitude > m_UfoAnimations.GetAccelerationRequiredToTilt) 
+        if (acceleration.magnitude > Host.GetAccelerationRequiredToTilt) 
         {
             targetQuat = Quaternion.AngleAxis(tiltAngle, Vector3.Cross(Vector3.up, accelerationInPlane).normalized);
         }
@@ -153,9 +139,9 @@ public class UFOFlyAnimationState : AStateBase
 
         //break down acceleration direction into planes defined by x and z axis
         // take acceleration direction
-        float angularVelocity = m_UfoAnimations.GetRotationalVelocity * Time.deltaTime * m_UfoAnimations.GetAccelerationDampingVal(Quaternion.Angle(m_UfoAnimations.GetBody.rotation, targetQuat));
+        float angularVelocity = Host.GetRotationalVelocity * Time.deltaTime * Host.GetAccelerationDampingVal(Quaternion.Angle(Host.GetBody.rotation, targetQuat));
 
-        m_UfoAnimations.GetBody.rotation = Quaternion.RotateTowards(m_UfoAnimations.GetBody.rotation, targetQuat, angularVelocity);
+		Host.GetBody.rotation = Quaternion.RotateTowards(Host.GetBody.rotation, targetQuat, angularVelocity);
 
         accelerationLastFrame = acceleration;
 
@@ -163,26 +149,18 @@ public class UFOFlyAnimationState : AStateBase
     }
 }
 
-public class UFOAbductAnimationState : AStateBase 
+public class UFOAbductAnimationState : AStateBase<UfoAnimationComponent>
 {
-    private readonly UfoAnimationComponent m_UfoAnimations;
-    public UFOAbductAnimationState(in UfoAnimationComponent animationComponent)
-    {
-        m_UfoAnimations = animationComponent;
-    }
+
     public override void Tick()
     {
-        m_UfoAnimations.GetBody.rotation = Quaternion.RotateTowards(m_UfoAnimations.GetBody.rotation, Quaternion.identity, m_UfoAnimations.GetRotationalVelocity * Time.deltaTime);
+        Host.GetBody.rotation = Quaternion.RotateTowards(Host.GetBody.rotation, Quaternion.identity, Host.GetRotationalVelocity * Time.deltaTime);
     }
 }
 
-public class UFODeathAnimationState : AStateBase 
+public class UFODeathAnimationState : AStateBase<UfoAnimationComponent>
 {
-    private readonly UfoAnimationComponent m_UfoAnimations;
-    public UFODeathAnimationState(in UfoAnimationComponent animationComponent)
-    {
-        m_UfoAnimations = animationComponent;
-    }
+
     public override void Tick()
     {
         

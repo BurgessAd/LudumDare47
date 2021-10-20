@@ -4,20 +4,17 @@ using UnityEngine;
 using System;
 
 [RequireComponent(typeof(LocalDebugData))]
+[RequireComponent(typeof(HealthComponent))]
 [ExecuteInEditMode]
 public class FoodSourceComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField] private AnimationCurve m_RegenerationRateByCurrentHealth = default;
-
-    [SerializeField] private Animator m_FoodHealthAnimator = default;
 
     [SerializeField] private float m_fHealthThresholdForEaten = default;
 
     [SerializeField] private float m_fHealthThresholdForReadyForEating = default;
 
     [SerializeField] private float m_fFoodSizeChangeTime = default;
-
-    [SerializeField] private string m_FoodAnimatorParamName = default;
 
     [SerializeField] private CowGameManager m_Manager = default;
 
@@ -65,7 +62,7 @@ private LocalDebugData m_GrassDebug;
         float regenerationRatePerSecond = m_RegenerationRateByCurrentHealth.Evaluate(m_HealthComponent.GetCurrentHealthPercentage);
         m_HealthComponent.ReplenishHealth(regenerationRatePerSecond * Time.deltaTime);
         m_fCurrentFoodSize = Mathf.SmoothDamp(m_fCurrentFoodSize, m_HealthComponent.GetCurrentHealthPercentage, ref m_fFoodSizeChangeVelocity, m_fFoodSizeChangeTime);
-        m_FoodHealthAnimator.Play("GrassGrowth", -1, m_fCurrentFoodSize);
+        m_Listeners.ForEachListener((IFoodSourceSizeListener listener) => listener.OnSetFoodSize(m_fCurrentFoodSize));
 
         if (m_HealthComponent.GetCurrentHealthPercentage < m_fHealthThresholdForEaten && m_CurrentFoodStatus == FoodStatus.ReadyToEat)
         {
@@ -84,4 +81,13 @@ private LocalDebugData m_GrassDebug;
         //m_GrassDebug.AddDebugLine(string.Format("Current Food Growth Rate per Second: %f", regenerationRatePerSecond));
 #endif
     }
+
+    UnityUtils.ListenerSet<IFoodSourceSizeListener> m_Listeners = new UnityUtils.ListenerSet<IFoodSourceSizeListener>();
+
+    public void AddListener(in IFoodSourceSizeListener listener) { m_Listeners.Add(listener); }
+}
+
+public interface IFoodSourceSizeListener 
+{
+    void OnSetFoodSize(float foodSize);
 }

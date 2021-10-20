@@ -11,13 +11,13 @@ using System;
 // vertex color alpha is grass length proportional to total length
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
+[RequireComponent(typeof(FoodSourceComponent))]
 [ExecuteInEditMode]
-public class GrassPatchComponent : MonoBehaviour
+public class GrassPatchComponent : MonoBehaviour, IFoodSourceSizeListener
 {
     [SerializeField] private float m_MaxGrassDensity;
     [SerializeField] private float m_GrassMapGenerationHeight;
     [SerializeField] private float m_GrassLength;
-	[SerializeField] private float m_GrassLength2;
     [SerializeField] private LayerMask m_GrassGenerationLayerMask;
     [SerializeField] private LayerMask m_BlockingGrassGenerationLayerMask;
      
@@ -36,8 +36,8 @@ public class GrassPatchComponent : MonoBehaviour
     private readonly List<Vector3> normals = new List<Vector3>();
     private readonly List<Vector3> tangents = new List<Vector3>();
     private readonly List<Color32> colors = new List<Color32>();
-    private MaterialPropertyBlock m_PropertyBlock;
     private MeshRenderer m_MeshRenderer;
+    private int m_lengthId;
 
 	#region getters and setters
     public Texture2D GrassMap { get => m_GrassMap; set { m_GrassMap = value; m_bHasBoundsDefined = true; } }
@@ -52,16 +52,20 @@ public class GrassPatchComponent : MonoBehaviour
 	{
         if (!m_MeshRenderer)
             m_MeshRenderer = GetComponent<MeshRenderer>();
-        if (m_PropertyBlock == null)
-            m_PropertyBlock = new MaterialPropertyBlock();
-        if (m_lastGrassLength != m_GrassLength2)
+        if (m_lastGrassLength != m_GrassLength)
 		{
-			m_MeshRenderer.GetPropertyBlock(m_PropertyBlock);
-			m_PropertyBlock.SetFloat("_BladeHeightMultiplier", m_GrassLength2);
-			m_MeshRenderer.SetPropertyBlock(m_PropertyBlock);
-			m_lastGrassLength = m_GrassLength2;
+            m_MeshRenderer.sharedMaterial.SetFloat(m_lengthId, m_GrassLength);
+			m_lastGrassLength = m_GrassLength;
 		}
 	}
+
+	public void Awake()
+	{
+        GetComponent<FoodSourceComponent>().AddListener(this);
+        m_MeshRenderer = GetComponent<MeshRenderer>();
+        m_MeshRenderer.sharedMaterial = new Material(m_MeshRenderer.sharedMaterial);
+        m_lengthId = Shader.PropertyToID("_BladeHeightMultiplier");
+    }
 
 	public GameObject CreateGrassPaintVisualizer(in Vector3 pos)
 	{
@@ -85,7 +89,6 @@ public class GrassPatchComponent : MonoBehaviour
         spriteRenderer.sprite = Sprite.Create(m_GrassMap, new Rect(0, 0, (int)m_GrassMap.width, (int)m_GrassMap.height), new Vector2(0, 1), pixelsPerUnitWorld);
     }
 
-    int i = 0;
 
 	private void OnDrawGizmosSelected()
 	{
@@ -223,4 +226,9 @@ public class GrassPatchComponent : MonoBehaviour
         }
         return false;
     }
+
+	public void OnSetFoodSize(float foodSize)
+	{
+        m_GrassLength = foodSize;
+	}
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PenBeaconComponent : MonoBehaviour, IPauseListener
+public class PenBeaconComponent : MonoBehaviour, IPauseListener, IHealthListener
 {
     [SerializeField] private CowGameManager m_GameManager;
     [SerializeField] private float m_FlashTime;
@@ -12,19 +12,18 @@ public class PenBeaconComponent : MonoBehaviour, IPauseListener
     [SerializeField] private List<PenBeaconElementComponent> m_BeaconElements;
     [SerializeField] private List<Rotator> m_BeaconRotators;
     [SerializeField] private float m_IntialOpacity;
-    private StateMachine m_BeaconStateMachine;
+    private StateMachine<PenBeaconComponent> m_BeaconStateMachine;
     private Transform m_PlayerTransform;
 
     private void Start()
     {
-        m_BeaconStateMachine = new StateMachine(new PenBeaconPlayState(this));
-        m_BeaconStateMachine.AddState(new PenBeaconPrePlayState(this));
-        m_BeaconStateMachine.AddState(new PenBeaconPostDeathState(this));
+        m_BeaconStateMachine = new StateMachine<PenBeaconComponent>(new PenBeaconPlayState(), this);
+        m_BeaconStateMachine.AddState(new PenBeaconPrePlayState());
+        m_BeaconStateMachine.AddState(new PenBeaconPostDeathState());
         m_BeaconStateMachine.InitializeStateMachine();
 
         m_PlayerTransform = m_GameManager.GetPlayer.transform;
-        m_PlayerTransform.GetComponent<HealthComponent>().OnEntityDied += (GameObject, Vector3, DamageType) => OnLevelFinished();
-
+        m_PlayerTransform.GetComponent<HealthComponent>().AddListener(this);
 
 		m_GameManager.GetCurrentLevel.OnLevelStarted += OnLevelStarted;
 		m_GameManager.GetCurrentLevel.OnLevelFinished += OnLevelFinished;
@@ -55,7 +54,7 @@ public class PenBeaconComponent : MonoBehaviour, IPauseListener
 
     void Update()
     {
-        m_BeaconStateMachine.Tick();
+        m_BeaconStateMachine.Tick(Time.deltaTime);
     }
     public void OnObjectEnterPen()
     {
@@ -146,68 +145,51 @@ public class PenBeaconComponent : MonoBehaviour, IPauseListener
             m_BeaconColourChangers[i].enabled = false;
         }
     }
+
+	public void OnEntityTakeDamage(GameObject go1, GameObject go2, DamageType type) {}
+
+	public void OnEntityDied(GameObject go1, GameObject go2, DamageType type)
+	{
+        OnLevelFinished();
+    }
 }
 
 
-class PenBeaconPlayState : AStateBase
+class PenBeaconPlayState : AStateBase<PenBeaconComponent>
 {
-    private readonly PenBeaconComponent m_BeaconElementComponent;
-    public PenBeaconPlayState(PenBeaconComponent penBeaconComponent)
-    {
-        m_BeaconElementComponent = penBeaconComponent;
-    }
-
     public override void Tick()
     {
-        m_BeaconElementComponent.LetChildUpdateOpacity();
+        Host.LetChildUpdateOpacity();
     }
 }
 
-class PenBeaconPauseState : AStateBase 
+class PenBeaconPauseState : AStateBase<PenBeaconComponent>
 {
-    private readonly PenBeaconComponent m_BeaconComponent;
-
-    public PenBeaconPauseState(PenBeaconComponent beaconComponent) 
-    {
-        m_BeaconComponent = beaconComponent;
-    }
 
 	public override void OnEnter()
 	{
-        m_BeaconComponent.OnPause();
+		Host.OnPause();
 	}
 
 	public override void OnExit()
 	{
-        m_BeaconComponent.OnUnpause();
+		Host.OnUnpause();
 	}
 }
 
-class PenBeaconPrePlayState : AStateBase
+class PenBeaconPrePlayState : AStateBase<PenBeaconComponent>
 {
-    private readonly PenBeaconComponent m_BeaconElementComponent;
-    public PenBeaconPrePlayState(PenBeaconComponent penBeaconComponent)
-    {
-        m_BeaconElementComponent = penBeaconComponent;
-    }
 
     public override void OnEnter()
     {
-        m_BeaconElementComponent.SetInitialOpacity();
+		Host.SetInitialOpacity();
     }
 }
 
-class PenBeaconPostDeathState : AStateBase
+class PenBeaconPostDeathState : AStateBase<PenBeaconComponent>
 {
-    private readonly PenBeaconComponent m_BeaconElementComponent;
-    public PenBeaconPostDeathState(PenBeaconComponent penBeaconComponent)
-    {
-        m_BeaconElementComponent = penBeaconComponent;
-    }
-
     public override void OnEnter()
     {
-        m_BeaconElementComponent.FadeOutAtEnd();
-
+		Host.FadeOutAtEnd();
     }
 }

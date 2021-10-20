@@ -10,7 +10,7 @@ public class GrassPatchEditor : EditorWindow
 
 	private GameObject grassObjectPrefab;
 
-	private StateMachine m_StateMachine;
+	private StateMachine<GrassPatchEditor> m_StateMachine;
 
 	private SceneView m_CurrentViewingWindow;
 
@@ -25,9 +25,9 @@ public class GrassPatchEditor : EditorWindow
 
 	private void OnEnable()
 	{
-		m_StateMachine = new StateMachine(new StateIdle(this));
-		m_StateMachine.AddState(new StateDefiningSize(this));
-		m_StateMachine.AddState(new StateDrawingTexture(this));
+		m_StateMachine = new StateMachine<GrassPatchEditor>(new StateIdle(), this);
+		m_StateMachine.AddState(new StateDefiningSize());
+		m_StateMachine.AddState(new StateDrawingTexture());
 		m_StateMachine.InitializeStateMachine();
 		SceneView.duringSceneGui += OnSceneGUI;
 		window = this;
@@ -41,9 +41,8 @@ public class GrassPatchEditor : EditorWindow
 
 	private void OnSceneGUI(SceneView sv) 
 	{
-		int i = 0;
 		m_CurrentViewingWindow = sv;
-		m_StateMachine.LateTick();
+		m_StateMachine.Tick(Time.deltaTime);
 	}
 	private void OnGUI()
 	{
@@ -66,7 +65,7 @@ public class GrassPatchEditor : EditorWindow
 			}
 		}
 
-		m_StateMachine.Tick();
+		m_StateMachine.Tick(Time.deltaTime);
 		HandleUtility.Repaint();
 	}
 	public GrassPatchComponent GetCurrentGrassPatch => m_CurrentGrassPatch;
@@ -81,15 +80,9 @@ public class GrassPatchEditor : EditorWindow
 	}
 }
 
-public class StateIdle : AStateBase 
+public class StateIdle : AStateBase<GrassPatchEditor>
 {
 	private string m_CurrentGrassName = "New Grass Object";
-	private readonly GrassPatchEditor host;
-	public StateIdle(GrassPatchEditor editor) 
-	{
-		m_CurrentGrassName = "New Grass Object";
-		host = editor;
-	}
 
 	public override void Tick()
 	{
@@ -98,18 +91,18 @@ public class StateIdle : AStateBase
 			m_CurrentGrassName = GUILayout.TextField(m_CurrentGrassName);
 			if (GUILayout.Button("Add New Grass Object"))
 			{
-				host.CreateNewGrassObject();
+				Host.CreateNewGrassObject();
 			}
 		}
 
-		using (new EditorGUI.DisabledScope(host.GetCurrentGrassPatch == null))
+		using (new EditorGUI.DisabledScope(Host.GetCurrentGrassPatch == null))
 		{
 			if (GUILayout.Button("Define Grass Bounds"))
 			{
 				RequestTransition<StateDefiningSize>();
 			}
 		}
-		using (new EditorGUI.DisabledScope(host.GetCurrentGrassPatch == null || !host.GetCurrentGrassPatch.HasBoundsDefined))
+		using (new EditorGUI.DisabledScope(Host.GetCurrentGrassPatch == null || !Host.GetCurrentGrassPatch.HasBoundsDefined))
 		{
 			if (GUILayout.Button("Paint Grass Density Map"))
 			{
@@ -117,26 +110,20 @@ public class StateIdle : AStateBase
 			}
 			if (GUILayout.Button("Build Grass Mesh"))
 			{
-				host.GetCurrentGrassPatch.CreateGrassFromParams();
+				Host.GetCurrentGrassPatch.CreateGrassFromParams();
 			}
 		}
 	}
 }
 
-public class StateDefiningSize : AStateBase 
+public class StateDefiningSize : AStateBase<GrassPatchEditor>
 {
-	private readonly GrassPatchEditor host;
 
 	private Vector3 m_GrassPatchSizeDefinitionStartAnchor;
 	private Vector3 m_GrassPatchSizeDefinitionEndAnchor;
 	private SpriteRenderer m_SpriteRenderer;
 	private int m_CurrentDefinition;
 	private Vector3 m_MousePos;
-	
-	public StateDefiningSize(GrassPatchEditor editor)
-	{
-		host = editor;
-	}
 
 	public override void OnEnter()
 	{
@@ -160,18 +147,18 @@ public class StateDefiningSize : AStateBase
 		if (type == EventType.MouseMove || type == EventType.MouseDrag || type == EventType.MouseDown) 
 		{
 			m_MousePos = Event.current.mousePosition;
-			m_MousePos.y = host.GetCurrentSceneView.camera.pixelHeight - m_MousePos.y;
+			m_MousePos.y = Host.GetCurrentSceneView.camera.pixelHeight - m_MousePos.y;
 		}
 
-		Ray ray = host.GetCurrentSceneView.camera.ScreenPointToRay(m_MousePos);
+		Ray ray = Host.GetCurrentSceneView.camera.ScreenPointToRay(m_MousePos);
 
 		if (type == EventType.MouseDown && Event.current.button == 0)
 		{
-			if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, host.GetCurrentGrassPatch.GrassGenerationLayer, QueryTriggerInteraction.Ignore))
+			if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, Host.GetCurrentGrassPatch.GrassGenerationLayer, QueryTriggerInteraction.Ignore))
 			{
 				m_GrassPatchSizeDefinitionStartAnchor = hit.point;
 				m_CurrentDefinition = 1;
-				m_SpriteRenderer = host.GetCurrentGrassPatch.CreateGrassPaintVisualizer(m_GrassPatchSizeDefinitionStartAnchor).GetComponent<SpriteRenderer>();
+				m_SpriteRenderer = Host.GetCurrentGrassPatch.CreateGrassPaintVisualizer(m_GrassPatchSizeDefinitionStartAnchor).GetComponent<SpriteRenderer>();
 			}
 		}
 
@@ -183,13 +170,13 @@ public class StateDefiningSize : AStateBase
 			m_GrassPatchSizeDefinitionEndAnchor = ray.origin + ray.direction * ( Vector3.Dot(planeNormal, planeOrigin - ray.origin) 
 																						/ (Vector3.Dot(ray.direction, planeNormal)));
 
-			host.GetCurrentGrassPatch.UpdateGrassSizeVisualizer(m_SpriteRenderer, m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
+			Host.GetCurrentGrassPatch.UpdateGrassSizeVisualizer(m_SpriteRenderer, m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
 			if (type == EventType.MouseUp && Event.current.button == 0) 
 			{
-				host.GetCurrentGrassPatch.GrassGenerationBounds = new Tuple<Vector3, Vector3>(m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
+				Host.GetCurrentGrassPatch.GrassGenerationBounds = new Tuple<Vector3, Vector3>(m_GrassPatchSizeDefinitionStartAnchor, m_GrassPatchSizeDefinitionEndAnchor);
 
-				Vector3 edgeA = host.GetCurrentGrassPatch.GrassGenerationBounds.Item1;
-				Vector3 edgeB = host.GetCurrentGrassPatch.GrassGenerationBounds.Item2;
+				Vector3 edgeA = Host.GetCurrentGrassPatch.GrassGenerationBounds.Item1;
+				Vector3 edgeB = Host.GetCurrentGrassPatch.GrassGenerationBounds.Item2;
 
 				Vector3 bottomLeft = new Vector3(Mathf.Min(edgeA.x, edgeB.x), (edgeA.y + edgeB.y) / 2, Mathf.Min(edgeA.z, edgeB.z));
 				Vector3 topRight = new Vector3(Mathf.Max(edgeA.x, edgeB.x), (edgeA.y + edgeB.y) / 2, Mathf.Max(edgeA.z, edgeB.z));
@@ -201,14 +188,14 @@ public class StateDefiningSize : AStateBase
 				float rescale = 256 / longestAxialLength;
 				Vector2Int texSize = new Vector2Int((int)(rescale * size.x), (int)(rescale * size.z));
 
-				host.GetCurrentGrassPatch.GrassMap = new Texture2D(Mathf.Abs(texSize.x), Mathf.Abs(texSize.y));
-				Color32[] pixels = host.GetCurrentGrassPatch.GrassMap.GetPixels32();
+				Host.GetCurrentGrassPatch.GrassMap = new Texture2D(Mathf.Abs(texSize.x), Mathf.Abs(texSize.y));
+				Color32[] pixels = Host.GetCurrentGrassPatch.GrassMap.GetPixels32();
 				for (int i = 0; i < pixels.Length; i++)
 				{
 					pixels[i] = Color.black;
 				}
-				host.GetCurrentGrassPatch.GrassMap.SetPixels32(pixels);
-				host.GetCurrentGrassPatch.GrassMap.Apply();
+				Host.GetCurrentGrassPatch.GrassMap.SetPixels32(pixels);
+				Host.GetCurrentGrassPatch.GrassMap.Apply();
 				RequestTransition<StateIdle>();
 			}
 		}
@@ -217,14 +204,13 @@ public class StateDefiningSize : AStateBase
 
 	public override void OnExit()
 	{
-		if (host.GetCurrentGrassPatch && m_SpriteRenderer)
-			host.GetCurrentGrassPatch.DeleteGrassPaintVisualizer(m_SpriteRenderer.gameObject);
+		if (Host.GetCurrentGrassPatch && m_SpriteRenderer)
+			Host.GetCurrentGrassPatch.DeleteGrassPaintVisualizer(m_SpriteRenderer.gameObject);
 	}
 }
 
-public class StateDrawingTexture : AStateBase 
+public class StateDrawingTexture : AStateBase<GrassPatchEditor>
 {
-	private readonly GrassPatchEditor host;
 	private GrassPatchComponent grassPatchComponent;
 	private float brushSize = 1f;
 	private float brushStrength = 0.5f;
@@ -249,16 +235,11 @@ public class StateDrawingTexture : AStateBase
 		Height
 	}
 
-	public StateDrawingTexture(GrassPatchEditor editor)
-	{
-		host = editor;
-	}
-
 	public override void OnEnter()
 	{
-		grassPatchComponent = host.GetCurrentGrassPatch;
+		grassPatchComponent = Host.GetCurrentGrassPatch;
 		m_bIsMouseDown = false;
-		m_SpriteRenderer = host.GetCurrentGrassPatch.CreateGrassPaintVisualizer(host.GetCurrentGrassPatch.GrassGenerationBounds.Item1).GetComponent<SpriteRenderer>();
+		m_SpriteRenderer = Host.GetCurrentGrassPatch.CreateGrassPaintVisualizer(Host.GetCurrentGrassPatch.GrassGenerationBounds.Item1).GetComponent<SpriteRenderer>();
 		grassPatchComponent.UpdateGrassPaintVisualizer(m_SpriteRenderer);
 	}
 
@@ -313,8 +294,8 @@ public class StateDrawingTexture : AStateBase
 
 		// tex is nested into window and window is nested in screen
 
-		float width = host.GetCurrentGrassPatch.GrassMap.width;
-		float height = host.GetCurrentGrassPatch.GrassMap.height;
+		float width = Host.GetCurrentGrassPatch.GrassMap.width;
+		float height = Host.GetCurrentGrassPatch.GrassMap.height;
 
 
 		float maxSize = 600;
@@ -323,13 +304,13 @@ public class StateDrawingTexture : AStateBase
 
 
 		Rect rect = new Rect((Screen.width / 2 - texSize.x / 2), (Screen.height / 2 - texSize.y / 2), texSize.x, texSize.y);
-		GUI.DrawTexture(rect, host.GetCurrentGrassPatch.GrassMap);
+		GUI.DrawTexture(rect, Host.GetCurrentGrassPatch.GrassMap);
 
 		float brushSize_PixelSpace = brushSize / RectPixelsPerTexPixel;
 		float halfBrushSize_PixelSpace = brushSize_PixelSpace / 2;
 
 
-		Vector2 screenMousePoint = GUIUtility.GUIToScreenPoint(Event.current.mousePosition) - host.position.position;
+		Vector2 screenMousePoint = GUIUtility.GUIToScreenPoint(Event.current.mousePosition) - Host.position.position;
 
 		if (type == EventType.MouseDown)
 		{

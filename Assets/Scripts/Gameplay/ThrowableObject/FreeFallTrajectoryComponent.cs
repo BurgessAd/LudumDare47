@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Collections.Generic;
 public class FreeFallTrajectoryComponent : MonoBehaviour, IPauseListener
 {
     ProjectileParams projectile;
@@ -7,37 +8,27 @@ public class FreeFallTrajectoryComponent : MonoBehaviour, IPauseListener
  
     [SerializeField] private Rigidbody m_rMovingBody;
     [SerializeField] private CowGameManager m_Manager;
+	[SerializeField] private DebugTextComponent m_debugTextComponent;
+    [SerializeField] private List<GameObject> m_listOfObjsToChangeLayer = new List<GameObject>();
+    [SerializeField] private LayerMask m_ThrownLayer = 0;
 
-    public event Action<Collision> OnObjectHitGround;
+	public event Action<Collision> OnObjectHitGround;
     public event Action OnObjectNotInFreeFall;
+	public bool m_bIsFalling = false;
 
 	private void Awake()
 	{
-        enabled = false;
         m_Manager.AddToPauseUnpause(this);
     }
-    public void Pause()
+
+    public void Pause() 
     {
         enabled = false;
     }
 
     public void Unpause()
     {
-        enabled = true;
-    }
-
-    bool wasPausedWhilstFalling = false;
-
-    private void OnPaused() 
-    {
-        wasPausedWhilstFalling = enabled;
-        enabled = false;
-    }
-
-    private void OnUnpaused()
-    {
-        enabled = wasPausedWhilstFalling;
-        wasPausedWhilstFalling = false;
+		enabled = true;
     }
 
     public void ThrowObject(in ProjectileParams projectileParams) 
@@ -45,34 +36,55 @@ public class FreeFallTrajectoryComponent : MonoBehaviour, IPauseListener
         m_fCurrentTime = 0.0f;
         projectile = projectileParams;
         m_rMovingBody.isKinematic = true;
-        enabled = true;
+		m_bIsFalling = true;
         m_rMovingBody.position = projectile.EvaluatePosAtTime(0.0f);
         m_rMovingBody.rotation = projectile.EvaluateRotAtTime(0.0f);
+        foreach(GameObject go in m_listOfObjsToChangeLayer) 
+        {
+            m_ObjectsToChangeBack.Add(new Tuple<GameObject, int>(go, go.layer));
+            go.layer = m_ThrownLayer;
+        }
     }
+
+    private List<Tuple<GameObject, int>> m_ObjectsToChangeBack = new List<Tuple<GameObject, int>>();
 
     public void StopThrowingObject() 
     {
         OnObjectNotInFreeFall?.Invoke();
-        enabled = false;
+        StopThrowingInternal();
+    }
+
+    private void StopThrowingInternal() 
+    {
+        m_bIsFalling = false;
+        foreach(Tuple<GameObject, int> tuple in m_ObjectsToChangeBack) 
+        {
+            tuple.Item1.layer = tuple.Item2;
+        }
     }
 
 	private void OnCollisionEnter(Collision collision)
     {
-        if (enabled)
+        if (m_bIsFalling)
         {
             OnObjectHitGround?.Invoke(collision);
             OnObjectNotInFreeFall?.Invoke();
             m_rMovingBody.velocity = projectile.EvaluateVelocityAtTime(m_fCurrentTime);
             m_rMovingBody.angularVelocity = projectile.m_vRotAxis * projectile.m_fAngVel;
         }
-        enabled = false;
+        StopThrowingInternal();
     }
 
     void Update()
     {
-        m_fCurrentTime += Time.deltaTime;
-        m_rMovingBody.MovePosition(projectile.EvaluatePosAtTime(m_fCurrentTime));
-        m_rMovingBody.MoveRotation(projectile.EvaluateRotAtTime(m_fCurrentTime));
+		if (m_bIsFalling)
+		{
+			m_fCurrentTime += Time.deltaTime;
+			m_rMovingBody.MovePosition(projectile.EvaluatePosAtTime(m_fCurrentTime));
+			m_rMovingBody.MoveRotation(projectile.EvaluateRotAtTime(m_fCurrentTime));
+		}
+		if (m_debugTextComponent)
+			m_debugTextComponent.AddLine(string.Format("Free fall: {0} \n Time free falling: {1}", m_bIsFalling ? "active" : "inactive", m_fCurrentTime.ToString()));
     }
 }
 

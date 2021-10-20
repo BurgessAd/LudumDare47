@@ -8,10 +8,14 @@ public class AnimalMovementComponent : MonoBehaviour
     [SerializeField] private float m_fStuckSpeed;
     [SerializeField] private float m_RunSpeed;
     [SerializeField] private float m_IdleSpeed;
+    [SerializeField] private float m_RotationSpeed;
     [SerializeField] private float m_IdleAcceleration;
     [SerializeField] private float m_RunAcceleration;
     [SerializeField] private Rigidbody m_AnimalRigidBody;
+    [SerializeField] private PhysicalEntity m_PhysicalEntity;
     [SerializeField] private CharacterController m_AnimalCharacterController;
+
+    [SerializeField] private AnimationCurve m_UprightAccelerationScalar;
 
     public float TimeOnGround { get; private set; }
 
@@ -20,10 +24,7 @@ public class AnimalMovementComponent : MonoBehaviour
     private Vector3 m_vPositionLastFrame;
     private Transform m_tObjectTransform;
     private NavMeshAgent m_NavMeshAgent;
-    private int m_iLayerMask;
-
-    private StateMachine m_MovementStateMachine;
-
+    private LayerMask m_iLayerMask;
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     void Awake()
@@ -58,9 +59,9 @@ public class AnimalMovementComponent : MonoBehaviour
         Debug.DrawLine(stuck1, stuck2, Color.red * (1 - m_fStuckPercentage) + Color.green * m_fStuckPercentage);
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    // function chooses a random destination within range m_fMaximumWanderDistance on the navmesh
-    public bool ChooseRandomDestination() 
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// function chooses a random destination within range m_fMaximumWanderDistance on the navmesh
+	public bool ChooseRandomDestination() 
     {
         enabled = true;
         m_fCurrentTimeStuck = 0.0f;
@@ -89,22 +90,61 @@ public class AnimalMovementComponent : MonoBehaviour
         if (m_NavMeshAgent.isOnNavMesh) 
         {
             m_NavMeshAgent.ResetPath();
-        }  
-    }
+        }
+		m_vDestination = m_tObjectTransform.position;
+
+	}
 
     public void RunInDirection(Vector3 dir) 
     {
-
-        Vector3 targetUp;
-        Vector3 targetForward = dir;
-        if (Physics.Raycast(m_AnimalRigidBody.position + 0.5f * Vector3.up, -Vector3.up, out RaycastHit hit, 1, layerMask: (1 << 8)))
+        if (!m_PhysicalEntity.IsGrounded)
         {
-            targetUp = hit.normal;
-            targetForward = Vector3.ProjectOnPlane(targetForward, targetUp);
+            m_AnimalRigidBody.freezeRotation = false;
+            return;
         }
-        Vector3 currentVelocity = m_AnimalRigidBody.velocity;
-        Vector3 velocityChange = targetForward * m_IdleAcceleration * Time.deltaTime - currentVelocity.normalized * m_IdleAcceleration * (currentVelocity.magnitude / (m_RunSpeed * 10)) * Time.deltaTime;
-        m_AnimalRigidBody.AddForce( velocityChange ,ForceMode.VelocityChange);
+		else 
+        {
+            m_AnimalRigidBody.freezeRotation = true;
+        }
+        Vector3 targetUp = m_PhysicalEntity.GetGroundedNorm;
+        Vector3 targetForward = Vector3.ProjectOnPlane(dir, targetUp).normalized;
+        Vector3 currentVelocity = (m_AnimalRigidBody.position - m_vPositionLastFrame)/Time.deltaTime;
+        float percentageTowardsGoalVelocity = Mathf.Clamp(Vector3.Dot(targetForward, currentVelocity) / m_RunSpeed, 0, 2f);
+        float parallelVelocityAccelerationScaler = 1 - percentageTowardsGoalVelocity;
+
+        // also has trouble getting up edges - help it up a bit maybe?
+
+
+        Vector3 currentVelocityPerp = currentVelocity - Vector3.Dot(targetForward, currentVelocity) * targetForward;
+        float perpVelocityAccelerationScalar = -Mathf.Clamp01(currentVelocityPerp.magnitude / m_RunSpeed);
+        // we also need to tilt to face the direction we want to go
+        // as force will offset us and try to stop us :(
+
+        Quaternion desiredRotation = Quaternion.LookRotation(targetForward, targetUp);
+        m_AnimalRigidBody.rotation = Quaternion.Lerp(m_AnimalRigidBody.rotation, desiredRotation, m_RotationSpeed * Time.deltaTime);
+       // m_AnimalRigidBody.rotation = desiredRotation;// UnityUtils.UnityUtils.SmoothDampQuat(m_AnimalRigidBody.rotation, desiredRotation, ref quatVelocity, 0.4f);
+
+        Quaternion currentToDesired = Quaternion.Inverse(m_AnimalRigidBody.rotation) * desiredRotation;
+
+        currentToDesired.ToAngleAxis(out float ang, out Vector3 axis);
+
+        Vector3 parallelAngVel = Vector3.Dot(m_AnimalRigidBody.angularVelocity, axis) * axis;
+        Vector3 unwantedAngVel = m_AnimalRigidBody.angularVelocity - parallelAngVel;
+
+        Vector3 currentAngularVelocity = m_AnimalRigidBody.angularVelocity;
+
+
+
+        //Vector3 torque = ;
+        //m_AnimalRigidBody.AddTorque(torque, ForceMode.VelocityChange);
+
+        float uprightAccelerationScalar = m_UprightAccelerationScalar.Evaluate(ang) * Time.deltaTime * m_RunAcceleration;
+
+        // only apply forward velocity if we're on the ground (taper it off as we tilt?)
+        Vector3 velocityChange = targetForward.normalized * uprightAccelerationScalar * parallelVelocityAccelerationScaler;// targetForward * m_RunAcceleration - currentVelocity.normalized * m_IdleAcceleration * (currentVelocity.magnitude / (m_RunSpeed * 10));
+        velocityChange += currentVelocityPerp.normalized * uprightAccelerationScalar * perpVelocityAccelerationScalar;
+        m_AnimalRigidBody.MovePosition(m_AnimalRigidBody.position + velocityChange);
+        //m_AnimalRigidBody.velocity += velocityChange;
     }
 
 
@@ -166,7 +206,6 @@ public class AnimalMovementComponent : MonoBehaviour
         Vector3 displacement = m_tObjectTransform.position - tRunTowardTransform.position;
         if ((Vector3.ProjectOnPlane(displacement, Vector3.up)).sqrMagnitude < distanceFrom * distanceFrom)
         {
-			Debug.Log("IsStopped");
             m_NavMeshAgent.isStopped = true;
             return true;
         }
@@ -181,15 +220,20 @@ public class AnimalMovementComponent : MonoBehaviour
         m_fCurrentTimeStuck = 0.0f;
         if (CheckStoppingDistanceForChase(tRunTowardTransform, distanceFrom))
 		{
-			Debug.Log("Stopping");
             return true;
 		}
         m_NavMeshAgent.isStopped = false;
-        if(NavMesh.SamplePosition(tRunTowardTransform.position, out NavMeshHit hit, runDistance, m_iLayerMask)) 
+
+        Vector3 target_localSpace = tRunTowardTransform.position - m_tObjectTransform.position;
+        float targetDistance_localSpace = target_localSpace.magnitude;
+        target_localSpace.Normalize();
+        float desiredDistance_localSpace = Mathf.Max(targetDistance_localSpace - distanceFrom, 0);
+        target_localSpace *= desiredDistance_localSpace;
+
+        if(NavMesh.SamplePosition(m_tObjectTransform.position + target_localSpace, out NavMeshHit hit, runDistance, m_iLayerMask)) 
         {
             if (m_NavMeshAgent.SetDestination(hit.position)) 
             {
-				Debug.Log("Running");
 				m_vDestination = hit.position;
                 return true;
             }

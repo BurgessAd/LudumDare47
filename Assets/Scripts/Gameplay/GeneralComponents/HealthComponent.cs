@@ -5,10 +5,6 @@ using System.Collections;
 [RequireComponent(typeof(EntityTypeComponent))]
 public class HealthComponent : MonoBehaviour
 {
-    public event Action<GameObject, GameObject, DamageType> OnEntityDied;
-
-    public event Action<GameObject, GameObject, DamageType, float> OnTakenDamageInstance;
-
     [SerializeField] private float m_MaxHealth = 3;
 
     [SerializeField] private CowGameManager m_Manager;
@@ -25,6 +21,17 @@ public class HealthComponent : MonoBehaviour
 
     private bool m_IsInvulnerable = false;
 
+    private UnityUtils.ListenerSet<IHealthListener> m_HealthListeners = new UnityUtils.ListenerSet<IHealthListener>();
+
+    public void AddListener(IHealthListener listener) 
+    {
+        m_HealthListeners.Add(listener);
+    }
+
+    public void RemoveListener(IHealthListener listener) 
+    {
+        m_HealthListeners.Remove(listener);
+    }
 
 
     private void Awake()
@@ -71,7 +78,7 @@ public class HealthComponent : MonoBehaviour
         {
             m_CurrentHealth = 0;
             m_bIsKilled = true;
-            OnEntityDied?.Invoke(gameObject, damagedBy, damageType);
+            m_HealthListeners.ForEachListener((IHealthListener listener) => listener.OnEntityDied(gameObject, damagedBy, damageType));
         }
     }
 
@@ -88,7 +95,7 @@ public class HealthComponent : MonoBehaviour
             }
             else
             {
-                OnTakenDamageInstance?.Invoke(gameObject, damagedBy, damageType, GetCurrentHealthPercentage);
+                m_HealthListeners.ForEachListener((IHealthListener listener) => listener.OnEntityTakeDamage(gameObject, damagedBy, damageType));
                 StartCoroutine(SetInvulnerability());
             }
             return true;
@@ -100,6 +107,12 @@ public class HealthComponent : MonoBehaviour
     {
         OnKilled(gameObject, null, damageType);
     }
+}
+
+public interface IHealthListener 
+{
+    void OnEntityTakeDamage(GameObject go1, GameObject go2, DamageType type);
+    void OnEntityDied(GameObject go1, GameObject go2, DamageType type);
 }
 
 public enum DamageType 
