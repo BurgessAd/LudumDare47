@@ -4,13 +4,18 @@ using UnityEngine;
 
 public class PhysicalEntity : MonoBehaviour
 {
-    ContactPoint[] m_Contacts = new ContactPoint[8];
+    private ContactPoint[] m_Contacts = new ContactPoint[8];
     private Vector3 m_LastGroundedPosition = Vector3.zero;
     private Vector3 m_LastGroundedNormal = Vector3.zero;
     private bool m_bIsGrounded = false;
+    private Transform m_PhysTransform = null;
+    private Collider[] m_colliderResults = new Collider[1];
     [SerializeField] private CowGameManager m_Manager = null;
-    [SerializeField] private Transform m_PhysTransform = null;
-    Collider[] m_colliderResults = new Collider[1];
+
+	private void Awake()
+	{
+        m_PhysTransform = transform;
+	}
 
 	private void Update()
     {

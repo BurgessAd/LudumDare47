@@ -13,18 +13,23 @@ public class BushComponent : MonoBehaviour, IFoodSourceSizeListener
     [SerializeField] private float m_FlowerScalar;
 
     [Header("Object references")]
-    [SerializeField] private GameObject m_BerryPrefab;
+    [SerializeField] private Mesh m_BerryMesh;
+    [SerializeField] private Material m_BerryMaterial;
+    [SerializeField] private Transform m_Transform;
+
 
     private class Flower 
     {
         public float m_SizeScalar;
         public float m_CurrentSize;
         public float m_SizeChangeVelocity;
-        public Transform m_FlowerTransform;
+        public Vector3 m_flowerPos;
+        public Quaternion m_flowerRotation;
     }
 
     private float m_CurrentFoodSize = 0.0f;
     private readonly List<Flower> m_Flowers = new List<Flower>();
+    private Matrix4x4[] m_Matrices;
 
     static void AddMeshAndTransformDataForUse(in List<Mesh> meshes, in List<Transform> transforms, GameObject gameObjectToAdd) 
     {
@@ -90,6 +95,7 @@ public class BushComponent : MonoBehaviour, IFoodSourceSizeListener
 
 	private void Awake()
 	{
+        m_BerryMesh = GetComponentInChildren<MeshFilter>().sharedMesh;
         GetComponent<FoodSourceComponent>().AddListener(this);
 
         List<Mesh> meshes = new List<Mesh>();
@@ -127,21 +133,24 @@ public class BushComponent : MonoBehaviour, IFoodSourceSizeListener
 
                     Vector3 spawnPos = tri.GetRandomPosOnTri();
                     Quaternion spawnQuat = Quaternion.LookRotation(tri.GetNorm(), Vector3.up);
-                    GameObject newFlower = Instantiate(m_BerryPrefab, spawnPos, spawnQuat);
 
                     Flower flower = new Flower
                     {
-                        m_FlowerTransform = newFlower.transform,
+                        m_flowerPos = spawnPos,
+                        m_flowerRotation = UnityEngine.Random.rotation,
                         m_CurrentSize = 1.0f,
                         m_SizeScalar = UnityEngine.Random.Range(1 - m_FlowerSizeRandom, 1 + m_FlowerSizeRandom),
                         m_SizeChangeVelocity = 0.0f
                     };
-                    flower.m_FlowerTransform.position = spawnPos;
-                    flower.m_FlowerTransform.parent = transform;
-
                     m_Flowers.Add(flower);
                 }
             });
+        }
+        m_Matrices = new Matrix4x4[m_Flowers.Count];
+        for (int i = 0; i < m_Matrices.Length; i++) 
+        {
+            Flower flower = m_Flowers[i];
+            m_Matrices[i] = Matrix4x4.TRS(flower.m_flowerPos, flower.m_flowerRotation, flower.m_CurrentSize * flower.m_SizeScalar * Vector3.one);
         }
     }
 
@@ -150,24 +159,39 @@ public class BushComponent : MonoBehaviour, IFoodSourceSizeListener
         if (m_CurrentFoodSize != foodSize) 
         {
             m_CurrentFoodSize = foodSize;
-            enabled = true;
+            m_bUpdateSizes = true;
         }
     }
 
+    private bool m_bUpdateSizes = true;
+
     void Update()
     {
-        bool allFlowersAtTarget = true;
-        for (int i = 0; i < m_Flowers.Count; i++) 
-        {
-            float target = (float)i / m_Flowers.Count <= m_CurrentFoodSize ? 1.0f : 0.0f;
+        bool isReadable = m_BerryMesh.isReadable;
 
-            if (Mathf.Abs(m_Flowers[i].m_CurrentSize - target) < 0.001f)
-                continue;
-            allFlowersAtTarget = false;
-            m_Flowers[i].m_CurrentSize = Mathf.SmoothDamp(m_Flowers[i].m_CurrentSize, target, ref m_Flowers[i].m_SizeChangeVelocity, m_TimeForFlowerAnim);
-            m_Flowers[i].m_FlowerTransform.localScale = m_Flowers[i].m_SizeScalar * m_Flowers[i].m_CurrentSize * m_FlowerScalar * Vector3.one;
-        }
-        if (allFlowersAtTarget)
-            enabled = false;
+        Mesh mesh = new Mesh();
+        mesh.vertices = new Vector3[] { Vector3.zero, Vector3.forward, Vector3.right};
+        mesh.triangles = new int[] { 0, 1, 2 };
+        mesh.normals = new Vector3[] { Vector3.up, Vector3.up, Vector3.up };
+        Graphics.DrawMeshInstanced(mesh, 0, m_BerryMaterial, m_Matrices);
+
+        if (!m_bUpdateSizes)
+            return;
+
+        bool allFlowersAtTarget = true;
+		for (int i = 0; i < m_Flowers.Count; i++)
+		{
+			Flower currentFlower = m_Flowers[i];
+			float target = (float)i / m_Flowers.Count <= m_CurrentFoodSize ? 1.0f : 0.0f;
+
+			if (Mathf.Abs(m_Flowers[i].m_CurrentSize - target) < 0.001f)
+				continue;
+			allFlowersAtTarget = false;
+			currentFlower.m_CurrentSize = Mathf.SmoothDamp(currentFlower.m_CurrentSize, target, ref currentFlower.m_SizeChangeVelocity, m_TimeForFlowerAnim);
+			m_Matrices[i] = Matrix4x4.TRS(currentFlower.m_flowerPos, currentFlower.m_flowerRotation, currentFlower.m_CurrentSize * m_FlowerScalar * Vector3.one * currentFlower.m_SizeScalar);
+		}
+
+		if (allFlowersAtTarget)
+            m_bUpdateSizes = false;
     }
 }

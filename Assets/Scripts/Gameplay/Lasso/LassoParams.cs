@@ -28,12 +28,9 @@ public class LassoParams : ScriptableObject
 	public float m_LassoRelaxTime;
 
 	[Header("Lasso Spinning Params")]
-	[Range(0f, 1f)]
-	public float m_TimeBeforeUserCanThrow;
-	[Range(0f, 4f)]
-	public float m_MaxTimeSpinning;
-	[Range(0f,1f)]
-	public float m_MaxTimeToSwitchStrength;
+	[Range(0f, 1f)] public float m_TimeBeforeUserCanThrow;
+	[Range(0f, 4f)] public float m_MaxTimeSpinning;
+	public AnimationCurve m_SpinUpProfile;
 	public AnimationCurve m_SpinSidewaysProfile;
 	public AnimationCurve m_SpinHeightProfile;
 	public AnimationCurve m_SpinSizeProfile;

@@ -74,22 +74,39 @@ public class TerrainGenerator : ScriptableObject
 	[HideInInspector]
 	public Terrain workingTerrain;
 	[Header("Shaders")]
-
 	[SerializeField]
 	private ComputeShader marchShader = null;
 
 	[SerializeField]
 	private Material meshMaterial = null;
 
+	[Space]
+	[Header("Brushes")]
+	[SerializeField]
+	private List<ITerrainBrush> m_TerrainBrushes;
+
+	[Space]
+	[Header("Brush Associators")]
+	[SerializeField]
+	private BrushPropertyAssociator m_BrushPropertyAssociator;
+	[Space]
+	[Header("Terrain Layers")]
+	[SerializeField]
+	private int m_TerrainLayer;
+	[SerializeField] [Range(1, 10)] private uint m_DelayedColliderUpdateFrames = 1;
+
 	public Material GetMeshMaterial => meshMaterial;
 
-	private List<Chunk> colliderUpdateChunks;
+	public LayerMask GetTerrainLayer => 1 << m_TerrainLayer;
 
-	private ComputeBuffer triangleBuffer;
-	private ComputeBuffer triCountBuffer;
-	//private ComputeBuffer angleColoursBuffer;
-	private ComputeBuffer chunkColoursBuffer;
-	private ComputeBuffer isoPointsBuffer;
+	public BrushPropertyAssociator GetBrushPropertyAssociator => m_BrushPropertyAssociator;
+
+	private Queue<Chunk> m_ColliderUpdateChunks = new Queue<Chunk>();
+
+	[SerializeField] [HideInInspector] private ComputeBuffer triangleBuffer;
+	[SerializeField] [HideInInspector] private ComputeBuffer triCountBuffer;
+	[SerializeField] [HideInInspector] private ComputeBuffer chunkColoursBuffer;
+	[SerializeField] [HideInInspector] private ComputeBuffer isoPointsBuffer;
 
 	private bool waitingForColliderUpdate = false;
 
@@ -98,11 +115,13 @@ public class TerrainGenerator : ScriptableObject
 	{
 		ReleaseBuffers();
 	}
-	int i = 0;
 
-	public Terrain CreateTerrain(in string name)
+	public ref List<ITerrainBrush> GetTerrainBrushes() => ref m_TerrainBrushes;
+
+	public Terrain CreateTerrain(in string name, in float terrainScale)
 	{
-		Terrain terrain = new GameObject { name = name }.AddComponent<Terrain>();
+		Terrain terrain = new GameObject { name = name, layer = m_TerrainLayer }.AddComponent<Terrain>();
+		terrain.scale = terrainScale;
 		terrain.m_MeshMaterial = meshMaterial;
 		LoadTerrainForEditing(terrain);
 		return terrain;
@@ -180,25 +199,72 @@ public class TerrainGenerator : ScriptableObject
 		workingTerrain.RecalcNumChunks();
 		UpdateAllChunks(true);
 	}
+
+	private int m_NumToUpdateEachFrame = 0;
 	/// Update all chunks if their variables within call for such, build the mesh, update the colliders
 	void UpdateAllChunks(bool updateColliders)
 	{
-		colliderUpdateChunks = new List<Chunk>();
-
+		int num = 0;
 		for (int x = 0; x < workingTerrain.m_TerrainExtent.x; x++)
 		{
 			for (int y = 0; y < workingTerrain.m_TerrainExtent.y; y++)
 			{
 				for (int z = 0; z < workingTerrain.m_TerrainExtent.z; z++)
 				{
-					UpdateChunkMesh(x,y,z, updateColliders);
+					UpdateChunkMesh(x,y,z, updateColliders, ref num);
 				}
 			}
+		}
+		if (num != 0)
+		{
+			if (m_DelayedColliderUpdateFrames == 0)
+				m_NumToUpdateEachFrame = 1;
+			m_NumToUpdateEachFrame = Mathf.CeilToInt((float)m_ColliderUpdateChunks.Count / m_DelayedColliderUpdateFrames);
+		}
+		ColliderUpdate();
+	}
+
+	/// Get chunks within radius of brush click and brush size
+	public void ApplyBrushToTerrain(in RaycastHit hit, in ITerrainBrush brush, in float brushSize)
+	{
+		Vector3 hitPoint = hit.point;
+		hitPoint /= workingTerrain.scale;
+		Vector2 xChunkRange = new Vector2(hitPoint.x - brushSize, hitPoint.x + brushSize) / workingTerrain.chunkSize;
+		Vector2 yChunkRange = new Vector2(hitPoint.y - brushSize, hitPoint.y + brushSize) / workingTerrain.chunkSize;
+		Vector2 zChunkRange = new Vector2(hitPoint.z - brushSize, hitPoint.z + brushSize) / workingTerrain.chunkSize;
+
+		xChunkRange.x = Mathf.Clamp(Mathf.FloorToInt(xChunkRange.x), 0, workingTerrain.m_TerrainExtent.x - 1);
+		xChunkRange.y = Mathf.Clamp(Mathf.FloorToInt(xChunkRange.y), 0, workingTerrain.m_TerrainExtent.x - 1);
+
+		yChunkRange.x = Mathf.Clamp(Mathf.FloorToInt(yChunkRange.x), 0, workingTerrain.m_TerrainExtent.y - 1);
+		yChunkRange.y = Mathf.Clamp(Mathf.FloorToInt(yChunkRange.y), 0, workingTerrain.m_TerrainExtent.y - 1);
+
+		zChunkRange.x = Mathf.Clamp(Mathf.FloorToInt(zChunkRange.x), 0, workingTerrain.m_TerrainExtent.z - 1);
+		zChunkRange.y = Mathf.Clamp(Mathf.FloorToInt(zChunkRange.y), 0, workingTerrain.m_TerrainExtent.z - 1);
+
+		bool brushHitTerrain = false;
+		for (int x = (int)xChunkRange.x; x <= (int)xChunkRange.y; x++)
+		{
+
+			for (int y = (int)yChunkRange.x; y <= (int)yChunkRange.y; y++)
+			{
+				for (int z = (int)zChunkRange.x; z <= (int)zChunkRange.y; z++)
+				{
+					brushHitTerrain = true;
+					brush.BeginDispatchShader(workingTerrain, hit, x, y, z);
+					Chunk chunk = Grid.GetValueFromGrid(x, y, z, workingTerrain.m_TerrainChunks, workingTerrain.m_TerrainExtent);
+					chunk.shouldRerender = true;
+				}
+			}
+		}
+		if (brushHitTerrain)
+		{
+			UpdateAllChunks(brush.AffectsGeometry);
 		}
 	}
 
 	/// Updates chunk mesh by building/rebuilding the grid, passing its points and colours to a buffer, and setting the shader to return the correct vertex/triangles data to the mesh
-	public void UpdateChunkMesh(in int x, in int y, in int z, bool updateColliders)
+	public void UpdateChunkMesh(in int x, in int y, in int z, bool updateColliders, ref int numAdded)
 	{
 		Chunk chunkOfInterest = Grid.GetValueFromGrid(x, y, z, workingTerrain.m_TerrainChunks, workingTerrain.m_TerrainExtent);
 
@@ -239,9 +305,10 @@ public class TerrainGenerator : ScriptableObject
 
 			chunkOfInterest.SetMesh(vertices, meshTriangles, meshColours);
 			
-			if (!colliderUpdateChunks.Contains(chunkOfInterest) && updateColliders)
+			if (!m_ColliderUpdateChunks.Contains(chunkOfInterest) && updateColliders)
 			{
-				colliderUpdateChunks.Add(chunkOfInterest);            //Add this chunk to those we should re-render colliders for
+				numAdded++;
+				m_ColliderUpdateChunks.Enqueue(chunkOfInterest);            //Add this chunk to those we should re-render colliders for
 			}
 		}
 	}
@@ -299,16 +366,31 @@ public class TerrainGenerator : ScriptableObject
 		}
 	}
 
+	public void ColliderUpdate() 
+	{
+		for (int i = 0; i < m_NumToUpdateEachFrame; i++) 
+		{
+			if (m_ColliderUpdateChunks.Count == 0)
+				return;
+			Chunk chunk = m_ColliderUpdateChunks.Dequeue();
+			chunk.SetCollider(); 
+		}
+		//if (m_ColliderUpdateChunks.Count > 0)
+		//{
+		//	JobifiedBaking.BakeMeshes(m_ColliderUpdateChunks);
+		//	m_ColliderUpdateChunks.Clear();
+		//	waitingForColliderUpdate = false;
+		//}
+	}
+
 	/// Coroutine for collider update; calls JobifiedBaking.BakeMeshes to bake each mesh asynchronously
 	IEnumerator WaitForColliderUpdate()		//Not sure why it needs to be in a coroutine but it's what I've found works for now
 	{
-		if (!waitingForColliderUpdate && colliderUpdateChunks.Count > 0)
+		if (!waitingForColliderUpdate && m_ColliderUpdateChunks.Count > 0)
 		{
 			waitingForColliderUpdate = true;
 			yield return null;
-			JobifiedBaking.BakeMeshes(colliderUpdateChunks);
-			colliderUpdateChunks.Clear();
-			waitingForColliderUpdate = false;
+			ColliderUpdate();
 		}
 	}
 }

@@ -73,13 +73,10 @@ public class LassoInputComponent : MonoBehaviour, IPauseListener
 	public AnimationCurve JerkProfile => m_LassoParams.m_JerkProfile;
 
 	public float JerkTimeForPull => m_LassoParams.m_JerkTimeForPull;
-
-
 	public float TimeBeforeUserCanThrow => m_LassoParams.m_TimeBeforeUserCanThrow;
-
 	public float MaxTimeSpinning => m_LassoParams.m_MaxTimeSpinning;
 
-	public float MaxTimeToSwitchStrength => m_LassoParams.m_MaxTimeToSwitchStrength;
+	public AnimationCurve SpinUpProfile => m_LassoParams.m_SpinUpProfile;
 	public AnimationCurve SpinSidewaysProfile => m_LassoParams.m_SpinSidewaysProfile;
 	public AnimationCurve SpinHeightProfile => m_LassoParams.m_SpinHeightProfile;
 	public AnimationCurve SpinSizeProfile => m_LassoParams.m_SpinSizeProfile;
@@ -470,10 +467,13 @@ namespace LassoStates
 	// actual point is offset
 	public class LassoSpinningState : AStateBase<LassoInputComponent>
 	{
-		float m_fCurrentTimeSpinning = 0.0f;
-
 		float m_fCurrentAngle;
 		float m_CurrentInitializeTime = 0.0f;
+
+		public LassoSpinningState() 
+		{
+			AddTimers(1);
+		}
 
 		public override void OnEnter()
 		{
@@ -483,7 +483,6 @@ namespace LassoStates
 			Host.SetLoopLineRenderer(true);
 			Host.SetRopeLineRenderer(true);
 			Host.SetTrajectoryRenderer(true);
-			m_fCurrentTimeSpinning = 0.0f;
 			Host.TriggerPowerBarAnimIn();
 			Host.SpinningIsInitializing = true;
 			Host.SpunUp = false;
@@ -509,14 +508,12 @@ namespace LassoStates
 
 		public override void Tick()
 		{
-			float time = m_fCurrentTimeSpinning / Host.MaxTimeSpinning;
-			m_fCurrentTimeSpinning = Mathf.Min(m_fCurrentTimeSpinning + Time.deltaTime, Host.MaxTimeSpinning);
-
+			float time = Mathf.Clamp01(GetTimerVal(0) / Host.MaxTimeSpinning);
+			float spinStr = Host.SpinUpProfile.Evaluate(time);
 			float r = Host.SpinSizeProfile.Evaluate(time);
 			float height = Host.SpinHeightProfile.Evaluate(time);
 			float sidewaysOffset = Host.SpinSidewaysProfile.Evaluate(time);
-
-			Host.SetSpinStrength(time);
+			Host.SetSpinStrength(spinStr);
 			Host.RenderTrajectory();
 
 			Vector3 forwardPlanar = Vector3.ProjectOnPlane(Host.GetLassoGrabPoint.forward, Vector3.up);
@@ -561,17 +558,18 @@ namespace LassoStates
 
 	public class LassoAnimalSpinningState : AStateBase<LassoInputComponent>
 	{
-
-		float m_fCurrentTimeSpinning = 0.0f;
 		float m_CurrentAngle;
-
 		float m_CurrentInitializeTime = 0.0f;
+
+		public LassoAnimalSpinningState() 
+		{
+			AddTimers(1);
+		}
 
 		public override void OnEnter()
 		{
 			Host.StartSwingingObject();
 			Host.SetTrajectoryRenderer(true);
-			m_fCurrentTimeSpinning = 0.0f;
 			m_CurrentInitializeTime = Host.TimeBeforeUserCanThrow;
 			m_CurrentAngle = 0.0f;
 			Host.SetRopeLineRenderer(true);
@@ -592,18 +590,17 @@ namespace LassoStates
 
 		public override void Tick()
 		{
-			float time = m_fCurrentTimeSpinning / Host.MaxTimeSpinning;
+			float time = Mathf.Clamp01(GetTimerVal(0) / Host.MaxTimeSpinning);
+			float spinStr = Host.SpinUpProfile.Evaluate(time);
 			float r = Host.SpinSizeProfile.Evaluate(time);
 			float height = Host.SpinHeightProfile.Evaluate(time);
 
 			Host.GetThrowableObject.GetMainTransform.position = Host.GetSwingingTransform.position + new Vector3(r * Mathf.Cos(m_CurrentAngle), height, r * Mathf.Sin(m_CurrentAngle));
 			Vector3 forward = Host.GetLassoGrabPoint.position - Host.GetThrowableObject.GetAttachmentTransform.position;
 			Host.GetThrowableObject.GetMainTransform.rotation = Quaternion.LookRotation(forward.normalized, Vector3.up);
-			Host.SetSpinStrength(time);
+			Host.SetSpinStrength(spinStr);
 			Host.RenderRope();
-
 			Host.RenderTrajectory();
-			m_fCurrentTimeSpinning = Mathf.Min(m_fCurrentTimeSpinning + Time.deltaTime, Host.MaxTimeSpinning);
 
 			m_CurrentAngle += Host.SpinSpeedProfile.Evaluate(time) * Time.deltaTime;
 			if (m_CurrentInitializeTime > 0)

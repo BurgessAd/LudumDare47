@@ -115,9 +115,77 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_JerkTimeForPull: 0.241
   m_LassoRelaxTime: 5.44
-  m_TimeBeforeUserCanThrow: 0.498
-  m_MaxTimeSpinning: 1.29
-  m_MaxTimeToSwitchStrength: 1
+  m_TimeBeforeUserCanThrow: 0.2
+  m_MaxTimeSpinning: 1.535
+  m_SpinUpProfile:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.0021413276
+      value: 0
+      inSlope: 0.030246923
+      outSlope: 0.030246923
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.20110193
+    - serializedVersion: 3
+      time: 0.26186526
+      value: 0.3315661
+      inSlope: 2.3201327
+      outSlope: 2.3201327
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.21395858
+    - serializedVersion: 3
+      time: 0.4963462
+      value: 0.96800166
+      inSlope: 1.5319008
+      outSlope: 1.5319008
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.22387023
+      outWeight: 1
+    - serializedVersion: 3
+      time: 0.5366258
+      value: 1.0061829
+      inSlope: 0.03996262
+      outSlope: 0.03996262
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.5863462
+      value: 0.9621933
+      inSlope: -1.1892103
+      outSlope: -1.1892103
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.29074752
+    - serializedVersion: 3
+      time: 0.7511993
+      value: 0.8438145
+      inSlope: -0.30734146
+      outSlope: -0.30734146
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.99920154
+      value: 0.8120926
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   m_SpinSidewaysProfile:
     serializedVersion: 2
     m_Curve:

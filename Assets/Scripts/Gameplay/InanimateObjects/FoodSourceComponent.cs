@@ -5,7 +5,6 @@ using System;
 
 [RequireComponent(typeof(LocalDebugData))]
 [RequireComponent(typeof(HealthComponent))]
-[ExecuteInEditMode]
 public class FoodSourceComponent : MonoBehaviour, IPauseListener
 {
     [SerializeField] private AnimationCurve m_RegenerationRateByCurrentHealth = default;

@@ -11,10 +11,8 @@ public class AnimalMovementComponent : MonoBehaviour
     [SerializeField] private float m_RotationSpeed;
     [SerializeField] private float m_IdleAcceleration;
     [SerializeField] private float m_RunAcceleration;
-    [SerializeField] private Rigidbody m_AnimalRigidBody;
-    [SerializeField] private PhysicalEntity m_PhysicalEntity;
-    [SerializeField] private CharacterController m_AnimalCharacterController;
 
+    [SerializeField] private Rigidbody m_AnimalRigidBody;
     [SerializeField] private AnimationCurve m_UprightAccelerationScalar;
 
     public float TimeOnGround { get; private set; }
@@ -22,6 +20,7 @@ public class AnimalMovementComponent : MonoBehaviour
     private Vector3 m_vDestination;
     private float m_fCurrentTimeStuck = 0.0f;
     private Vector3 m_vPositionLastFrame;
+    private PhysicalEntity m_PhysicalEntity;
     private Transform m_tObjectTransform;
     private NavMeshAgent m_NavMeshAgent;
     private LayerMask m_iLayerMask;
@@ -32,6 +31,7 @@ public class AnimalMovementComponent : MonoBehaviour
         m_iLayerMask = 1 << NavMesh.GetNavMeshLayerFromName("Default");
         m_tObjectTransform = GetComponent<Transform>();
         m_NavMeshAgent = GetComponent<NavMeshAgent>();
+        m_PhysicalEntity = GetComponent<PhysicalEntity>();
         m_vPositionLastFrame = m_tObjectTransform.position;
         m_vDestination = m_tObjectTransform.position;
         m_fCurrentTimeStuck = 0.0f;

@@ -63,16 +63,19 @@ public class FreeFallTrajectoryComponent : MonoBehaviour, IPauseListener
         }
     }
 
-	private void OnCollisionEnter(Collision collision)
+	private void OnCollisionStay(Collision collision)
     {
-        if (m_bIsFalling)
+        if (m_fCurrentTime > 0.5f) 
         {
-            OnObjectHitGround?.Invoke(collision);
-            OnObjectNotInFreeFall?.Invoke();
-            m_rMovingBody.velocity = projectile.EvaluateVelocityAtTime(m_fCurrentTime);
-            m_rMovingBody.angularVelocity = projectile.m_vRotAxis * projectile.m_fAngVel;
+            if (m_bIsFalling)
+            {
+                OnObjectHitGround?.Invoke(collision);
+                OnObjectNotInFreeFall?.Invoke();
+                m_rMovingBody.velocity = projectile.EvaluateVelocityAtTime(m_fCurrentTime);
+                m_rMovingBody.angularVelocity = projectile.m_vRotAxis * projectile.m_fAngVel;
+            }
+            StopThrowingInternal();
         }
-        StopThrowingInternal();
     }
 
     void Update()
@@ -109,12 +112,12 @@ public struct ProjectileParams
         m_fAngVel = angularVelocity;
     }
 
-    public ProjectileParams(float speed, Vector3 throwDirection, Vector3 origin, Vector3 rotationAxis, float angularVelocity = 0) 
+    public ProjectileParams(float speed, Vector3 throwDirection, Vector3 origin, float angularVelocity = 0) 
     {
         m_fGravityMult = 1;
         m_fThrowSpeed = speed;
         m_vStartPos = origin;
-        m_vRotAxis = rotationAxis;
+        m_vRotAxis = UnityEngine.Random.insideUnitSphere;
         m_vForwardDir = Vector3.ProjectOnPlane(throwDirection, Vector3.up).normalized;
         m_fElevationAngle = Mathf.Deg2Rad * (90 - Vector3.Angle(Vector3.up, throwDirection));
         m_fAngVel = angularVelocity;

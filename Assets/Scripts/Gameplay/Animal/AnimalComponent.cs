@@ -181,6 +181,11 @@ public class AnimalComponent : MonoBehaviour, IPauseListener, IEntityTrackingLis
             }
         }
     }
+    public void OnReceiveImpulse(in Vector3 forceChange) 
+    {
+        ProjectileParams pParams = new ProjectileParams(m_ThrowableComponent, forceChange.magnitude, forceChange.normalized, m_AnimalBodyTransform.position, 180f);
+        m_ThrowableComponent.ThrowObject(pParams);
+    }
 
 	public void OnStruckByObject(in Vector3 velocity, in float mass)
 	{
@@ -291,8 +296,18 @@ public class AnimalComponent : MonoBehaviour, IPauseListener, IEntityTrackingLis
     { 
         if (!GetTargetEntity)
             return true;
+
         float distSq = Vector3.SqrMagnitude(GetTargetEntity.GetTrackingTransform.position - m_AnimalMainTransform.position);
-        float distToEscSq = m_EvadedDistance * m_EvadedDistance * 1.0f;
+		float distToEscSq;
+		if (GetTargetEntity.GetEntityInformation == m_Manager.GetHazardType && GetTargetEntity.TryGetComponent(out HazardComponent hazard))
+        {
+            distToEscSq = hazard.GetHazardRadius * hazard.GetHazardRadius;
+        }
+		else 
+        {
+            distToEscSq = m_EvadedDistance * m_EvadedDistance * 1.0f;
+        }
+
         return distSq > distToEscSq;
     }
 

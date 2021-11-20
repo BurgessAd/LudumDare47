@@ -6,9 +6,9 @@
 
 public class Chunk : MonoBehaviour
 {
-	private MeshFilter meshFilter;
-	private MeshCollider meshCollider;
-	public Mesh mesh;
+	[SerializeField] [HideInInspector] private MeshFilter meshFilter;
+	[SerializeField] [HideInInspector] private MeshCollider meshCollider;
+	[SerializeField] [HideInInspector] public Mesh mesh;
 
 	public Vector3Int renderTo;
 
@@ -67,6 +67,7 @@ public class Chunk : MonoBehaviour
 
 	public void SetCollider()
 	{
+		meshCollider.sharedMesh = null;
 		meshCollider.sharedMesh = mesh;
 	}
 
@@ -74,8 +75,12 @@ public class Chunk : MonoBehaviour
 	//Reset colliders at the end of setup.
 	public void Awake()
 	{
-		meshFilter = GetComponent<MeshFilter>();
-		meshCollider = GetComponent<MeshCollider>();
+		if (!meshFilter)
+			meshFilter = GetComponent<MeshFilter>();
+		if (!meshCollider)
+			meshCollider = GetComponent<MeshCollider>();
+		if (mesh)
+			return;
 		mesh = new Mesh();
 		meshFilter.sharedMesh = mesh;
 	}

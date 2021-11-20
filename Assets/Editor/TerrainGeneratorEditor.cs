@@ -12,16 +12,32 @@ public class TerrainGeneratorEditor : Editor
     // Start is called before the first frame update
     TerrainGenerator terrainGenerator;
     Editor terrainGeneratorEditor;
+    private IBrush m_SelectedBrush;
+
     bool autoUpdate = true;
     int _choiceIndex = 0;
-    int _loadChoiceIndex = 0;
-    static string m_AssetPathString = "TerrainAssets";
+    int _brushChoiceIndex = 0;
+
+
+    private int cachedIndex = -1;
+    private bool m_bMouseDown = false;
+    private string newTerrainDataName = "New TerrainData";
+
+    void LocateTerrainInLevel() 
+    {
+        Terrain[] terrains = FindObjectsOfType(typeof(Terrain)) as Terrain[];
+        if (terrains.Length > 0) 
+        {
+            GetTerrain.Add(terrains[0]);
+            terrainGenerator.LoadTerrainForEditing(terrains[0]);
+        }
+    }
 
     void CreateNewTerrainData(in string terrainDataName)
     {
         
         _choiceIndex = GetTerrain.Count()-1;
-        Terrain newTerrain = terrainGenerator.CreateTerrain(terrainDataName);
+        Terrain newTerrain = terrainGenerator.CreateTerrain(terrainDataName, m_scale);
         GetTerrain.Add(newTerrain);
         terrainGenerator.ActiveTerrainDataSettingsChanged();
     }
@@ -49,8 +65,135 @@ public class TerrainGeneratorEditor : Editor
         }
         
     }
-    int cachedIndex = -1;
-    string newTerrainDataName = "New TerrainData";
+
+    void DrawBrushChoices() 
+    {
+        BrushPropertyAssociator associator = terrainGenerator.GetBrushPropertyAssociator;
+
+        int numBrushes = terrainGenerator.GetTerrainBrushes().Count;
+        if (numBrushes < 1)
+            return;
+        if (_brushChoiceIndex >= numBrushes)
+            _brushChoiceIndex = numBrushes - 1;
+
+        string[] brushNames = new string[terrainGenerator.GetTerrainBrushes().Count + 1];
+        brushNames[0] = "No Brush Selected";
+        for (int i = 1; i < brushNames.Length; i++)
+        {
+            brushNames[i] = terrainGenerator.GetTerrainBrushes()[i - 1].name;
+        }
+
+        _brushChoiceIndex = EditorGUILayout.Popup(_brushChoiceIndex, brushNames);
+
+        if (_brushChoiceIndex == 0)
+            m_SelectedBrush = null;
+        else
+        {
+            m_SelectedBrush = terrainGenerator.GetTerrainBrushes()[_brushChoiceIndex-1];
+        }
+        if (m_SelectedBrush == null)
+            return;
+
+        m_SelectedBrush.InitializeBrush();
+
+        if (m_SelectedBrush.ExtendsProperty(associator.GetSizeProperty))
+        {
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label(associator.GetSizeProperty.ToUpper());
+
+            float val = m_SelectedBrush.GetData<float>(associator.GetSizeProperty);
+            val = EditorGUILayout.Slider(val, 0f, 1f);
+            m_SelectedBrush.SetData(associator.GetSizeProperty, val);
+
+            GUILayout.EndHorizontal();
+        }
+        if (m_SelectedBrush.ExtendsProperty(associator.GetStrengthProperty))
+        {
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label(associator.GetStrengthProperty.ToUpper());
+
+            float val = m_SelectedBrush.GetData<float>(associator.GetStrengthProperty);
+            val = EditorGUILayout.Slider(val, 0f, 1f);
+            m_SelectedBrush.SetData(associator.GetStrengthProperty, val);
+            GUILayout.EndHorizontal();
+        }
+        if (m_SelectedBrush.ExtendsProperty(associator.GetHardnessProperty))
+        {
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label(associator.GetHardnessProperty.ToUpper());
+            float val = m_SelectedBrush.GetData<float>(associator.GetHardnessProperty);
+            val = EditorGUILayout.Slider(val, 0f, 1f);
+            m_SelectedBrush.SetData(associator.GetHardnessProperty, val);
+
+            GUILayout.EndHorizontal();
+        }
+        if (m_SelectedBrush.ExtendsProperty(associator.GetColourProperty))
+        {
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label(associator.GetColourProperty.ToUpper());
+
+            Color val = m_SelectedBrush.GetData<Color>(associator.GetColourProperty);
+            val = EditorGUILayout.ColorField(val);
+            m_SelectedBrush.SetData(associator.GetColourProperty, val);
+
+            GUILayout.EndHorizontal();
+        }
+        if (m_SelectedBrush.ExtendsProperty(associator.GetUseVerticalProperty))
+        {
+            GUILayout.BeginHorizontal("box");
+            GUILayout.Label(associator.GetUseVerticalProperty.ToUpper());
+
+            bool val = m_SelectedBrush.GetData<bool>(associator.GetUseVerticalProperty);
+            val = EditorGUILayout.Toggle(val);
+            m_SelectedBrush.SetData(associator.GetUseVerticalProperty, val);
+
+            if (!val)          
+            {
+                if (m_SelectedBrush.ExtendsProperty(associator.GetCacheNormalsProperty))
+                {
+                    GUILayout.BeginHorizontal("box");
+                    GUILayout.Label(associator.GetCacheNormalsProperty.ToUpper());
+
+                    bool val2 = m_SelectedBrush.GetData<bool>(associator.GetCacheNormalsProperty);
+                    val2 = EditorGUILayout.Toggle(val2);
+                    m_SelectedBrush.SetData(associator.GetCacheNormalsProperty, val2);
+
+                    GUILayout.EndHorizontal();
+                }
+            }
+
+            GUILayout.EndHorizontal();
+        }
+    }
+
+    private void RunBrushApplication()
+	{
+        if (m_SelectedBrush == null)
+            return;
+            
+        Event e = Event.current;
+        if (e.type == EventType.MouseDown)
+        {
+            m_SelectedBrush.OnStartApplyingBrush();
+            m_bMouseDown = true;
+        }
+        if (e.type == EventType.MouseUp)
+        {
+            m_SelectedBrush.OnLeaveBrush();
+            m_bMouseDown = false;
+        }
+        if (m_bMouseDown)
+        {
+            Physics.SyncTransforms();
+
+            Physics.autoSimulation = false;
+            Physics.Simulate(Time.deltaTime);
+            Physics.autoSimulation = true;
+
+            m_SelectedBrush.OnApplyBrush();
+        }
+    }
+    private float m_scale = 1.0f;
     public override void OnInspectorGUI()
     {
         cachedIndex = _choiceIndex;
@@ -59,52 +202,12 @@ public class TerrainGeneratorEditor : Editor
         {
             _choiceIndex = GetTerrain.Count - 1;
         }
-        GUILayout.Label("Save or load terrain");
-        GUILayout.BeginHorizontal("box");
-        if (GUILayout.Button("Export terrain")) 
+        GUILayout.Label("Load Terrain From Level");
+        if (GUILayout.Button("Find Terrain"))
         {
-            if (HasValidTerrainSelected())
-            {
-                int chunkNum = 0;
-                foreach(Chunk chunk in GetTerrain[_choiceIndex].m_TerrainChunks) 
-                {
-                    string assetPath = "Assets/Resources/" + m_AssetPathString + "/chunkMesh" + chunkNum.ToString() + ".asset";
-                    AssetDatabase.CreateAsset(chunk.GetMesh(), assetPath);
-                    chunkNum++;
-                }
-                AssetDatabase.Refresh();
-                DeleteTerrainData(_choiceIndex);
-            }
-            
+            LocateTerrainInLevel();
         }
-
-        if (GUILayout.Button("Import Terrain"))
-        {
-            string assetPath = "Assets/Resources/" + m_AssetPathString;
-            Object[] assets = Resources.LoadAll<Mesh>(m_AssetPathString);
-            if (assets.Length > 0)
-            {
-                GameObject chunkHolder = new GameObject(name = "MeshHolder");
-                for (int i = 0; i < assets.Length; i++) 
-                {
-                    GameObject newGameObject = new GameObject();
-                    MeshFilter meshFilter = (MeshFilter)newGameObject.AddComponent(typeof(MeshFilter));
-                    MeshRenderer meshRenderer = (MeshRenderer)newGameObject.AddComponent(typeof(MeshRenderer));
-                    MeshCollider meshCollider = (MeshCollider)newGameObject.AddComponent(typeof(MeshCollider));
-                    meshFilter.sharedMesh = (Mesh)assets[i];
-                    meshCollider.sharedMesh = (Mesh)assets[i];
-                    meshRenderer.material = terrainGenerator.GetMeshMaterial;
-                    newGameObject.transform.SetParent(chunkHolder.transform);
-                    newGameObject.hideFlags = HideFlags.HideInHierarchy;
-                }
-            }
-            else 
-            {
-                Debug.Log("Failed to find anything in folder to load! Are you sure there's meshes to load in Assets/Resources/TerrainAssets?");
-            }
-        }
-        GUILayout.EndHorizontal();
-        GUILayout.Label("Choose or delete terrain");
+        GUILayout.Label("Choose or Delete Terrain");
         GUILayout.BeginHorizontal("box");
 
         _choiceIndex = EditorGUILayout.Popup("Current Terrain", _choiceIndex, _terrainData.Select(x=>x.name).ToArray());
@@ -125,12 +228,19 @@ public class TerrainGeneratorEditor : Editor
         }
 
         GUILayout.EndHorizontal();
-        GUILayout.Label("Create new terrain");
+
+        GUILayout.BeginHorizontal("box");
+        GUILayout.Label("Terrain Scale");
+        m_scale = EditorGUILayout.FloatField(m_scale);
+        GUILayout.EndHorizontal();
+
+
+        GUILayout.Label("Create New Terrain");
 
         GUILayout.BeginHorizontal("box");
         newTerrainDataName = GUILayout.TextField(newTerrainDataName, 25, GUILayout.Width(200.0f));
 
-        if (GUILayout.Button("Create New Terrain"))
+        if (GUILayout.Button("Create Neww Terrain"))
         {
             if (!newTerrainDataName.Equals(""))
             {
@@ -153,14 +263,15 @@ public class TerrainGeneratorEditor : Editor
         autoUpdate = GUILayout.Toggle(autoUpdate, "Auto-Update Terrain");
         GUILayout.EndHorizontal();
 
-
-
         if (GetTerrain.Count > 0)
         {  
             DrawSettingsEditor(GetTerrain[_choiceIndex], ref terrainGeneratorEditor);
-        } 
+        }
+        GUILayout.Label("Terrain Brushes");
 
+        DrawBrushChoices();
 
+        RunBrushApplication();
     }
 
     void DrawSettingsEditor(Object settings, ref Editor editor) 

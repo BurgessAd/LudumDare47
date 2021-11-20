@@ -16,8 +16,9 @@ GameObject:
   - component: {fileID: 4764156418921188620}
   - component: {fileID: 8193576897066533465}
   - component: {fileID: 2864538650215313589}
+  - component: {fileID: 245518832}
   m_Layer: 0
-  m_Name: Bushes
+  m_Name: bushes
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -115,8 +116,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: -0.004282655
-      value: 0.2004717
+      time: -0.051976405
+      value: 1.5124297
       inSlope: 0
       outSlope: 0
       tangentMode: 136
@@ -125,12 +126,12 @@ MonoBehaviour:
       outWeight: 0.33333334
     - serializedVersion: 3
       time: 1
-      value: 0.20518868
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
+      value: 0.6468696
+      inSlope: -0.2825905
+      outSlope: -0.2825905
+      tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
+      inWeight: 0.10438189
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -156,9 +157,11 @@ MonoBehaviour:
   m_TargetNumOfFlowers: 200
   m_MaxAngleFromUp: 70
   m_FlowerSizeRandom: 0.2
-  m_FlowerScalar: 0.02
-  m_BerryPrefab: {fileID: 4044804479684728317, guid: bfbc29f8892721349a8c8efb5d29ad8d,
+  m_FlowerScalar: 1.25
+  m_BerryMesh: {fileID: 289301614986012343, guid: d99a7fd548c9f4f42a1bd5f3475b3cf7,
     type: 3}
+  m_BerryMaterial: {fileID: 2100000, guid: f6f7bc95d6e4674439999f5bd72d53d1, type: 2}
+  m_Transform: {fileID: 0}
 --- !u!114 &8193576897066533465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195,6 +198,54 @@ MonoBehaviour:
   m_CurrentHealth: 9.411646
   m_DamagedParticleType: {fileID: 5297521350535027660, guid: 8d57a9dc035004a469ba2d9eddd4026f,
     type: 3}
+--- !u!114 &245518832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 281739335688112978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9899c017b37e547489dd736154e1a4b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_DefaultShaderId: _Color
+  m_MaterialColourSettingReference: 0
+  m_ColourSettings:
+  - m_ColourGradient:
+      serializedVersion: 2
+      key0: {r: 0, g: 0.1509434, b: 0.007547163, a: 1}
+      key1: {r: 0.07995001, g: 0.36900002, b: 0, a: 1}
+      key2: {r: 0, g: 0, b: 0, a: 0}
+      key3: {r: 0, g: 0, b: 0, a: 0}
+      key4: {r: 0, g: 0, b: 0, a: 0}
+      key5: {r: 0, g: 0, b: 0, a: 0}
+      key6: {r: 0, g: 0, b: 0, a: 0}
+      key7: {r: 0, g: 0, b: 0, a: 0}
+      ctime0: 0
+      ctime1: 65535
+      ctime2: 0
+      ctime3: 0
+      ctime4: 0
+      ctime5: 0
+      ctime6: 0
+      ctime7: 0
+      atime0: 0
+      atime1: 65535
+      atime2: 0
+      atime3: 0
+      atime4: 0
+      atime5: 0
+      atime6: 0
+      atime7: 0
+      m_Mode: 0
+      m_NumColorKeys: 2
+      m_NumAlphaKeys: 2
+    m_RolledColor: {r: 0.079471394, g: 0.36769462, b: 0.000045180786, a: 1}
+    m_MaterialIndex: 0
+    m_MaterialColourId: _Color
+  m_bRandomizeOnStart: 1
 --- !u!1 &7596582200506077565
 GameObject:
   m_ObjectHideFlags: 0

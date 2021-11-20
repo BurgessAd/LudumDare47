@@ -22,8 +22,11 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 	[Header("--- FOV Animation ---")]
 	[SerializeField] private float m_fMaxFOVChangePerSecond = 1.0f;
     [SerializeField] private float m_fDefaultFOV;
+    [SerializeField] private float m_ThrowAnimPulseTime;
     [SerializeField] private AnimationCurve m_FOVTugAnimator;
     [SerializeField] private AnimationCurve m_FOVForceAnimator;
+    [SerializeField] private AnimationCurve m_FOVThrowAnimator;
+    [SerializeField] private AnimationCurve m_FOVThrowPulseAnimator;
 
 	[Header("--- Anim Strings ---")]
 	[SerializeField] private string m_JumpString;
@@ -82,7 +85,21 @@ public class PlayerCameraComponent : MonoBehaviour, IPauseListener
 	{
         float animationSize = m_ThrowForceCamShake.Evaluate(throwForce);
 		m_CameraShaker.ShakeOnce(animationSize/3, animationSize, 0.3f, 0.3f);
+        StartCoroutine(AnimCoroutine(throwForce));
 	}
+
+    private float m_CurrentTime = 0.0f;
+    private IEnumerator AnimCoroutine(float throwForce) 
+    {
+        m_CurrentTime = 0.0f;
+        while (m_CurrentTime < m_ThrowAnimPulseTime) 
+        {
+            m_fTargetFOV = m_fDefaultFOV * (1 +  m_FOVThrowPulseAnimator.Evaluate(m_CurrentTime / m_ThrowAnimPulseTime) * m_FOVThrowAnimator.Evaluate(throwForce)); 
+            m_CurrentTime += Time.deltaTime;
+            yield return null;
+        }
+        m_fTargetFOV = m_fDefaultFOV;
+    }
 
 	float currentMovement = 0.0f;
 	float currentMovementAcceleration = 0.0f;

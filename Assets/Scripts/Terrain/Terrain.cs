@@ -29,13 +29,13 @@ public class Terrain : MonoBehaviour
 
 	[Header("Extent Settings")]
 	[Range(1, 100)]
-	public int extentX = 64;
+	public int extentX = 15;
 
 	[Range(1, 100)]
-	public int extentY = 64;
+	public int extentY = 15;
 
 	[Range(1, 100)]
-	public int extentZ = 64;
+	public int extentZ = 15;
 
 	public float isoLevel = 0.5f;
 
@@ -88,15 +88,66 @@ public class Terrain : MonoBehaviour
 		}
 	}
 
+	private static void IterateExtent(in Vector3Int lowExtent, in Vector3Int highExtent, in Action<int, int, int> func) 
+	{
+		for (int x1 = lowExtent.x; x1 < highExtent.x; x1++)
+		{
+			for (int y1 = lowExtent.y; y1 < highExtent.y; y1++)
+			{
+				for (int z1 = lowExtent.z; z1 < highExtent.z; z1++)
+				{
+					func(x1, y1, z1);
+				}
+			}
+		}
+	}
+
 	public void RecalcNumChunks()
 	{
-		Vector3Int newRenderedChunksXYZ = new Vector3Int(1 + Mathf.FloorToInt((float)extentX / (chunkSize)), 1 + Mathf.FloorToInt((float)extentY / (chunkSize)), 1 + Mathf.FloorToInt((float)extentZ / (chunkSize)));
+		Vector3Int oldRenderedChunks = m_TerrainExtent;
+		Vector3Int newRenderedChunks = new Vector3Int(1 + Mathf.FloorToInt((float)(extentX) / (chunkSize)), 1 + Mathf.FloorToInt((float)(extentY) / (chunkSize)), 1 + Mathf.FloorToInt((float)(extentZ) / (chunkSize)));
 
-		Grid.ResizeKeepMax(newRenderedChunksXYZ, ref m_TerrainExtent, ref m_TerrainChunks);
+		Vector3Int chunksToUpdateFrom = Vector3Int.Min(oldRenderedChunks, newRenderedChunks);
+		Vector3Int chunksToUpdateTo = Vector3Int.Max(oldRenderedChunks, newRenderedChunks);
+
+		Grid.ResizeKeepMax(newRenderedChunks, ref m_TerrainExtent, ref m_TerrainChunks);
 		// Resize createdChunks to include new chunks, keep old chunks that are to be deleted for now so that we can access them
 
-		Vector3Int newRenderTo;
-		Vector3Int newRenderFrom;
+		//IterateExtent(Vector3Int.Max(chunksToUpdateFrom-Vector3Int.one, Vector3Int.zero), m_TerrainExtent, (int x, int y, int z) =>
+		//{
+		//	if (x >= newRenderedChunks.x|| y >= newRenderedChunks.y || z >= newRenderedChunks.z) 
+		//	{
+		//		Chunk chunk = Grid.GetValueFromGrid(x, y, z, m_TerrainChunks, m_TerrainExtent);
+		//		if (chunk != null)
+		//		{
+		//			DestroyImmediate(chunk.gameObject);
+		//			return;
+		//		}
+		//	}
+
+		//	Vector3Int newRenderTo = new Vector3Int(Mathf.Min(chunkSize + 1, extentX - x * chunkSize), Mathf.Min(chunkSize + 1, extentY - y * chunkSize), Mathf.Min(chunkSize + 1, extentZ - z * chunkSize));
+		//	Vector3Int newRenderFrom = new Vector3Int(Mathf.Max(1 - x, 0), Mathf.Max(1 - y, 0), Mathf.Max(1 - z, 0));
+
+		//	Chunk chunkOfInterest = Grid.GetValueFromGrid(x, y, z, m_TerrainChunks, m_TerrainExtent);
+
+		//	if (chunkOfInterest == null)
+		//	{
+		//		chunkOfInterest = CreateChunk(x, y, z);
+		//		Grid.SetGridValue(x, y, z, chunkOfInterest, m_TerrainChunks, m_TerrainExtent);
+		//		chunkOfInterest.renderTo = newRenderTo;
+		//		chunkOfInterest.renderFrom = newRenderFrom;
+		//		return;
+		//	}
+
+		//	//if the render to value is different, change it and flag the chunk for updates. only flag if chunk already existed.
+		//	if (chunkOfInterest.renderTo != newRenderTo)
+		//	{
+		//		chunkOfInterest.renderTo = newRenderTo;
+		//		chunkOfInterest.shouldRerender = true;
+		//	}
+		//});
+
+
 
 		for (int x = 0; x < m_TerrainExtent.x; x++)
 		{
@@ -105,7 +156,7 @@ public class Terrain : MonoBehaviour
 				for (int z = 0; z < m_TerrainExtent.z; z++)
 				{
 					// if the chunk was present in the old set, and is outside new rendered range, destroy it.
-					if (x >= newRenderedChunksXYZ.x || y >= newRenderedChunksXYZ.y || z >= newRenderedChunksXYZ.z)
+					if (x >= newRenderedChunks.x || y >= newRenderedChunks.y || z >= newRenderedChunks.z)
 					{
 						if (Grid.GetValueFromGrid(x, y, z, m_TerrainChunks, m_TerrainExtent))
 						{
@@ -114,8 +165,8 @@ public class Terrain : MonoBehaviour
 						}
 					}
 
-					newRenderTo = new Vector3Int(Mathf.Min(chunkSize + 1, extentX - x * chunkSize), Mathf.Min(chunkSize + 1, extentY - y * chunkSize), Mathf.Min(chunkSize + 1, extentZ - z * chunkSize));
-					newRenderFrom = new Vector3Int(Mathf.Max(1 - x, 0), Mathf.Max(1 - y, 0), Mathf.Max(1 - z, 0));
+					Vector3Int newRenderTo = new Vector3Int(Mathf.Min(chunkSize + 1, extentX - x * chunkSize), Mathf.Min(chunkSize + 1, extentY - y * chunkSize), Mathf.Min(chunkSize + 1, extentZ - z * chunkSize));
+					Vector3Int newRenderFrom = new Vector3Int(Mathf.Max(1 - x, 0), Mathf.Max(1 - y, 0), Mathf.Max(1 - z, 0));
 
 					Chunk chunkOfInterest = Grid.GetValueFromGrid(x, y, z, m_TerrainChunks, m_TerrainExtent);
 
@@ -137,7 +188,8 @@ public class Terrain : MonoBehaviour
 				}
 			}
 		}
-		Grid.Resize(newRenderedChunksXYZ, ref m_TerrainExtent, ref m_TerrainChunks);
+
+		Grid.Resize(newRenderedChunks, ref m_TerrainExtent, ref m_TerrainChunks);
 	}
 
 
@@ -192,7 +244,7 @@ public class Terrain : MonoBehaviour
 
 	public static Color AssignGridColourValue(int x, int y, int z) 
 	{
-		return Color.white;
+		return Color.grey;
 	}
 
 	// delete all chunk gameobjects
@@ -204,7 +256,9 @@ public class Terrain : MonoBehaviour
 			{
 				for (int z = 0; z < m_TerrainExtent.z; z++)
 				{
-					Grid.GetValueFromGrid(x, y, z, m_TerrainChunks, m_TerrainExtent).DestroyChunkAndData();
+					Chunk chunk = Grid.GetValueFromGrid(x, y, z, m_TerrainChunks, m_TerrainExtent);
+					if (chunk)
+						chunk.DestroyChunkAndData();
 				}
 			}
 		}

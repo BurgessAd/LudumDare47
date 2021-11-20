@@ -6,13 +6,8 @@ using System;
 public class EntityTypeComponent : MonoBehaviour
 {
     [SerializeField] private EntityInformation m_EntityInformation;
-
     [SerializeField] private CowGameManager m_Manager;
-
     [SerializeField] private Transform m_TrackingTransform;
-
-    [SerializeField] private Transform m_PhysicsTransform;
-
     [SerializeField] private float m_TrackableRadius = 0f;
 
     private UnityUtils.ListenerSet<IEntityTrackingListener> m_Listeners = new UnityUtils.ListenerSet<IEntityTrackingListener>();

@@ -8,8 +8,14 @@ public class AttackTypeRam : AttackBase
 	[SerializeField] private float m_RamFXStrength = 0.5f;
 	[SerializeField] private Transform m_RamPoint;
 	[SerializeField] private GameObject m_RamFXPrefabs;
+	[SerializeField] private PhysicalEntity m_AnimalEntity;
 	public override void AttackTarget(in GameObject target, in Vector3 attackDirection)
 	{
+		//m_AnimalEntity.GetGroundedPos;
+		//m_AnimalEntity.GetGroundedNorm;
+		//m_
+
+
 		IThrowableObjectComponent throwableComponent = target.GetComponent<IThrowableObjectComponent>();
 		Vector3 planeOfAttackNormal = Vector3.Cross(attackDirection, Vector3.up);
 		Vector3 rammingOffset = (throwableComponent.GetMainTransform.position - m_RamPoint.position).normalized;
@@ -35,7 +41,8 @@ public class AttackTypeRam : AttackBase
 		{
 			CameraShaker.Instance.ShakeOnce(5.0f, 5.0f, 0.1f, 1.0f);
 		}
-		ProjectileParams throwParams = new ProjectileParams(throwableComponent, m_RamForce, rammingDirection, throwableComponent.GetMainTransform.position, 0);
+		ProjectileParams throwParams = new ProjectileParams(m_RamForce, rammingDirection, throwableComponent.GetMainTransform.position, 0);
+		target.GetComponent<FreeFallTrajectoryComponent>().ThrowObject(throwParams);
 		target.GetComponent<IThrowableObjectComponent>().ThrowObject(throwParams);
 	}
 }

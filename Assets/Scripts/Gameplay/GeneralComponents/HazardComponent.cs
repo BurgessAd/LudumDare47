@@ -14,7 +14,12 @@ public class HazardComponent : MonoBehaviour
         StartCoroutine(StartDestroyTimer());
     }
 
-    private IEnumerator StartDestroyTimer() 
+	private void OnDrawGizmosSelected()
+	{
+        Gizmos.DrawWireSphere(transform.position, m_HazardRadius);
+	}
+
+	private IEnumerator StartDestroyTimer() 
     {
         yield return new WaitForSecondsRealtime(m_HazardLifetime);
         m_EntityTypeComponent.OnKilled();
